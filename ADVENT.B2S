@@ -1,0 +1,521 @@
+1	ON ERROR GOTO 25000 &
+\	COMMON ACC$(8%)=7%,AR$=80%,C%,C$=10%,CRLF$=2%, &
+	FLAG%(8%),HP%(8%),LEVEL%(8%),KB%(8%),NAM$(8%)=30%,NO.OF.USERS%, &
+	XP.(8%),STUN(8%), &
+	NPCMESS$(8%)=40%,OB$(8%,9%)=30%,PASS$(8%)=10%, &
+	ROOM%(8%),SENT.KB%,SENT.MESS$=80%,SENT.PROG%,SENT.PROJ%, &
+	USER%,CI$=1%,WEAPON$(8%)=20%,WEAPON%(8%), &
+	ATT.LEVEL%(10%),DEF.LEVEL%(10%),MON.HP%(10%),MON.DAM%(10%), &
+	SPEC$(10%)=6%,MON.ROOM%(10%),MON.XP%(10%),RUN.ACC$=9%,MMM$=128%, &
+	BLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%) &
+
+10	CALL ADVINI &
+\	FIELD #1%, 128% AS BUF$ &
+\	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, &
+	312% AS DESC$ &
+\	DIM #5%, MONSTER$(10000%)=20% &
+\	DIM #7%, CHARACTER$(100%)=512% &
+\	COM.LIST$= &
+	"/LOOK      /NORTH     /EAST      /SOUTH     /WEST      "+ &
+	"/INVENTORY /STATUS    /GET       /TAKE      /PICK      "+ &
+	"/DROP      /THROW     /TELL      /SHOUT     /DRAW      "+ &
+	"/SHEATH    /HIT       /LT        /QUIT      /WEAPON    "+ &
+	"/READ      /WRITE     /WIPE      /EAT       /OPEN      "+ &
+	"/HELP      /ROB       /RING      /USE       /PRAY      "+ &
+	"/ANNOUNCE  /TELEPORT  /ROOM      /LIST      /INVISIBLE "+ &
+	"/HEAL      /FIREBALL  /STUN      /ZAP       /SEND      "+ &
+	"/PASS      /HOLD      /UNSTUN    /SUMMON    /KISS      "+ &
+	"/COMMUNE   /BLESS     /CREATE    /MAKE      /SPY       "+ &
+	"/BELLOW    /VALUE     /CALL      /GAG       /BLIND     "+ &
+	"/MESSAGE   /REST      " &
+
+30	GOTO 25005 IF RND<0.2 &
+\	GET #1%, RECORD 32767%+1%+16384%+8192% &
+\	USER%=INSTR(1%,USER.KB.LIST$,LEFT(BUF$,1%)) &
+\	GOTO 30 UNLESS USER% &
+
+40	KB%(USER%)=ASCII(BUF$) &
+\	J%=SQR(-1%) UNLESS ROOM%(USER%) &
+	! Generate error to send them to corrupt room is the character is &
+	! corrupt. &
+\	GOTO 2020 IF FLAG%(USER%) AND 2%^11% &
+\	J%=5%*INT((14%+2.8*LEVEL%(USER%)^1.8)/5%) &
+\	HP%(USER%)=J% IF HP%(USER%)>J% &
+\	JJ%=50%*((1.0*HP%(USER%))/(1.0*J%)) &
+\	JJ%=1% IF JJ%<=0% &
+\	FATIGUE%(USER%)=FATIGUE%(USER%)+1% &
+\	FATIGUE%(USER%)=JJ% IF FATIGUE%(USER%)>JJ% &
+\	GOTO 30 UNLESS TIME(0%)>STUN(USER%) &
+	! Stunned. &
+\	GET #3%, RECORD ROOM%(USER%) &
+\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)) &
+	! They're in a corrupt room. &
+\	CALL ADVOUT(KB%(USER%),CRLF$+'ADVENT is asleep - wait, or ^Z to exit.')&
+	IF C%=-1% &
+\	GOTO 50 IF C%=-1% &
+	! Asleep &
+\	COM$=CVT$$(RIGHT(BUF$,2%),1%+4%+8%+32%+128%) &
+\	PRINT #1%, RECORD 32767%+1%+SPY%(KB%(USER%)), CRLF$+ &
+	CVT$$(LEFT(NAM$(USER%),10%),255%)+' > '+COM$ &
+	IF SPY%(KB%(USER%)) &
+\	GOSUB 1530 IF INSTR(1%,PEOPLE$,"*") UNLESS FLAG%(USER%) AND 2%^1% &
+	! *Monster &
+\	GOSUB 1540 IF INSTR(1%,PEOPLE$,"#") IF FLAG%(USER%) AND 1% &
+	! #Monster &
+\	GOTO 30 IF COM$=CHR$(3%) &
+	! ^C so look for next command in their buffer. &
+
+41	GOSUB 21000 &
+	! Decode command. &
+\	GOTO 50 UNLESS C% &
+	! Illegal command. &
+\	CALL ADVNOR IF C%>=1% AND C%<=19% &
+\	CALL ADVCMD IF C%>19% AND C%<45% &
+\	CALL ADVODD IF C%>=45% &
+\	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, &
+	312% AS DESC$ &
+	! Call the right sub-program.  ADVNOR is intended to be the &
+	! sub-program normally in residence.  ADVCMD contains less often &
+	! used commands. &
+\	IF ROOM$<>CHR$(ROOM%(USER%)) THEN &
+	OPEN 'MSG:LOG1.95' AS FILE #4%, MODE 2% &
+\	PRINT #4%, 'Room';ROOM%(USER%);' corrupted by command number';C% &
+\	CLOSE #4% &
+
+50	GOTO 500 IF HP%(USER%)<=0% &
+\	J$="> " &
+\	J$="-]--- " IF FLAG%(USER%) AND 2%^0% &
+\	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$;J$; &
+\	J$=SYS(CHR$(11%)+CHR$(1%)+CHR$(KB%(USER%))) &
+	! Print prompt and clear their buffer. &
+\	GOTO 30 &
+
+100	! MESSAGE &
+	&
+	&
+	LSET BUF$=STRING$(128%,0%) &
+\	KEEP$=SYS(CHR$(6%)+CHR$(22%)+CHR$(2%)+CHR$(2%)+STRING$(6%,0%)+ &
+	CHR$(1%)+CHR$(0%)+CHR$(0%)+CHR$(SWAP%(0%))) &
+\	KEEP$=KEEP$+BUF$ &
+
+110	SENT.MESS$=RIGHT(KEEP$,21%) &
+\	SENT.PROG%=ASCII(RIGHT(KEEP$,5%)) &
+\	SENT.PROJ%=ASCII(RIGHT(KEEP$,6%)) &
+\	SENT.ACC$=NUM1$(SENT.PROJ%)+","+NUM1$(SENT.PROG%) &
+\	SENT.KB%=ASCII(RIGHT(KEEP$,7%)) &
+\	C%=-2% IF CVT$$(SENT.MESS$,255%)="DIE" &
+\	FATAL.ERR%=(C%=-2%) &
+\	GOTO 32767% IF C%=-2% &
+\	CALL ADVMSG &
+\	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, &
+	312% AS DESC$ &
+\	IF C%=-2% THEN &
+	FATAL.ERR%=-1% &
+\	GOSUB 500 &
+\	FATAL.ERR%=0% &
+\	C%=0% &
+
+120	RETURN &
+
+200	! THE BIG SLEEP &
+	&
+	&
+	J$=SYS(CHR$(6%)+CHR$(22%)+CHR$(2%)+CHR$(1%)) &
+
+210	GOTO 30 &
+
+500	! REMOVE USER &
+	&
+	&
+	CALL ADVBYE &
+\	USER.KB.LIST$='' &
+\	USER.KB.LIST$=USER.KB.LIST$+CHR$(KB%(I%)) FOR I%=1% TO 8% &
+\	RETURN IF FATAL.ERR% &
+\	GOTO 30 &
+
+1530	! *MONSTER &
+	&
+	&
+	J$="" &
+\	J$=J$+CHR$(I%) IF ROOM%(I%)=ROOM%(USER%) FOR I%=1% TO 8% &
+\	RETURN UNLESS ASCII(RIGHT(J$,INT(RND*LEN(J$)+1%)))=USER% &
+\	GOTO 1550 &
+
+1540	! #MONSTER &
+	&
+	&
+	J$="" &
+\	J$=J$+CHR$(I%) IF ROOM%(I%)=ROOM%(USER%) AND (FLAG%(I%) AND &
+	1%)<>0% FOR I%=1% TO 8% &
+\	RETURN UNLESS ASCII(RIGHT(J$,INT(RND*LEN(J$)+1%)))=USER% &
+\	GOTO 1550 &
+
+1550	! MONSTER ATTACKS &
+	&
+	&
+	J%=FNGMD%(ROOM%(USER%)) &
+\	J%=7%+ATT.LEVEL%(MON%)-LEVEL%(USER%) &
+\	CH%=5% &
+\	CH%=5%+J%*5% IF J%/7%=0% &
+\	CH%=J%*10%-30% IF J%/7% &
+\	D%=INT(RND*100%) &
+\	MON$=FNGRAB$(PEOPLE$,"#") &
+\	MON$=FNGRAB$(PEOPLE$,"*") UNLESS INSTR(1%,MON$,"#") &
+\	MON$=RIGHT(MON$,2%) &
+\	MON$="The"+RIGHT(MON$,INSTR(1%,MON$," ")) IF INSTR(1%,MON$," ") <= 3% &
+	AND INSTR(1%,MON$," ")<>0% &
+\	D%=INT(RND*100%) &
+\	IF D%>CH% THEN &
+	CALL ADVSHT(CRLF$+MON$+' tries to hit '+CVT$$(NAM$(USER%),128%)) &
+\	CALL ADVOUT(KB%(USER%),CRLF$+MON$+' misses you.') &
+\	RETURN &
+
+1560	DAM%=INT(RND*MON.DAM%(MON%))+1% &
+\	HP%(USER%)=HP%(USER%)-DAM% &
+\	JJ$=" hits " &
+\	JJ$=" kills " IF HP%(USER%)<=0% &
+\	CALL ADVSHT(CRLF$+MON$+JJ$+CVT$$(NAM$(USER%),128%)) &
+\	CALL ADVOUT(KB%(USER%),CRLF$+MON$+JJ$+'you.') &
+\	GOSUB 1570 IF LEN(CVT$$(SPEC$(MON%),255%)) &
+\	RETURN &
+
+1570	! MONSTER SPECIAL ATTACKS &
+	&
+	&
+	IF INSTR(1%,SPEC$(MON%),"/PA") THEN &
+	CH%=VAL(MID(SPEC$(MON%),INSTR(1%,SPEC$(MON%),"/PA")+3%,2%)) &
+\	CH%=100% UNLESS CH% &
+\	CH%=CH%-LEVEL%(USER%) &
+\	IF INT(RND*100%)<=CH% THEN &
+	J%=20%-LEVEL%(USER%) &
+\	J%=5% IF J%<=5% &
+\	STUN(USER%)=J%*NO.OF.USERS%+TIME(0%) &
+\	CALL ADVSHT(CRLF$+MON$+' paralyses '+CVT$$(NAM$(USER%),255%)) &
+\	CALL ADVOUT(KB%(USER%),CRLF$+MON$+' paralyses you.') &
+
+1580	IF INSTR(1%,SPEC$(MON%),"/PO") THEN &
+	CH%=VAL(MID(SPEC$(MON%),INSTR(1%,SPEC$(MON%),"/PO")+3%,2%)) &
+\	CH%=100% UNLESS CH% &
+\	CH%=CH%-LEVEL%(USER%) &
+\	IF INT(RND*100%)<=CH% THEN &
+	I%=0% &
+\	I%=I%+1% UNTIL (I%=9% OR INSTR(1%,CVT$$(OB$(USER%,I%),255%), &
+	"ANTIDOTE")<>0%) &
+\	OB$(USER%,I%)="" IF I%<>9% &
+\	IF I%=9% THEN HP%(USER%)=-1000% &
+\	CALL ADVSHT(CRLF$+MON$+' poisons '+CVT$$(NAM$(USER%),255%)) &
+\	CALL ADVOUT(KB%(USER%),CRLF$+MON$+' poisons you.') &
+
+1590	RETURN &
+
+1600	! NPC &
+	&
+	&
+	GET #3%, RECORD ROOM%(USER%) &
+\	GOSUB 1530 IF INSTR(1%,PEOPLE$,'*') &
+\	CALL ADVNPC &
+\	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, &
+	312% AS DESC$ &
+\	COM$=SENT.MESS$ &
+\	GOTO 41 &
+
+1610	! WORKMAN &
+	&
+	&
+	GET #3%, RECORD ROOM%(USER%) &
+\	RETURN IF C%=-1% &
+\	INPUT #8%, COM$ &
+\	INPUT #8%, ROOM% &
+\	INPUT #8%, CH% &
+\	INPUT #8%, NAM$ &
+\	GOTO 1620 IF ROOM%(USER%)=ROOM% &
+\	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+' vanishes in a puff of smoke.') &
+\	J$=FNCLEAR$ &
+\	ROOM%(USER%)=ROOM% &
+\	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+" appears.") &
+\	GET #3%, RECORD ROOM% &
+
+1620	GOTO 1650 UNLESS COM$="MON" &
+\	J%=FNGMD%(ROOM%) &
+\	INPUT #8%, ATT.LEVEL%(MON%) &
+\	INPUT #8%, DEF.LEVEL%(MON%) &
+\	INPUT #8%, MON.HP%(MON%) &
+\	INPUT #8%, MON.DAM%(MON%) &
+\	INPUT #8%, SPEC$(MON%) &
+\	INPUT #8%, MON.XP%(MON%) &
+\	INPUT #8%, MON.FLAG%(MON%) &
+\	INPUT #8%, D% FOR I%=1% TO 2% &
+\	GOTO 1700 UNLESS RND*100<CH% &
+\	IF INSTR(1%,PEOPLE$,NAM$)=0% AND INSTR(1%,"#*",LEFT(PEOPLE$, &
+	1%))=0% THEN &
+	LSET PEOPLE$=NAM$+"/"+PEOPLE$ &
+\	PUT #3%, RECORD ROOM% &
+\	GET #3%, RECORD ROOM% &
+\	J%=FNSMD%(MON%) &
+\	GOTO 1700 &
+
+1630	GOTO 1700 &
+
+1650	GOTO 1700 UNLESS RND*100<CH% &
+\	GOTO 1700 IF INSTR(1%,CVT$$( &
+	OBJECT$,255%),CVT$$(NAM$,255%)) &
+\	LSET OBJECT$=NAM$+"/"+OBJECT$ &
+\	PUT #3%, RECORD ROOM% &
+\	GET #3%, RECORD ROOM% &
+\	GOTO 1700 &
+
+1700	J$=FNGRAB$(PEOPLE$,"corpse") &
+\	RETURN UNLESS INSTR(1%,J$,"!")<>0% AND INSTR(1%,J$,"corpse")<>0% &
+\	LSET PEOPLE$=FNEDIT$(PEOPLE$,J$+"/") &
+\	PUT #3%, RECORD ROOM% &
+\	GET #3%, RECORD ROOM% &
+\	RETURN &
+
+2000	! REST &
+	GET #1%, RECORD 32767%+1%+KB%(USER%) &
+\	GOTO 2010 UNLESS INSTR(1%,BUF$,CHR$(3%)) &
+
+2005	FLAG%(USER%)=FLAG%(USER%) XOR 2%^11% &
+\	CALL ADVOUT(KB%(USER%),CRLF$+'You stretch vigourously, and decide'+ &
+	' to stop resting.') &
+\	RETURN &
+
+2010	GET #3%, RECORD ROOM%(USER%) &
+\	GOSUB 1530 IF INSTR(1%,PEOPLE$,"*") UNLESS FLAG%(USER%) AND 2%^1% &
+	! *Monster &
+\	GOSUB 1540 IF INSTR(1%,PEOPLE$,"#") IF FLAG%(USER%) AND 1% &
+	! #Monster &
+\	J%=5%*INT((14%+2.8*LEVEL%(USER%)^1.8)/5%) &
+\	HP%(USER%)=J% IF HP%(USER%)>J% &
+\	JJ%=50%*((1.0*HP%(USER%))/(1.0*J%)) &
+\	JJ%=1% IF JJ%<=0% &
+\	FATIGUE%(USER%)=FATIGUE%(USER%)+1% &
+\	FATIGUE%(USER%)=JJ% IF FATIGUE%(USER%)>JJ% &
+\	CALL ADVOUT(KB%(USER%),CRLF$+'Fatigue : '+NUM1$(FATIGUE%(USER%))) &
+\	RETURN &
+
+2020	J%=ASCII(BUF$)=3% &
+\	GOSUB 2005 IF J% &
+\	GOTO 30 IF J% &
+\	CALL ADVOUT(KB%(USER%),CRLF$+"You can't, you're resting. ^C to stop.") &
+\	GOTO 30 &
+
+15000	! FUNCTIONS &
+	&
+	&
+
+15050	DEF* FNEDIT$(C$,B$) &
+\	A$=C$ &
+\	Z%=1% &
+
+15060	GOTO 15070 UNLESS INSTR(1%,A$,B$) &
+\	Y%=INSTR(1%,A$,B$) &
+\	A$=LEFT(A$,Y%-1%)+RIGHT(A$,Y%+LEN(B$)) &
+
+15070	FNEDIT$=A$ &
+\	FNEND &
+
+15080	DEF* FNGRAB$(O$,P$) &
+\	O%=INSTR(1%,CVT$$(O$,36%),CVT$$(P$,36%)) &
+\	GOTO 15090 IF MID(O$,II%,1%)="/" FOR II%=O% TO 1% STEP -1% &
+\	OO%=1% &
+\	GOTO 15100 &
+
+15090	OO%=II%+1% &
+
+15100	FNGRAB$=MID(O$,OO%,INSTR(OO%,O$,"/")-OO%) &
+\	FNEND &
+
+15110	DEF* FNCLEAR$ &
+\	IF FLAG%(USER%) AND 1% THEN &
+	HP%(USER%)=HP%(USER%)*3%/4% &
+\	FLAG%(USER%)=FLAG%(USER%)-1% &
+
+15120	FNEND &
+
+15140	DEF* FNGMD%(R%) &
+\	G.R%=R% &
+\	GOTO 15150 IF MON.ROOM%(MON%)=R% FOR MON%=0% TO 10% &
+\	MON%=-1% &
+\	MON%=I% IF MON.ROOM%(I%)=0% FOR I%=0% TO 10% &
+\	MON%=INT(RND*10%) IF MON%=-1% &
+
+15141	J%=FNSMD%(MON%) IF MON.ROOM%(MON%) &
+
+15142	J$=MONSTER$(R%) &
+
+15143	ATT.LEVEL%(MON%)=CVT$%(J$) &
+\	J$=RIGHT(J$,3%) &
+\	DEF.LEVEL%(MON%)=CVT$%(J$) &
+\	J$=RIGHT(J$,3%) &
+\	MON.HP%(MON%)=CVT$%(J$) &
+\	J$=RIGHT(J$,3%) &
+\	MON.DAM%(MON%)=CVT$%(J$) &
+\	J$=RIGHT(J$,3%) &
+\	SPEC$(MON%)=LEFT(J$,6%) &
+\	J$=RIGHT(J$,7%) &
+\	MON.XP%(MON%)=CVT$%(J$) &
+\	J$=RIGHT(J$,3%) &
+\	MON.FLAG%(MON%)=CVT$%(J$) &
+\	MON.ROOM%(MON%)=R% &
+
+15150	FNEND &
+
+15160	DEF* FNSMD%(R%) &
+\	J$=CVT%$(ATT.LEVEL%(R%))+CVT%$(DEF.LEVEL%(R%))+CVT%$(MON.HP%(R%))+ &
+	CVT%$(MON.DAM%(R%))+ &
+	SPEC$(R%)+CVT%$(MON.XP%(R%))+CVT%$(MON.FLAG%(R%))+CVT%$(0%) &
+\	MONSTER$(MON.ROOM%(R%))=J$ &
+\	MON.ROOM%(R%)=0% &
+\	FNEND &
+
+21000	! COMMAND &
+	&
+	&
+	J%=INSTR(1%,COM$," ") &
+\	IF J%=0% THEN &
+	J$=COM$ &
+\	AR$="" &
+\	GOTO 21020 &
+
+21010	J$=LEFT(COM$,J%-1%) &
+\	AR$=RIGHT(COM$,J%+1%) &
+
+21020	IF FATIGUE%(USER%)<=0% AND CVT$$(J$,255%)<>'' THEN &
+	CALL ADVOUT(KB%(USER%),CRLF$+"You're too tired.") &
+\	C%=0% &
+\	RETURN &
+
+21021	J%=INSTR(1%,COM.LIST$,'/'+J$) &
+\	IF LEN(J$)=0% THEN &
+	C%=0% &
+\	FATIGUE%(USER%)=FATIGUE%(USER%)+1% IF FATIGUE%(USER%)<50% &
+\	CALL ADVOUT(KB%(USER%),CRLF$+'Fatigue : '+NUM1$(FATIGUE%(USER%))) &
+\	RETURN &
+
+21025	IF INSTR(1%,DESC$,'/C'+J$) THEN &
+	C$=J$ &
+\	C%=0% &
+\	CALL ADVPUZ &
+\	RETURN &
+
+21026	IF J%=0% THEN &
+	C%=0% &
+\	CALL ADVOUT(KB%(USER%),CRLF$+"You can't do that.") &
+\	RETURN &
+
+21030	C%=(J%-1%)/11%+1% &
+\	C$=CVT$$(MID(COM.LIST$,J%+1%,10%),128%) &
+\	CALL ADVPUZ IF INSTR(1%,DESC$,'$/O/') &
+\	RETURN &
+
+24990	OPEN 'MSG:LOG100.5' AS FILE #4%, MODE 2% &
+\	PRINT #4%, 'Corrupt room';ROOM%(USER%);' found by user '; &
+	NAM$(USER%);CRLF$;'at ';TIME$(0%);' on ';DATE$(0%) &
+\	CLOSE #4% &
+\	ROOM%(USER%)=449% &
+\	GET #3%, RECORD ROOM%(USER%) &
+\	CALL ADVDSP &
+\	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$;'You got stuck in a '; &
+	'corrupt room.  Report this now!' &
+\	GOTO 30 &
+
+24999	GOTO 32767 &
+
+25000	! ERRORS &
+	&
+	&
+	RESUME 2010 IF ERL=2000 &
+\	IF ERR=16% AND ERL=10 THEN PRINT "ADVENT already running." &
+\	STOP &
+
+25001	IF USER%<=8% THEN &
+	IF CVT$$(NAM$(USER%),255%)<>"" AND ROOM%(USER%)=0% THEN &
+	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$; &
+	"Your character got corrupted.  Report this to a demigod." &
+\	ROOM%(USER%)=449% &
+	! Corrupt character dump. &
+\	GET #3%, RECORD ROOM%(USER%) &
+\	CALL ADVDSP &
+\	RESUME 30% &
+
+25003	IF ERR=11 AND ERL=30 THEN &
+	USER%=INSTR(1%,USER.KB.LIST$,LEFT(BUF$,1%)) &
+\	RESUME 30 UNLESS TIME(0%)>STUN(USER%) &
+\	RESUME 500 &
+
+25004	GOTO 25010 UNLESS ERR=13% &
+\	RESUME 25005 &
+
+25005	GOSUB 100 &
+\	USER.KB.LIST$="" &
+\	USER.KB.LIST$=USER.KB.LIST$+CHR$(KB%(I%)) FOR I%=1% TO 8% &
+\	SLEEP 1% &
+\	GOTO 200 UNLESS LEN(CVT$$(USER.KB.LIST$,255%)) &
+\	GOSUB 2000 IF FLAG%(USER%) AND 2%^11% FOR USER%=1% TO 8% &
+\	GOSUB 1610 IF FLAG%(USER%) AND 128% FOR USER%=1% TO 8% &
+\	GOTO 1600 IF FLAG%(USER%) AND 64% FOR USER%=1% TO 8% &
+\	GOTO 30 &
+
+25010	RESUME 30 IF ERL=40 AND ERR=19% &
+\	RESUME 120 IF ERL=100 AND ERR=5% &
+\	RESUME 210 IF ERL=200 AND ERR=5% &
+
+25011	GOTO 25030 UNLESS ((FLAG%(USER%) AND 2%^7%) AND ERR=11% AND ERL=1610) &
+
+25012	RESUME 25020 &
+
+25020	FATAL.ERR%=-1% &
+\	GOSUB 500 &
+\	FATAL.ERR%=0% &
+\	CLOSE #8% &
+\	GOTO 30 &
+
+25030	GOTO 25040 UNLESS ERL=15142 &
+\	CALL ADVOUT(KB%(USER%),CRLF$+'Debug : '+NUM1$(ERR)+' at 15142') &
+\	CALL ADVOUT(KB%(USER%),'Get a Demigod NOW!!') &
+\	RESUME 30 &
+
+25040	&
+
+28998	GOTO 29000 UNLESS (FLAG%(USER%) AND 2%^7%) &
+\	RESUME 28999 &
+
+28999	CLOSE #8% &
+\	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
+\	PRINT #4%, "WORKMAN : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
+	" at line";ERL;" at ";TIME$(0%) &
+\	PRINT #4%, 'Room - ';NUM1$(ROOM%(USER%)) &
+\	CLOSE #4% &
+\	FATAL.ERR%=-1% &
+\	FLAG%(USER%)=0% &
+\	GOSUB 500 &
+\	FATAL.ERR%=0% &
+\	GOTO 30 &
+
+29000	J$=SYS(CHR$(6%)+CHR$(8%)+CHR$(PEEK(518%)/2%)+STRING$(23%,0%)+ &
+	CHR$(0%)+CHR$(255%)) IF FATAL.ERR% &
+\	FATAL.ERR%=-1% &
+\	C%=-2% &
+\	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
+\	PRINT #4%, "ADVENT : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
+	" at line";ERL;" at ";TIME$(0%) &
+\	PRINT #4%, "User was ";NAM$(USER%);" in room";ROOM%(USER%) IF &
+		(USER%>0% AND USER%<=8%) &
+\	CLOSE #4% &
+\	RESUME 32767 &
+
+32767	PRINT #1%, RECORD 32767%+1%+KB%(I%), CRLF$;"ADVENT shutting down."; &
+	CRLF$ IF CVT$$(NAM$(I%),255%)<>"" FOR I%=1% TO 8% &
+\	FLAG%(USER%)=FLAG%(USER%)-1% IF FLAG%(USER%) AND 1% FOR USER%=1% TO &
+	8% &
+\	GOSUB 500 IF CVT$$(NAM$(USER%),255%)<>"" FOR USER%=1% TO 8% &
+\	J%=FNSMD%(MON%) IF MON.ROOM%(MON%)<>0% FOR MON%=0% TO 10% &
+\	CLOSE #I% FOR I%=1% TO 12% &
+\	J$=SYS(CHR$(6%)+CHR$(22%)) &
+\	J$=SYS(CHR$(6%)+CHR$(12%)) &
+\	J$=SYS(CHR$(6%)+CHR$(5%)) &
+\	J$=SYS(CHR$(6%)+CHR$(-5%)+CHR$(SENT.KB%)+CRLF$+ &
+	"ADVENT : Shut down."+CRLF$) IF C%=-2% &
+\	END &
+

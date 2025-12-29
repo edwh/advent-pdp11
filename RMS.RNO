@@ -1,0 +1,81 @@
+.P
+RMS (Record Management System) is a set of routines which allows the user to
+declare a file organization and a set of fields, and leave the bulk of the
+work of searching, and maintaining indexes (if any) to RMS.
+.P
+Using RMS enables you to generate a data storage and retrieval application
+very quickly, and avoids the need to rewrite your search routines each time
+you develope a new application.  If disk space is unlikely to be a problem,
+you should ALWAYS use RMS.
+.P
+This text is not intended to teach you how to use RMS.  It is merely a
+collection of a few notes about the system which have been gathered from
+experience with it.  The following documents should be looked at:
+.S
+.LS
+.LEN;RMS-11 User's Manual
+.S
+This is a general introduction to the RMS system.
+.LEN;RMS-11 MACRO-11 Reference Manual
+.S
+This is for MACRO programmers only.  It is very detailed.
+.LEN;BASIC-PLUS-2 RSTS/E User's Guide
+.S
+This describes (amongst many other things) how to use RMS from BP2.
+.LEN;DP1:[56,13]RMSPAS.DOC
+.S
+This describes the interface to NBS Pascal.
+.ELS
+.HL 1 Languages
+RMS can be used from MACRO, BASIC-PLUS-2 and NBS Pascal.
+.HL 1 Overhead
+The space overhead can be quite high, especially on indexed files with many
+keys.
+.HL 1 Speed
+The speed of location of a record is very good.  In a sample indexed file, using
+2000 record of 32 bytes, a primary key of 10 bytes, and an alternate key of
+20 bytes, searches were practically instantaneous (<.1 seconds runtime).
+.P
+A later demonstration program (MAIL) suggests that the time is not quite
+as impressive as implied above.  However MAIL.DTA must be about a bad
+case for a RMS file, for the following reasons:
+.LS
+.LE;Not created using RMSDFN or RMSDEF.
+.LE;Very frequent deletions and insertions.
+.LE;Duplicate primary keys (may lead (?) to slower indexing).
+.ELS
+.HL 1 Using from BASIC-PLUS-2
+This section describes a few things to remember if you are using RMS from
+BASIC-PLUS-2.
+.PLM +5
+.HL 2 Compiling
+When you TKB a program, you must include in your .ODL file one of the special
+BP2 ODL files (from LB:).  The easiest way to do this is to use the BUILD
+command to produce the command file for you.  Compilation can be a lengthy
+process, and the resulting task file is large.
+.HL 2 MAP Statements
+MAP statements are used to define the structure of the record.  See the BP2
+manuals.
+.HL 2 Variable length records
+When you use variable length records, you should still specify a length for
+strings.  It is here the maximum length.
+.P
+Since the MAP statement statically allocates space at compile time, if you
+simply do a PUT, a record will be created which is the size of the MAP buffer.
+To get round this, use the COUNT feature.
+.P
+To the best of my knowledge, it is not possible to declare one particular
+MAP variable as variable in length.  The way I have got round this is to
+declare the variable I want variable in length at the end of the MAP, and
+calculate the required record size by adding up the lengths of the previous
+variables and adding to it LEN(CVT$$(...,132%)).
+It is then possible to use the COUNT feature to PUT a variable sized record
+to the disk.
+.HL 2 Optimizing files
+If you are using an indexed structure, and you have frequent insertions and
+deletions, your file structure will become messy, leading to slower access
+times.  One easy way to rectify this is with an optimization program.  Such
+a program is very simple - it sequentially GETs a record from the old file, and PUTs it
+to the new one.  This results in a better file structure since it removes
+all deleted records etc.
+.PLM -5

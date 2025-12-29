@@ -1,0 +1,143 @@
+.CH Booker ( The code )
+.P
+This chapter will describe the procedures in Booker.  Details on operation
+are given in a seperate chapter.
+.P
+.HL 1 Main Routine
+.P
+The main routine is very simple.  It calls Initialise, to set up arrays and
+print the notice text, then calls GetCommand to get a command from the user,
+and then calls the relevant routine.
+.P
+.HL 1 Initialise
+.P
+This routine clears the screen, prints the header and the notice text, sets
+up the list of possible booking days, the list of valid keyboards,
+the list of valid commands and the prompt for the GetCommand routine.
+.P
+.HL 1 GetCommand
+.P
+This routine prints the prompt defined in Initialise, and gets the user's
+response.  It then checks the list of valid commands, and if the command
+is there, returns with the command number.  Otherwise it reprompts the user.
+.P
+.HL 1 DoBook
+.P
+This is the procedure which actually allows the user to make a booking.  The
+sequence of events is as follows :
+.P
+Before entry to the routine, the number of bookings for the account currently
+being used are traced.  The routine proper is only entered if the account is
+able to make more bookings.
+.P
+On entry, the routine lists the bookable days, in order.  The user is then
+prompted for the day to book for.  When the user has given a valid day, the
+routine asks for the period to book for.  Having recieved a valid period, the
+free terminals for that period are displayed, and the user is prompted for
+a keyboard number.  When this is recieved, the routine makes the booking and
+exits.  The defaults for all of the above questions are given in the user
+section of the manual.
+.P
+.HL 1 DoDelete
+.P
+This routine handles the deletion of bookings. The week's bookings are scanned
+through for any made by the account currently being used, and if any are found,
+the user is prompted to specify whether they should be deleted or not.
+.P
+This is the end of the chapter giving a brief description of the procedures
+in Booker.  To find out exactly what each routine does, look at the code.
+.PG
+.CH Master ( The Code )
+.P
+This chapter, like the one on Booker, will give a brief outline of what 
+each procedure does.  To find out exactly what each routine does, look
+at the code.
+.P
+Master is overlaid - this means that the program is split up into several
+sections, which are loaded into core when required.  The overlays are
+allocated one to each command, and will now be discussed in turn.
+.P
+.HL 1 Trace
+.P
+This is the single exception to the one command-one overlay rule.  Since
+this command only needs to call the routine DoTrace from BookLibrary, it
+is not worth having a seperate overlay and it is contained in the base
+file MASTER.MOD
+.P
+.HL 1 Delete
+.P
+This overlay handles the delete command.  The user must specify a day,
+a period and a keyboard, all of which are checked.  The routine then checks 
+whether the booking space specified actually contains a booking (if it
+does not, then the routine prints '?This space is free.' and exits.  The
+account that is booked for that time is then displayed, and the user
+must confirm before the booking is deleted.
+.P
+.HL 1 Check
+.P
+This overlay handles the check command.  The user must specify the keyboard,
+and then the routine lists the bookings for that terminal for the current
+day.
+.P
+.HL 1 Verify
+.P
+This overlay is divided into more than one section :
+.P
+.HL 2 DoVerify
+.P
+This routine is the routine that does a verify on a particular keyboard.  Thus
+it prints the status, sends messages etc.  It is called either when a verify
+of one keyboard is specified by the user, or when a general verify is called
+for.
+.P
+The details of what this routine does are given in the section in the
+user's part of the manual.
+.P
+.HL 2 Main routine
+.P
+The main routine gets the current day's data, decides which kind of verify
+is called for and calls DoVerify.
+.P
+.HL 1 List
+.P
+The list command gets the day specified, opens the data file and prints
+out all the bookings in a table.  A dash is printed if the booking space
+is free.
+.P
+.HL 1 Send
+.P
+This command gets the keyboard, which can either be a number or 'ALL', gets
+the message to send, and then sends the message to the required terminals
+(if 'ALL' was specified, then all terminals in the list of bookable
+keyboards except the user's have the message sent to them).
+.P
+.HL 1 Analyse
+.P
+This overlay is divided into two sections, one of which is a short procedure :
+.P
+.HL 2 GetSwitch
+.P
+This short procedure is used to get the user's response to two options.  The
+prompt and the default reply are specified in the call, and the user must
+reply 'YES' or 'NO'.  A boolean variable set to TRUE if the user replied 'YES'
+is returned.
+.P
+.HL 2 Main routine
+.P
+First the routine works out the default start date, and prompts the user for
+the date at which to start the analysis.  Then two questions about the analysis
+must be answered - is it a full analysis and should the bookings files be
+killed when the analysis routine has finished with them.  The routine then
+loops for the five days, opening the relevant file (if the file does not exist,
+the routine will exit with an error message), and storing all the bookings in a
+list in core.  A Shell sort is then used to sort the list into ascending
+PPN (project-programmer number) order.  If a short analysis is selected, then
+the total number of bookings for each project which appears in the list id
+printed.  If a full analysis is required, the full account number is printed
+and the number of bookings made for that account is also printed.  This
+repeats until the end of the list is reached.
+.P
+.P
+This is the end of the chapter on Master's code.  It is not intended to
+slavishly follow the code, but to give a general idea of what each routine
+does.

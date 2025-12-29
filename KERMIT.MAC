@@ -1,0 +1,94 @@
+	.title	kermit
+	$rsx
+	$rwdef
+
+;
+;	Little kermit program to do the connect function.
+;
+
+start:	.print	#prompt
+	.input	#fil
+	mov	by$cnt,xrb
+	mov	by$cnt,xrb+2
+	mov	#fil,xrb+4
+	clr	xrb+10
+	clr	xrb+12
+	calls	$zapfqb
+	.fss
+	tstb	firqb
+	bne	start
+	movb	#crefq,firqb+fqfun
+	movb	#4,firqb+fqfil
+	mov	#1,firqb+fqmode
+	calfip
+	mov	#4,xrb
+	mov	#4,xrb+2
+	mov	#kb,xrb+4
+	clr	xrb+10
+	clr	xrb+12
+	calls	$zapfqb
+	.fss
+	tstb	firqb
+	bne	start
+	movb	#crefq,firqb+fqfun
+	movb	#2,firqb+fqfil
+	mov	#1,firqb+fqmode
+	calfip
+	calls	$zapfqb
+	calls	$zapxrb
+	mov	#3,xrb
+	movb	#4,xrb+6
+	.spec
+
+1$:	mov	#512.,xrb
+	clr	xrb+2
+	mov	#buf1,xrb+4
+	mov	#2,xrb+6
+	clr	xrb+xrblk
+	clr	xrb+xrtime
+	mov	#8192.,xrb+xrmod
+	.read
+	tstb	firqb
+	bne	2$
+	mov	#128.,xrb
+	clr	xrb+xrblk
+	mov	#buf1,xrb+xrloc
+	mov	#2,xrb+6
+	.write
+	br	1$
+
+2$:	$sleep	#0
+	mov	#512.,xrb
+	clr	xrb+2
+	mov	#buf1,xrb+4
+	mov	#2,xrb+6
+	clr	xrb+xrblk
+	clr	xrb+xrtime
+	mov	#8192.,xrb+xrmod
+	.read
+	cmpb	buf1,#28.
+	beq	3$
+	tstb	firqb
+	bne	1$
+	mov	#128.,xrb
+	clr	xrb+xrblk
+	mov	#buf1,xrb+xrloc
+	mov	#2,xrb+6
+	.write
+	br	1$
+
+3$:	calls	$zapxrb
+	mov	#2,xrb
+	movb	#4,xrb+6
+	.spec
+	.exit
+
+buf1:	.blkb	512.
+fil:	.blkb	50.
+prompt:	.asciz	/Keyboard (eh KB28:) > /
+	.even
+kb:	.asciz	/_KB:/
+	.even
+
+	.end	start
+

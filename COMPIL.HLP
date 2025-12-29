@@ -1,0 +1,14 @@
+                         Compiling LIBR
+                         --------------
+
+     You compile LIBR using the  program  COMPIL.BAC  in  [5,13].
+When  you  run  this, it asks for a control file - this should be
+LIBR (the control file has extension .CPL, but you don't need  to
+specify  this).   COMPIL then compares the create dates and times
+of the subprograms with that of LIBR2.TSK, to find out  which  to
+recompile.   It builds the file LIBR.CMD and chains to ATPK.  The
+logfile is LIBR.LOG.
+
+     If you want to know more about COMPIL, look at  the  program
+and  LIBR.CPL.   It's  useful for doing the same thing to lots of
+files.

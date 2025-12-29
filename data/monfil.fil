@@ -1,0 +1,6895 @@
+OBJ
+1
+60
+A newspaper
+MON
+39 
+60 
+*A dravak chieftain
+1 
+1 
+18 
+5 
+
+19 
+0
+0
+0
+OBJ
+40 
+80 
+An empty sack
+OBJ
+40 
+50 
+A crystal vase~15
+OBJ
+38 
+60 
+A short sword$4
+MON
+8
+80 
+*A dravak guard
+1 
+1 
+15 
+4 
+
+13 
+0
+0
+0
+MON
+1404
+75
+#The ghost of a librarian
+2
+3
+35
+7
+/FO75/
+45
+0
+0
+0
+MON
+46 
+90 
+*A snake
+0 
+1 
+8 
+2 
+/PA20/
+18 
+0
+0
+0
+MON
+87 
+60 
+#A crikol
+0 
+0 
+10 
+3 
+/PA05/
+10 
+0
+0
+0
+MON
+44 
+60 
+#A red robed monk
+1 
+1 
+15 
+4 
+/PA10/
+30 
+0
+0
+0
+MON
+21 
+40 
+*A cave lizard
+6 
+3 
+60 
+5 
+
+210 
+0
+0
+0
+OBJ
+21 
+5 
+A chest of jewels~50
+MON
+57 
+50 
+#A dragonewt
+1 
+1 
+14 
+3 
+
+14 
+0
+0
+0
+MON
+400 
+75 
+*A troll guard
+3 
+4 
+60 
+6 
+
+150 
+0
+0
+0
+MON
+400 
+25 
+*A troll sentinel
+3 
+4 
+35 
+6 
+
+145 
+0
+0
+0
+OBJ
+400 
+50 
+A stone club$6
+MON
+403 
+50 
+*A female troll
+2 
+2 
+15 
+5 
+
+70 
+0
+0
+0
+OBJ
+403 
+50 
+A rug
+OBJ
+403 
+50 
+Some food
+OBJ
+403 
+25 
+A bread knife$1
+MON
+404 
+25 
+*A wandering troll
+2 
+2 
+15 
+4 
+/FO50/
+60 
+0
+0
+0
+MON
+407 
+50 
+#A large troll
+3 
+3 
+30 
+6 
+
+90 
+0
+0
+0
+OBJ
+407 
+50 
+Some food
+OBJ
+407 
+50 
+A rough stone~30
+OBJ
+407 
+25 
+Key 407
+MON
+408 
+75 
+*A troll wife
+3 
+3 
+25 
+4 
+
+60 
+0
+0
+0
+OBJ
+408 
+50 
+A saucepan$3
+OBJ
+408 
+30 
+Some food
+OBJ
+408 
+30 
+A gold statue~60
+MON
+413 
+60 
+*A troll brat
+1 
+1 
+12 
+3 
+
+30 
+0
+0
+0
+OBJ
+413 
+70 
+A rattle
+OBJ
+413 
+50 
+Some chalk
+MON
+433 
+95 
+*SNUFFLE
+6 
+5 
+70 
+6 
+
+250 
+0
+0
+0
+OBJ
+433 
+50 
+A paper knife$4
+OBJ
+433 
+50 
+A large bag of silver coins~100
+MON
+40 
+90 
+*A dravak supreme high chief
+1 
+2 
+44 
+5 
+/PA15/
+80 
+0
+0
+0
+MON
+301 
+100 
+#A traveller
+1 
+0 
+10 
+4 
+
+10 
+0
+0
+0
+MON
+406 
+30 
+*A wandering troll child
+1 
+1 
+10 
+3 
+/FO50/
+30 
+0
+0
+0
+MON
+434 
+50 
+*A giant spider
+2 
+2 
+15 
+4 
+/PA10/
+60 
+0
+0
+0
+OBJ
+434 
+75 
+A long plank
+MON
+435 
+75 
+*A black cave spider
+3 
+3 
+30 
+5 
+/PA20/
+100 
+0
+0
+0
+OBJ
+435 
+75 
+A javelin$5
+OBJ
+435 
+50 
+A golden torc~50
+MON
+310 
+60 
+#A traveller
+1 
+1 
+10 
+4 
+
+9 
+0
+0
+0
+MON
+310 
+40 
+#A villager
+0 
+0 
+8 
+3 
+
+5 
+0
+0
+0
+MON
+328 
+75 
+*A blacksmith
+1 
+1 
+14 
+5 
+
+21 
+0
+0
+0
+OBJ
+310 
+10 
+A coin~4
+MON
+331 
+60 
+#A villager
+0 
+0 
+6 
+3 
+
+4 
+0
+0
+0
+MON
+424 
+50 
+*A snow wolf
+2 
+1 
+24 
+5 
+
+50 
+0
+0
+0
+OBJ
+46 
+50 
+Key 39
+OBJ
+46 
+20 
+A curved dagger$4
+MON
+425 
+80 
+*A troll bodyguard
+3 
+4 
+60 
+6 
+
+200 
+0
+0
+0
+OBJ
+425 
+25 
+Key 425
+MON
+426 
+95 
+*The troll high chieftain
+15 
+15 
+90 
+6 
+
+1000 
+0
+0
+0
+OBJ
+426 
+50 
+A gold trophy~100
+OBJ
+426 
+50 
+A ceremonial sword$6
+MON
+436 
+30 
+*A snow bear
+3 
+2 
+40 
+5 
+
+100 
+0
+0
+0
+MON
+439 
+70 
+#A peaceful hermit
+2 
+4 
+30 
+3 
+
+60 
+0
+0
+0
+OBJ
+439 
+50 
+A quarterstaff$4
+OBJ
+439 
+50 
+A pot of gold~50
+MON
+6 
+5 
+*A goblin
+1 
+0 
+8 
+4 
+
+10 
+0
+0
+0
+MON
+7 
+15 
+*A kobold
+0 
+0 
+7 
+3 
+
+5 
+0
+0
+0
+MON
+8 
+80 
+*A giant rat
+0 
+0 
+7 
+3 
+
+5 
+0
+0
+0
+MON
+8 
+75 
+*A rat
+0 
+0 
+5 
+2 
+
+3 
+0
+0
+0
+MON
+9 
+10 
+*A kobold
+0 
+0 
+7 
+3 
+
+5 
+0
+0
+0
+MON
+451 
+80 
+#A zoo attendant
+3 
+3 
+30 
+4 
+
+100 
+0
+0
+0
+MON
+452 
+80 
+#A blink dog
+2 
+6 
+50 
+3 
+
+100 
+0
+0
+0
+MON
+453 
+80 
+#A dravak
+2 
+3 
+30 
+5 
+
+65 
+0
+0
+0
+MON
+454 
+80 
+#A baby gold dragon
+5 
+6 
+70 
+6 
+
+400 
+0
+0
+0
+MON
+455 
+80 
+#A minotaur
+3 
+3 
+50 
+5 
+
+200 
+0
+0
+0
+MON
+457 
+80 
+#A beholder
+3 
+3 
+35 
+4 
+/PA80/
+150 
+0
+0
+0
+MON
+458 
+80 
+#A small furry bear
+2 
+3 
+30 
+3 
+
+70 
+0
+0
+0
+MON
+459 
+80 
+#A triffid
+0 
+0 
+5 
+1 
+/PO90/
+20 
+0
+0
+0
+MON
+460 
+80 
+#A dalek
+2 
+1 
+70 
+8 
+
+150 
+0
+0
+0
+MON
+461 
+80 
+#The head zookeeper
+3 
+5 
+45 
+6 
+/PA20/
+150 
+0
+0
+0
+MON
+464 
+100 
+#A prison warder
+8 
+4 
+50 
+0 
+/PA99/
+0 
+0
+0
+0
+OBJ
+427 
+20 
+Some food
+MON
+428 
+30 
+*A wandering troll
+3 
+4 
+15 
+4 
+/FO50/
+50 
+0
+0
+0
+OBJ
+422 
+40 
+Key 440
+OBJ
+441 
+50 
+A small copper coin~1
+MON
+441 
+50 
+*A large rat
+2 
+3 
+10 
+3 
+/PO05/
+25 
+0
+0
+0
+MON
+442 
+50 
+*A rotting corpse
+4 
+5 
+40 
+10 
+/PA25/
+100 
+0
+0
+0
+OBJ
+442 
+50 
+A golden treasure chest~300
+OBJ
+429 
+30 
+Some pumice
+MON
+430 
+50 
+#A lonely troll guard
+3 
+3 
+30 
+5 
+
+120 
+0
+0
+0
+OBJ
+430 
+30 
+A flail$4
+MON
+431 
+50 
+#A dozy guard
+3 
+3 
+20 
+4 
+
+60 
+0
+0
+0
+OBJ
+431 
+30 
+A tankard
+OBJ
+431 
+30 
+A newspaper
+OBJ
+431 
+30 
+Some dice
+OBJ
+463 
+100 
+A sugar cube
+MON
+501 
+100 
+*A human zombie
+2 
+3 
+30 
+4 
+/pa05/
+100 
+0
+0
+0
+MON
+504 
+75 
+#A weary prisoner
+1 
+2 
+10 
+2 
+
+10 
+0
+0
+0
+MON
+506 
+100 
+*A bastard torturer
+2 
+2 
+50 
+3 
+
+50 
+0
+0
+0
+MON
+508 
+75 
+*A large rat
+3 
+3 
+20 
+3 
+
+50 
+0
+0
+0
+MON
+510 
+75 
+#A winged centaur
+4 
+5 
+20 
+4 
+
+200 
+0
+0
+0
+MON
+511 
+75 
+*A cockroach
+2 
+2 
+10 
+2 
+
+10 
+0
+0
+0
+MON
+512 
+50 
+#A beautiful young maiden
+4 
+4 
+50 
+4 
+
+150 
+0
+0
+0
+MON
+514 
+70 
+*A killer insect
+1 
+2 
+20 
+3 
+/PA05/
+40 
+0
+0
+0
+MON
+516 
+100 
+#A drunk gardener
+1 
+1 
+100 
+2 
+
+50 
+0
+0
+0
+MON
+477 
+80 
+*A hobgoblin
+3 
+4 
+40 
+20 
+/PA20/
+200 
+0
+0
+0
+OBJ
+477 
+80 
+Key 484
+MON
+472 
+80 
+*A majotaur
+4 
+3 
+50 
+5 
+
+250 
+0
+0
+0
+OBJ
+474 
+50 
+A gold bar~50
+MON
+475 
+80 
+*A giant bat
+1 
+1 
+20 
+3 
+/PO05/
+30 
+0
+0
+0
+MON
+486 
+80 
+*A slime crawler
+2 
+2 
+20 
+2 
+/PA60/
+80 
+0
+0
+0
+OBJ
+508 
+20 
+A rusty old spear$4
+OBJ
+511 
+100 
+A leather whip$2
+OBJ
+512 
+10 
+A golden hair pin~50
+OBJ
+514 
+100 
+A wheelbarrow
+OBJ
+522 
+60 
+A tin of baked beans~10
+MON
+522 
+70 
+*An angry guard
+2 
+2 
+10 
+5 
+
+20 
+0
+0
+0
+OBJ
+520 
+100 
+A banana skin
+OBJ
+506 
+100 
+A thumbscrew$1
+MON
+518 
+75 
+#A skeleton
+2 
+2 
+20 
+6 
+/pa20/
+100 
+0
+0
+0
+OBJ
+518 
+100 
+A crucifix~20
+MON
+523 
+50 
+#A goblin
+2 
+2 
+40 
+6 
+
+60 
+0
+0
+0
+MON
+524 
+100 
+#A music professor
+1 
+2 
+10 
+5 
+
+10 
+0
+0
+0
+OBJ
+524 
+75 
+A original manuscript~5
+MON
+530 
+50 
+#A servant
+1 
+1 
+10 
+6 
+
+20 
+0
+0
+0
+MON
+532 
+50 
+#A waiter
+2 
+2 
+10 
+1 
+
+50 
+0
+0
+0
+MON
+533 
+100 
+#A dancer
+3 
+3 
+20 
+3 
+
+100 
+0
+0
+0
+MON
+526 
+100 
+#A burly guard
+2 
+2 
+20 
+8 
+
+80 
+0
+0
+0
+OBJ
+526 
+100 
+A satchel of gold coins~30
+MON
+527 
+100 
+#A mean guard
+2 
+2 
+20 
+9 
+
+50 
+0
+0
+0
+OBJ
+527 
+50 
+A wad of notes~30
+MON
+529 
+60 
+*A smelter
+3 
+3 
+50 
+8 
+
+200 
+0
+0
+0
+OBJ
+528 
+50 
+A gold ingot~50
+OBJ
+528 
+50 
+A silver ingot~20
+MON
+531 
+50 
+*A servant
+2 
+3 
+30 
+6 
+
+100 
+0
+0
+0
+OBJ
+531 
+100 
+Some food
+OBJ
+531 
+100 
+Some food
+OBJ
+531 
+50 
+A valuable oil painting~20
+MON
+536 
+60 
+*A cleaning lady
+3 
+3 
+50 
+8 
+
+200 
+0
+0
+0
+OBJ
+536 
+50 
+A silver teapot~10
+MON
+537 
+100 
+#A gnome
+2 
+2 
+30 
+5 
+
+80 
+0
+0
+0
+MON
+538 
+70 
+*A big gnome
+3 
+3 
+50 
+5 
+
+200 
+0
+0
+0
+OBJ
+538 
+70 
+A steak knife$5
+MON
+539 
+50 
+*A half frozen maggot
+3 
+3 
+20 
+3 
+/pa20/
+100 
+0
+0
+0
+OBJ
+539 
+100 
+An ice cube
+OBJ
+539 
+50 
+Some food
+OBJ
+539 
+50 
+Some food
+OBJ
+539 
+100 
+Some food
+MON
+542 
+100 
+*A geisha girl
+2 
+2 
+30 
+5 
+
+50 
+0
+0
+0
+MON
+541 
+100 
+*A ninja
+3 
+5 
+60 
+9 
+/PA30/
+500 
+0
+0
+0
+OBJ
+542 
+50 
+A ming vase~30
+OBJ
+542 
+100 
+Some chinese tea leaves~1
+OBJ
+541 
+50 
+A manrikigusari$4
+OBJ
+541 
+50 
+A bo staff$4
+MON
+540 
+100 
+*A chief ninja
+8 
+8 
+100 
+20 
+/PA01/
+500 
+0
+0
+0
+OBJ
+540 
+50 
+A pair of tonfas$6
+OBJ
+540 
+50 
+A katana$6
+OBJ
+540 
+50 
+A jewel encrusted shuriken~20
+MON
+545 
+75 
+*A fairy
+2 
+2 
+20 
+5 
+
+50 
+0
+0
+0
+MON
+544 
+100 
+#A librarian
+2 
+2 
+30 
+2 
+
+40 
+0
+0
+0
+OBJ
+544 
+50 
+A gold leaf bookmark~10
+OBJ
+544 
+100 
+A newspaper
+OBJ
+545 
+50 
+A crystal wand~30
+OBJ
+545 
+100 
+Some food
+MON
+546 
+75 
+*A bloodthirsty ninja
+4 
+5 
+50 
+8 
+
+300 
+0
+0
+0
+MON
+543 
+50 
+#A samauri warrior
+2 
+2 
+60 
+9 
+/pa20/
+50 
+0
+0
+0
+OBJ
+543 
+50 
+A sai knife$5
+OBJ
+543 
+100 
+Some food
+MON
+549 
+75 
+#A lab technician
+2 
+2 
+50 
+4 
+/po10/
+100 
+0
+0
+0
+OBJ
+549 
+100 
+Some dynamite
+MON
+550 
+100 
+#A leprechaun
+3 
+4 
+40 
+4 
+
+200 
+0
+0
+0
+OBJ
+550 
+50 
+A pot of gold~30
+MON
+559 
+75 
+#An imperial guard
+3 
+5 
+50 
+9 
+
+300 
+0
+0
+0
+OBJ
+559 
+50 
+A golden throne~10
+MON
+547 
+75 
+#A wandering spirit
+2 
+2 
+25 
+5 
+/pa20/
+100 
+0
+0
+0
+OBJ
+547 
+50 
+An amethyst~20
+MON
+574 
+70 
+*A vampire
+3 
+4 
+35 
+8 
+/pa30/
+350 
+0
+0
+0
+OBJ
+547 
+50 
+A crucifix~10
+OBJ
+574 
+50 
+A crucifix~10
+OBJ
+574 
+100 
+A stake$1
+OBJ
+574 
+50 
+An open coffin
+MON
+577 
+20 
+#A workman
+2 
+50 
+50 
+30 
+
+200 
+0
+0
+0
+OBJ
+577 
+20 
+A cut glass decanter~30
+MON
+325 
+60 
+*A prisoner
+2 
+1 
+63 
+8 
+
+40 
+0
+0
+0
+MON
+324 
+50 
+#A policeman
+1 
+1 
+14 
+3 
+
+20 
+0
+0
+0
+MON
+329 
+40 
+#A villager
+0 
+0 
+8 
+3 
+
+7 
+0
+0
+0
+MON
+332 
+40 
+*A giant rat
+0 
+0 
+7 
+3 
+
+5 
+0
+0
+0
+MON
+327 
+50 
+#A grocer
+0 
+0 
+7 
+4 
+
+7 
+0
+0
+0
+MON
+331 
+30 
+#A small child
+0 
+0 
+3 
+2 
+
+3 
+0
+0
+0
+MON
+310 
+70 
+#A traveller
+1 
+0 
+10 
+4 
+
+10 
+0
+0
+0
+MON
+319 
+60 
+*A palace guard
+2 
+1 
+14 
+5 
+
+16 
+0
+0
+0
+MON
+319 
+70 
+*A palace defender
+1 
+1 
+12 
+4 
+
+10 
+0
+0
+0
+MON
+315 
+70 
+#A traveller
+0 
+1 
+8 
+4 
+
+9 
+0
+0
+0
+MON
+332 
+30 
+*A snake
+0 
+0 
+9 
+3 
+/PO10/
+19 
+0
+0
+0
+MON
+321 
+95 
+*A palace guard
+2 
+1 
+15 
+5 
+
+40 
+0
+0
+0
+OBJ
+321 
+30 
+A sack of silver dust~30
+OBJ
+321 
+30 
+A golden wand~20
+OBJ
+321 
+40 
+A wooden shepherd~10
+OBJ
+321 
+60 
+A large gem~20
+OBJ
+321 
+70 
+A chest of coins~40
+MON
+318 
+40 
+#A traveller
+0 
+0 
+8 
+4 
+
+9 
+0
+0
+0
+MON
+330 
+40 
+*A small boy
+0 
+0 
+4 
+2 
+
+2 
+0
+0
+0
+MON
+330 
+50 
+#A baby
+0 
+0 
+1 
+0 
+
+0 
+0
+0
+0
+MON
+326 
+35 
+#An orchid
+1 
+1 
+20 
+4 
+/PA10/
+35 
+0
+0
+0
+OBJ
+327 
+99 
+Some food
+OBJ
+327 
+99 
+A bag of flour
+OBJ
+326 
+90 
+A newspaper
+OBJ
+327 
+78 
+A newspaper
+OBJ
+328 
+60 
+A steel mallet$4
+OBJ
+328 
+40 
+An anvil$4
+OBJ
+320 
+40 
+A fountain pen$1
+OBJ
+324 
+70 
+Key 320
+OBJ
+31 
+85 
+Key 320
+OBJ
+87 
+99 
+Some chalk
+OBJ
+452 
+80 
+A deep purple cloak~30
+OBJ
+453 
+80 
+A gold coin~5
+OBJ
+455 
+80 
+A golden figurine~40
+OBJ
+457 
+80 
+A small bronze statue~20
+OBJ
+454 
+80 
+A large emerald~30
+OBJ
+460 
+80 
+A large copper statue~30
+OBJ
+461 
+100 
+Some food
+OBJ
+462 
+100 
+Some chalk
+MON
+521 
+75 
+*An alert guard
+2 
+2 
+20 
+3 
+
+50 
+0
+0
+0
+MON
+520 
+100 
+#A sleepy guard
+1 
+0 
+10 
+2 
+
+10 
+0
+0
+0
+OBJ
+520 
+100 
+A banana skin
+MON
+490 
+80 
+*A goblin bully
+3 
+3 
+60 
+6 
+
+100 
+0
+0
+0
+MON
+491 
+80 
+#A patrolling goblin teacher
+8 
+8 
+80 
+15 
+/PA10/
+350 
+0
+0
+0
+MON
+492 
+80 
+*A tiny goblin
+2 
+10 
+50 
+8 
+
+150 
+0
+0
+0
+MON
+494 
+80 
+*A vicious goblin
+8 
+6 
+50 
+6 
+
+175 
+0
+0
+0
+MON
+495 
+80 
+*A goblin teacher
+6 
+6 
+60 
+9 
+
+200 
+0
+0
+0
+MON
+496 
+80 
+*A goblin caretaker
+6 
+7 
+80 
+12 
+
+175 
+0
+0
+0
+MON
+497 
+80 
+*The goblin headmaster
+9 
+9 
+80 
+20 
+/PA10/
+300 
+0
+0
+0
+MON
+498 
+80 
+*The goblin surmaster
+8 
+8 
+90 
+9 
+
+250 
+0
+0
+0
+MON
+499 
+80 
+*A goblin prefect
+3 
+8 
+60 
+9 
+
+120 
+0
+0
+0
+MON
+266 
+80 
+*A burly goblin games teacher
+6 
+8 
+80 
+12 
+
+400 
+0
+0
+0
+MON
+267 
+80 
+*An angry goblin teacher
+9 
+8 
+80 
+10 
+
+200 
+0
+0
+0
+MON
+268 
+80 
+*The goblin head prefect
+8 
+6 
+80 
+16 
+
+175 
+0
+0
+0
+MON
+269 
+80 
+*A goblin sixth-former
+6 
+7 
+60 
+4 
+
+120 
+0
+0
+0
+MON
+271 
+80 
+#A sleeping goblin
+5 
+6 
+80 
+12 
+
+300 
+0
+0
+0
+MON
+272 
+80 
+*A^B light cover
+6 
+7 
+50 
+12 
+/PA50/
+200 
+0
+0
+0
+MON
+84 
+50 
+#A Davidian Guard
+6 
+8 
+50 
+15 
+
+25 
+0
+0
+0
+MON
+90 
+80 
+#A slime slobber
+1 
+1 
+40 
+2 
+
+50 
+0
+0
+0
+OBJ
+91 
+80 
+Some food
+OBJ
+91
+40
+A steel rod$2
+OBJ
+91 
+80 
+Some food
+OBJ
+91 
+40 
+A blue sword$4
+OBJ
+93 
+80 
+A jeweled javelin$6
+OBJ
+93 
+95 
+Some food
+OBJ
+96 
+80 
+A newspaper
+OBJ
+600 
+30 
+An egg
+OBJ
+601 
+60 
+Some food
+OBJ
+601 
+60 
+Some food
+OBJ
+605 
+40 
+A green scale~100
+OBJ
+606 
+80 
+Some food
+OBJ
+606 
+80 
+A large axe$5
+OBJ
+608 
+40 
+Some food
+OBJ
+610 
+20 
+A baby eagle
+OBJ
+611 
+90 
+Some food
+OBJ
+579 
+50 
+A fishing rod
+MON
+84 
+70 
+*A Davidian Cavehog
+6 
+7 
+80 
+15 
+
+60 
+0
+0
+0
+MON
+90 
+100 
+*Green slime
+2 
+6 
+120 
+2 
+/pa05/
+120 
+0
+0
+0
+MON
+93 
+100 
+#A trughuy
+9 
+12 
+254 
+8 
+/po01/
+280 
+0
+0
+0
+MON
+600 
+40 
+*A fanged bat
+6 
+6 
+55 
+12 
+/po08/
+60 
+0
+0
+0
+MON
+604 
+20 
+#A island warden
+3 
+7 
+86 
+30 
+
+40 
+0
+0
+0
+MON
+605 
+72 
+*A cliff crawler
+6 
+5 
+72 
+4 
+
+50 
+0
+0
+0
+MON
+606 
+78 
+*A granite gnasher
+8 
+9 
+180 
+20 
+/pa02/
+240 
+0
+0
+0
+MON
+608 
+64 
+#A sand worm
+3 
+3 
+24 
+3 
+/po20/
+40 
+0
+0
+0
+MON
+609 
+25 
+*A roc
+8 
+9 
+76 
+5 
+
+110 
+0
+0
+0
+MON
+610 
+35 
+#An eagle
+7 
+8 
+70 
+20 
+
+98 
+0
+0
+0
+MON
+611 
+65 
+#A trerrax
+2 
+7 
+120 
+3 
+
+200 
+0
+0
+0
+MON
+581 
+90 
+#A hamadryad
+8 
+9 
+200 
+40 
+/pa05/
+500 
+0
+0
+0
+MON
+584 
+90 
+*Charon the boatman
+10 
+10 
+300 
+20 
+
+700 
+0
+0
+0
+MON
+587 
+90 
+*A mountain wildcat
+10 
+10 
+80 
+18 
+
+500 
+0
+0
+0
+MON
+589 
+90 
+#An angry dragon
+12 
+12 
+200 
+15 
+/Pa05/
+2000 
+0
+0
+0
+MON
+596 
+90 
+#Workman Uncle's brother
+10 
+12 
+180 
+100 
+
+200 
+0
+0
+0
+MON
+598 
+90 
+*A thieving pirate
+10 
+10 
+170 
+17 
+
+70 
+0
+0
+0
+MON
+599 
+90 
+*An evil sorcerer
+15 
+15 
+200 
+80 
+/PA10/
+2000 
+0
+0
+0
+MON
+405 
+30 
+*A giant snail
+3 
+5 
+30 
+4 
+/PO05/
+75 
+0
+0
+0
+MON
+405 
+30 
+*A slime crawler
+2 
+2 
+15 
+4 
+/PO05/
+50 
+0
+0
+0
+OBJ
+405 
+50 
+A shiny shell~50
+MON
+411 
+99 
+#An ancestral troll
+15 
+15 
+1000 
+7 
+
+300 
+0
+0
+0
+OBJ
+410 
+50 
+A piece of pumice$1
+MON
+412 
+75 
+*A lost goblin
+3 
+3 
+15 
+3 
+
+30 
+0
+0
+0
+OBJ
+412 
+50 
+A short sword$4
+MON
+422 
+50 
+#A fire elemental
+9 
+9 
+90 
+21 
+
+300 
+0
+0
+0
+OBJ
+418 
+75 
+Some food
+MON
+417 
+45 
+*A tangleweed plant
+8 
+7 
+100 
+31 
+/PA25/
+30 
+0
+0
+0
+MON
+443 
+75 
+*A gold dragon
+9 
+9 
+150 
+50 
+
+1000 
+0
+0
+0
+OBJ
+443 
+50 
+The Arkenstone~500
+OBJ
+443 
+50 
+Sting$6
+OBJ
+443 
+50 
+The Gem of Coriolis~100
+OBJ
+444 
+50 
+A copy of Meddle
+OBJ
+93 
+80 
+A small inflatable boat
+OBJ
+93 
+50 
+An iridium rapier$6
+OBJ
+93 
+58 
+A jewelled gold bracelet~600
+OBJ
+611 
+60 
+A dinonogon's bone~150
+OBJ
+600 
+30 
+A piece of amber~120
+MON
+697 
+80 
+#A green dragonette
+5 
+7 
+65 
+14 
+
+200 
+0
+0
+0
+MON
+699 
+98 
+*A phantom
+9 
+10 
+300 
+20 
+/pa10/
+250 
+0
+0
+0
+OBJ
+699 
+70 
+A necklace~500
+OBJ
+699 
+80 
+A gold bar~400
+OBJ
+698 
+40 
+Some food
+OBJ
+601 
+70 
+A newspaper
+OBJ
+699 
+35 
+A jade bracelet~220
+OBJ
+699 
+50 
+A bag of gold coins~230
+OBJ
+699 
+80 
+A parchment map~400
+OBJ
+699 
+60 
+A silver cup~260
+OBJ
+30 
+80 
+Key 697
+OBJ
+411 
+68 
+Key 697
+OBJ
+696 
+85 
+Some food
+OBJ
+696 
+78 
+A pint of castlemaine XXXX
+OBJ
+696 
+70 
+A pint of guiness
+OBJ
+696 
+80 
+A pint of heineken
+OBJ
+696 
+85 
+A buck's fizz
+MON
+693 
+60 
+*A hangover
+8 
+6 
+101 
+20 
+
+40 
+0
+0
+0
+MON
+694 
+70 
+*A barman's wife
+6 
+4 
+100 
+15 
+
+100 
+0
+0
+0
+MON
+695 
+90 
+#A barman's son
+4 
+9 
+90 
+10 
+
+300 
+0
+0
+0
+MON
+692 
+30 
+#A dravak supreme high chief
+3 
+5 
+75 
+4 
+
+450 
+0
+0
+0
+MON
+692 
+30 
+#A Dragonnewt Guard
+2 
+3 
+50 
+4 
+
+220 
+0
+0
+0
+MON
+692 
+30 
+#A Trikker
+5 
+6 
+60 
+13 
+
+110 
+0
+0
+0
+MON
+690 
+75 
+#A receptionist
+1 
+2 
+15 
+2 
+
+50 
+0
+0
+0
+MON
+682 
+40 
+*A totally slashed guest
+6 
+11 
+180 
+30 
+
+45 
+0
+0
+0
+MON
+688 
+80 
+*A rat
+6 
+4 
+110 
+20 
+/PA20/
+25 
+0
+0
+0
+OBJ
+692 
+80 
+Some food
+OBJ
+695 
+50 
+A book of folklore~40
+OBJ
+694 
+60 
+A carving knife$4
+OBJ
+691 
+30 
+A newspaper
+OBJ
+690 
+20 
+Some chalk
+OBJ
+524 
+80 
+A rhythm stick$3
+OBJ
+463 
+100 
+A newspaper
+OBJ
+686 
+100 
+A newspaper
+MON
+686 
+100 
+#A hotel room guard
+6 
+10 
+100 
+15 
+
+100 
+0
+0
+0
+MON
+87 
+100 
+#The AIDS virus
+9 
+20 
+500 
+20 
+/PA20/
+200 
+0
+0
+0
+OBJ
+692
+10
+Some heroin
+MON
+230 
+80 
+#A pink elephant
+6 
+2 
+50 
+8 
+
+100 
+0
+0
+0
+MON
+231 
+80 
+#A blue elephant
+2 
+2 
+50 
+5 
+/PA10/
+120 
+0
+0
+0
+MON
+232 
+80 
+#A white elephant
+2 
+2 
+50 
+5 
+/PO02/
+250 
+0
+0
+0
+MON
+233 
+80 
+*A Russian astronaut
+8 
+6 
+50 
+6 
+/PA05/
+80 
+0
+0
+0
+MON
+235 
+80 
+*A tin soldier
+6 
+2 
+80 
+15 
+
+200 
+0
+0
+0
+MON
+812 
+80 
+*A houndman doorman
+0 
+1 
+10 
+4 
+
+8 
+0
+0
+0
+OBJ
+813 
+30 
+A bread roll$1
+OBJ
+813 
+20 
+A jelly tray
+OBJ
+813 
+20 
+A party hat
+OBJ
+815 
+70 
+A bottle of whisky
+OBJ
+815 
+40 
+A bottle of brandy
+OBJ
+815 
+60 
+A bottle of cider
+MON
+813 
+70 
+*A houndman
+1 
+0 
+8 
+3 
+
+5 
+0
+0
+0
+MON
+235 
+80 
+*A shooting star
+1 
+50 
+10000 
+0 
+
+0 
+0
+0
+0
+MON
+238 
+80 
+#The grim reaper
+4 
+3 
+50 
+5 
+/PA20/
+400 
+0
+0
+0
+MON
+474 
+80 
+#A gold bar guardian
+8 
+8 
+500 
+50 
+/PA50/
+100 
+0
+0
+0
+OBJ
+465 
+100 
+Some food
+OBJ
+465 
+100 
+A newspaper
+MON
+812 
+45 
+*A houndman doorman
+0 
+0 
+7 
+3 
+
+5 
+0
+0
+0
+MON
+815 
+40 
+*A houndman campaigner
+1 
+0 
+7 
+4 
+
+8 
+0
+0
+0
+MON
+814 
+30 
+*A houndman secretary
+0 
+0 
+4 
+2 
+
+2 
+0
+0
+0
+MON
+816 
+20 
+#A houndman
+2 
+0 
+10 
+4 
+
+8 
+0
+0
+0
+MON
+815 
+80 
+*A houndman sophisticate
+3 
+0 
+7 
+3 
+
+8 
+0
+0
+0
+OBJ
+815 
+70 
+A gold brooch~8
+OBJ
+814 
+99 
+A campaign leaflet
+OBJ
+814 
+99 
+A leaflet
+MON
+802 
+60 
+#A sandrat
+1 
+0 
+7 
+3 
+
+4 
+0
+0
+0
+OBJ
+802 
+40 
+A large coin~6
+MON
+805 
+60 
+*A brown bear
+1 
+1 
+14 
+4 
+
+24 
+0
+0
+0
+MON
+806 
+40 
+#A bear cub
+0 
+0 
+6 
+3 
+
+6 
+0
+0
+0
+OBJ
+806 
+90 
+A thigh bone$2
+MON
+808 
+10 
+#A rat
+0 
+0 
+7 
+2 
+
+3 
+0
+0
+0
+MON
+800 
+80 
+#A brown sand rat
+1 
+0 
+6 
+3 
+
+6 
+0
+0
+0
+MON
+820 
+75 
+#A young trollkin
+2 
+2 
+30 
+4 
+
+9 
+0
+0
+0
+OBJ
+820 
+60 
+Some pretty stones~2
+MON
+823 
+80 
+#A nasty trollkin guard
+3 
+3 
+15 
+4 
+
+15 
+0
+0
+0
+MON
+825 
+50 
+*The trollkin chieftain
+2 
+1 
+27 
+4 
+
+30 
+0
+0
+0
+MON
+822 
+70 
+#A trollkin
+1 
+0 
+11 
+3 
+
+9 
+0
+0
+0
+MON
+824 
+45 
+*A trollkin
+1 
+0 
+11 
+3 
+
+9 
+0
+0
+0
+OBJ
+825 
+70 
+A sack of loot~30
+OBJ
+822 
+40 
+A CDB bank bond~10
+OBJ
+825 
+80 
+Three gold bars~50
+OBJ
+816 
+99 
+Some chalk
+OBJ
+831 
+95 
+Some chalk
+OBJ
+827 
+70 
+Some food
+OBJ
+815 
+70 
+Some food
+OBJ
+833 
+90 
+Some chalk
+OBJ
+810 
+95 
+Some chalk
+OBJ
+825 
+85 
+Key 833
+OBJ
+831 
+5 
+Key 833
+OBJ
+802 
+15 
+Key 833
+OBJ
+802 
+60 
+A spade
+OBJ
+819 
+90 
+A spade
+MON
+809 
+50 
+#A fieldmouse
+0 
+0 
+1 
+1 
+
+0 
+0
+0
+0
+OBJ
+806 
+50 
+A ladder
+OBJ
+354 
+90 
+Some food
+OBJ
+354 
+95 
+Some chalk
+OBJ
+350 
+40 
+The Guardian
+OBJ
+350 
+40 
+The Independent
+OBJ
+350 
+40 
+New Scientist
+OBJ
+350 
+40 
+Socialist Worker
+OBJ
+350 
+40 
+Adventuring Monthly
+OBJ
+350 
+40 
+Playgoblin
+OBJ
+350 
+99 
+A newspaper
+OBJ
+353 
+50 
+Some food
+OBJ
+353 
+40 
+A long spear$5
+OBJ
+353 
+10 
+A poleaxe$6
+MON
+123 
+99 
+*A slimy snake
+1 
+1 
+10 
+2 
+/PA10/
+15 
+0
+0
+0
+OBJ
+123 
+50 
+Some food
+MON
+150 
+99 
+*A small orc
+2 
+2 
+1 
+3 
+
+10 
+0
+0
+0
+MON
+147 
+50 
+*A tiger beetle
+1 
+0 
+5 
+2 
+/PA10/
+15 
+0
+0
+0
+MON
+25 
+90 
+*A huge dog
+1 
+1 
+8 
+2 
+
+15 
+0
+0
+0
+MON
+26 
+80 
+*A Hobbit
+2 
+2 
+25 
+6 
+
+8 
+0
+0
+0
+MON
+24 
+50 
+*A hobbit maid
+3 
+5 
+56 
+25 
+
+5 
+0
+0
+0
+MON
+122 
+35 
+*A goldfish
+2 
+3 
+1 
+1 
+
+4 
+0
+0
+0
+MON
+128 
+10 
+*A Nat
+0 
+0 
+1 
+1 
+
+4
+0
+0
+0
+MON
+156 
+80 
+*An orc
+3 
+3 
+50 
+13 
+
+15 
+0
+0
+0
+MON
+159 
+80 
+*A giant beetle
+1 
+1 
+10 
+3 
+
+10 
+0
+0
+0
+MON
+160 
+80 
+*A zombie
+3 
+3 
+25
+4 
+15
+15 
+0
+0
+0
+MON
+162 
+70 
+*A giant earthworm
+3 
+0 
+25 
+3 
+
+30 
+0
+0
+0
+MON
+176 
+60 
+*A mole
+1 
+1 
+5 
+2 
+
+5 
+0
+0
+0
+MON
+178 
+70 
+*A tiger beetle
+1 
+1 
+15 
+6 
+
+20 
+0
+0
+0
+MON
+179 
+50 
+*A giant earthworm
+0 
+0 
+25 
+3 
+
+15 
+0
+0
+0
+MON
+187 
+45 
+*A big hairy spider
+0 
+0 
+15 
+3 
+/PA20/
+20 
+0
+0
+0
+MON
+190 
+90 
+*A giant beetle
+2 
+1 
+10 
+3 
+/PA10/
+25 
+0
+0
+0
+MON
+191 
+90 
+*A giant centipede
+0 
+0 
+3 
+1 
+/PA10/
+25 
+0
+0
+0
+MON
+197 
+50 
+*A giant weasel
+4 
+3 
+30 
+7 
+
+200 
+0
+0
+0
+MON
+850 
+99 
+*A doppleganger
+6 
+5 
+60 
+20 
+/PA40/
+100 
+0
+0
+0
+MON
+854 
+99 
+*A frost giant
+10 
+6 
+300 
+15 
+
+400 
+0
+0
+0
+MON
+858 
+99 
+*A shadow
+9 
+8 
+200 
+20 
+/PA10/
+1000 
+0
+0
+0
+MON
+876 
+40 
+*An ice golem
+9 
+6 
+500 
+15 
+
+1500 
+0
+0
+0
+MON
+877 
+90 
+*A hell hound
+8 
+5 
+80 
+30 
+
+500 
+0
+0
+0
+MON
+866 
+50 
+*An ice salamander
+2 
+5 
+100 
+1 
+
+100 
+0
+0
+0
+MON
+867 
+90 
+*A white dragon
+9 
+7 
+800 
+30 
+/PA30/
+1000 
+0
+0
+0
+MON
+878 
+50 
+*A crow
+0 
+0 
+2 
+1 
+
+4 
+0
+0
+0
+OBJ
+193 
+99 
+Some crampons
+MON
+193 
+99 
+*A two headed orc
+8 
+5 
+40 
+12 
+
+70 
+0
+0
+0
+MON
+164 
+99 
+*A crystal orc statue
+1 
+3 
+50 
+2 
+
+40 
+0
+0
+0
+OBJ
+164 
+80 
+A prism
+MON
+181 
+75 
+*A smelly eagle orc
+0 
+1 
+40 
+3 
+
+30 
+0
+0
+0
+OBJ
+181 
+75 
+Some gloves
+MON
+178 
+80 
+*A tiger beetle
+1 
+1 
+40 
+6 
+
+40 
+0
+0
+0
+OBJ
+178 
+50 
+Gauntlets of strength
+MON
+161 
+90 
+*A gnoll
+2 
+0 
+28 
+1 
+
+10 
+0
+0
+0
+OBJ
+161 
+50 
+A pair of scissors
+MON
+205 
+85 
+*A small baby orc
+0 
+0 
+3 
+1 
+
+2 
+0
+0
+0
+OBJ
+205 
+95 
+A cup
+MON
+198 
+90 
+*A mummy
+1 
+1 
+45 
+4 
+
+40 
+0
+0
+0
+OBJ
+198 
+90 
+A Talisman
+MON
+212 
+50 
+*A torch guardian
+1 
+1 
+10 
+4 
+
+10 
+0
+0
+0
+OBJ
+212 
+99 
+A flaming torch
+MON
+210 
+99 
+*An orc warder
+0 
+0 
+30 
+1 
+
+5 
+0
+0
+0
+OBJ
+210 
+99 
+Some Keys
+OBJ
+102 
+90 
+Heroblade$5
+OBJ
+102 
+90 
+A Holy Avenger$5
+OBJ
+102 
+90 
+A stone club$6
+MON
+861 
+90 
+*An eskimo
+4 
+1 
+30 
+5 
+
+100 
+0
+0
+0
+MON
+867 
+90 
+*A white dragon
+7 
+8 
+80 
+19 
+/PA30/
+1200 
+0
+0
+0
+MON
+861 
+75 
+#An eskimo
+5 
+3 
+25 
+3 
+
+100 
+0
+0
+0
+MON
+851 
+95 
+*A snowman
+8 
+6 
+60 
+14 
+
+400 
+0
+0
+0
+MON
+852 
+70 
+*A polar bear
+8 
+9 
+95 
+16 
+
+400 
+0
+0
+0
+MON
+853 
+70 
+*A frost giant
+6 
+5 
+40 
+8 
+
+700 
+0
+0
+0
+MON
+854 
+90 
+*An ice salamander
+3 
+2 
+20 
+3 
+
+200 
+0
+0
+0
+MON
+855 
+50 
+*A blue bear
+3 
+0 
+21 
+3 
+
+100 
+0
+0
+0
+MON
+856 
+65 
+*A pit fiend
+9 
+6 
+60 
+10 
+
+1000 
+0
+0
+0
+MON
+857 
+99 
+#An ice elf
+1 
+1 
+10 
+0 
+
+100 
+0
+0
+0
+MON
+860 
+50 
+*A white snake
+2 
+2 
+20 
+5 
+/PA70/
+200 
+0
+0
+0
+MON
+863 
+99 
+*An icicle
+99 
+99 
+100 
+70 
+
+100 
+0
+0
+0
+MON
+865 
+80 
+*A hell hound
+10 
+6 
+90 
+19 
+
+400 
+0
+0
+0
+MON
+867 
+80 
+*A white dragon
+6 
+6 
+80 
+30 
+/PA20/
+1200 
+0
+0
+0
+MON
+869 
+50 
+*A rock giant
+8 
+6 
+200 
+15 
+
+300 
+0
+0
+0
+MON
+871 
+75 
+*A fire salamander
+6 
+5 
+60 
+30 
+
+400 
+0
+0
+0
+MON
+876 
+99 
+*The death stalker
+9 
+9 
+500 
+30 
+/FO99/PA99/
+1000 
+0
+0
+0
+MON
+185 
+99 
+*A tired orc
+1 
+9 
+95 
+10 
+
+50 
+0
+0
+0
+OBJ
+162 
+50 
+Some food
+OBJ
+185 
+60 
+Some gloves
+OBJ
+183 
+90 
+Some gauntlets
+OBJ
+167 
+70 
+A white crystal~100
+OBJ
+867 
+70 
+A white gem~100
+OBJ
+867 
+50 
+Some crampons
+OBJ
+877 
+50 
+Fireblade$5
+OBJ
+210 
+99 
+Keys
+MON
+199 
+99 
+*A fiery angel of death
+9 
+6 
+200 
+30 
+
+500 
+0
+0
+0
+OBJ
+199 
+90 
+A box of matches
+OBJ
+193 
+50 
+A prism
+OBJ
+192 
+50 
+Some food
+OBJ
+192 
+50 
+Some smelly food
+OBJ
+192 
+50 
+A red ruby~50
+MON
+206 
+95 
+*A bog monster
+2 
+2 
+20 
+3 
+/PA20/
+40 
+0
+0
+0
+MON
+902 
+80 
+*A crab
+5 
+1 
+10 
+2 
+
+10 
+0
+0
+0
+MON
+904 
+90 
+#A Water elf
+4 
+1 
+15 
+2 
+
+20 
+0
+0
+0
+MON
+906 
+90 
+*An Octupus
+5 
+5 
+20 
+3 
+
+50 
+0
+0
+0
+MON
+907 
+80 
+*A shark
+6 
+5 
+20 
+15 
+
+40 
+0
+0
+0
+MON
+910 
+80 
+*A sting ray
+2 
+0 
+10 
+2 
+/PA20/
+30 
+0
+0
+0
+MON
+909 
+45 
+*A water elemental
+5 
+3 
+30 
+2 
+
+100 
+0
+0
+0
+MON
+912 
+99 
+*Captain Dredd
+3 
+3 
+99 
+9 
+
+100 
+0
+0
+0
+MON
+913 
+90 
+*A water snake
+1 
+3 
+20 
+2 
+/PA10/
+90 
+0
+0
+0
+MON
+918 
+80 
+*A starfish
+2 
+3 
+5 
+3 
+
+40 
+0
+0
+0
+MON
+917 
+80 
+*A Kuotoan
+3 
+2 
+20 
+3 
+
+80 
+0
+0
+0
+MON
+915 
+90 
+*A wet zombie
+1 
+2 
+4 
+1 
+/PA40/
+40 
+0
+0
+0
+MON
+961 
+20 
+*A flamehound
+8 
+8 
+190 
+35 
+
+1100 
+0
+0
+0
+OBJ
+913 
+10 
+A watersword$6
+OBJ
+915 
+70 
+Some mushy food
+OBJ
+916 
+90 
+Some scuba equipment
+OBJ
+913 
+90 
+A chest of jewels~100
+OBJ
+913 
+50 
+A badge~50
+OBJ
+911 
+20 
+Key 912
+OBJ
+122 
+99 
+Some scuba equipment
+OBJ
+920 
+90 
+A board
+MON
+1018 
+95 
+*A toilet lurker
+20 
+6 
+20 
+2 
+/FO00/
+100 
+0
+0
+0
+MON
+1014 
+80 
+*A sleepy giant
+20 
+6 
+150 
+5 
+/FO00/
+200 
+0
+0
+0
+MON
+1015 
+99 
+*The chief giant
+25 
+9 
+250 
+20 
+/FO00/
+400 
+0
+0
+0
+MON
+1006 
+99 
+*A hill giant guard
+10 
+4 
+60 
+8 
+/FO70/
+100 
+0
+0
+0
+MON
+1012 
+80 
+*A kitchen maid
+6 
+4 
+20 
+20 
+/FO00/
+20 
+0
+0
+0
+MON
+1013 
+80 
+*The steps guardian
+10 
+6 
+100 
+16 
+/FO00/
+200 
+0
+0
+0
+MON
+1105 
+20 
+*A small wandering robot
+6 
+8 
+130 
+20 
+/FO99/
+300 
+0
+0
+0
+MON
+1106 
+80 
+#A very attractive kitchen girl
+7 
+8 
+95 
+23 
+
+100 
+0
+0
+0
+MON
+1110 
+60 
+#A young Turnalian with long ginger hair
+11 
+8 
+224 
+30 
+/FO10/
+1000 
+0
+0
+0
+OBJ
+1106 
+98 
+Some food
+OBJ
+1112 
+30 
+A laser rifle$8
+MON
+1112 
+99 
+*A very solid looking robot
+10 
+14 
+1000 
+35 
+
+3000 
+0
+0
+0
+MON
+1113 
+60 
+*A Turnalian kid with a Vibro Knife
+7 
+7 
+85 
+26 
+/FO98/
+600 
+0
+0
+0
+OBJ
+1114 
+80 
+A gold crown~300
+MON
+1114 
+50 
+#A scantily clad Turnalian princess
+7 
+6 
+175 
+30 
+/FO53/
+500 
+0
+0
+0
+MON
+1104 
+90 
+#A sleeping Turnalian guard
+20 
+30 
+780 
+50 
+/FO00/
+6000 
+0
+0
+0
+MON
+1111 
+99 
+*A forcefield
+100 
+100 
+1000 
+65 
+/FO00/
+1000 
+0
+0
+0
+OBJ
+697 
+20 
+Key 688
+OBJ
+602 
+95 
+A small boat
+MON
+678 
+60 
+*A drunken dancing Hippy
+12 
+9 
+425 
+50 
+
+1000 
+0
+0
+0
+MON
+679 
+99 
+*A winged exit guardian
+15 
+10 
+500 
+30 
+/PO25/
+2000 
+0
+0
+0
+OBJ
+584 
+50 
+A small bear-skin boat
+MON
+1104 
+90 
+#A sleeping Turnalian Guard
+12 
+9 
+500 
+20 
+/FO00/
+200 
+0
+0
+0
+OBJ
+1110 
+40 
+A small plastic security card
+OBJ
+1117 
+60 
+Some food
+OBJ
+1117 
+60 
+A laser pistol$5
+OBJ
+1117 
+60 
+A videogame~250
+MON
+695 
+90 
+#A pensioner
+7 
+6 
+80 
+15 
+/FO00/
+500 
+0
+0
+0
+OBJ
+1118 
+90 
+Some food
+OBJ
+1118 
+80 
+A gold coin~32
+OBJ
+1118 
+70 
+A short bow$5
+MON
+1119 
+100 
+#A wandering flame
+2 
+30 
+250 
+50 
+/FO00/
+10 
+0
+0
+0
+OBJ
+1119 
+80 
+A food token
+OBJ
+1119 
+70 
+A half crown~10
+MON
+1120 
+90 
+#An old hermit
+2 
+1 
+30 
+5 
+
+12 
+0
+0
+0
+OBJ
+1120 
+60 
+A forged iron shaft$4
+OBJ
+1120 
+60 
+A newspaper
+OBJ
+1120 
+60 
+A meal token
+MON
+1123 
+80 
+*A ground lizard
+3 
+1 
+4 
+1 
+
+10 
+0
+0
+0
+OBJ
+1123 
+80 
+A torch bracket~7
+OBJ
+1123 
+60 
+Some food
+MON
+1122 
+100 
+#A shrine guardian
+6 
+9 
+4 
+6 
+/PA20/
+60 
+0
+0
+0
+MON
+1127 
+80 
+#A fat crawler grub
+0 
+0 
+7 
+2 
+
+12 
+0
+0
+0
+OBJ
+1127 
+70 
+Some food
+OBJ
+1127 
+70 
+A meal token
+MON
+1124 
+69 
+#A ghost
+0 
+1 
+12 
+1 
+/PA07/
+18 
+0
+0
+0
+OBJ
+1124 
+80 
+A flaking leather-bound book~20
+OBJ
+1124 
+80 
+A shortbow$5
+OBJ
+1125 
+80 
+A meal token
+OBJ
+60 
+1 
+Some food
+OBJ
+1125 
+60 
+Some food
+MON
+1125 
+80 
+*A mass of green slime
+0 
+0 
+15 
+2 
+
+25 
+0
+0
+0
+MON
+1121 
+80 
+*A firebeetle
+1 
+2 
+12 
+2 
+
+50 
+0
+0
+0
+OBJ
+1121 
+80 
+A runy ring~25
+OBJ
+1121 
+50 
+A meal token
+OBJ
+1128 
+90 
+A meal token
+OBJ
+1128 
+60 
+A newspaper
+OBJ
+1128 
+60 
+A copper disc~5
+MON
+1129 
+80 
+*An Icemonster
+1 
+1 
+2 
+4 
+/PA10/
+10 
+0
+0
+0
+OBJ
+1129 
+60 
+A meal token
+OBJ
+1129 
+30 
+A cold rod$5
+MON
+1130 
+100 
+#A bush
+0 
+0 
+500 
+3 
+/PO01/
+200 
+0
+0
+0
+MON
+1132 
+80 
+*A rock statue
+0 
+2 
+15 
+3 
+
+40 
+0
+0
+0
+OBJ
+1132 
+80 
+A brown diamond~18
+OBJ
+1132 
+80 
+A flint knife$4
+OBJ
+1132 
+80 
+A stone chip~9
+MON
+1131 
+80 
+#A rockotron
+1 
+1 
+10 
+4 
+
+37 
+0
+0
+0
+OBJ
+1131 
+50 
+Some food
+OBJ
+1132 
+80 
+A meal token
+OBJ
+1131 
+80 
+A meal token
+OBJ
+1131 
+60 
+An old map~15
+MON
+1133 
+70 
+*A rock flapper
+1 
+2 
+15 
+2 
+
+20 
+0
+0
+0
+OBJ
+1133 
+70 
+A short sword$4
+OBJ
+1133 
+80 
+Some food
+OBJ
+1133 
+70 
+A meal token
+MON
+1126 
+90 
+*A cave ape
+3 
+2 
+4 
+5 
+/PA20/
+50 
+0
+0
+0
+OBJ
+1128 
+60 
+A claw~8
+OBJ
+1126 
+80 
+Some food
+MON
+1128 
+70 
+#The catacomb master
+3 
+2 
+25 
+4 
+
+75 
+0
+0
+0
+OBJ
+1128 
+80 
+A ruby necklass~40
+OBJ
+1128 
+80 
+A ruby bracelet~20
+MON
+350 
+99 
+*A frog
+0 
+0 
+2 
+1 
+/FO99/
+1 
+0
+0
+0
+MON
+993 
+70 
+*A giant sand lizard
+5 
+4 
+200 
+7 
+/FO43/
+550 
+0
+0
+0
+MON
+992 
+70 
+*A giant sand lizard
+5 
+4 
+200 
+7 
+/FO43/
+550 
+0
+0
+0
+MON
+991 
+80 
+*A desert python
+3 
+3 
+80 
+5 
+/PA10/
+150 
+0
+0
+0
+OBJ
+993 
+80 
+Some food
+OBJ
+993 
+99 
+A newspaper
+OBJ
+84 
+95 
+A Newtron stick$6
+MON
+83 
+50 
+*A Demi-divine guard
+8 
+10 
+89 
+15 
+
+500 
+0
+0
+0
+OBJ
+1156 
+100 
+A leather whip$5
+MON
+1154 
+75 
+#A waiter
+8 
+8 
+80 
+16 
+/FO50/
+200 
+0
+0
+0
+OBJ
+1154 
+75 
+A menu~50
+MON
+1155 
+75 
+#A barman
+6 
+5 
+50 
+13 
+
+100 
+0
+0
+0
+MON
+1159 
+100 
+*A rock
+10 
+5 
+200 
+16 
+
+0 
+0
+0
+0
+OBJ
+1157 
+100 
+A spaceship
+MON
+1157 
+50 
+#A gang of drunken hippies
+8 
+6 
+90 
+16 
+
+150 
+0
+0
+0
+MON
+1160 
+75 
+#Marvin the paranoid android
+9 
+9 
+200 
+25 
+/PA10/
+500 
+0
+0
+0
+OBJ
+1160 
+75 
+A heart of gold~150
+OBJ
+1160 
+75 
+A heart of gold
+OBJ
+1160 
+75 
+M.D.'s autograph~20
+OBJ
+1160 
+75 
+A laser$4
+MON
+1161 
+75 
+*An orange singing caterpillar
+1 
+1 
+25 
+7 
+
+50 
+0
+0
+0
+OBJ
+1161 
+75 
+A Weirdo card
+OBJ
+1161 
+75 
+A red catapult$4
+OBJ
+1161 
+75 
+Some food
+MON
+1162 
+75 
+*A toilet cleaner
+3 
+6 
+50 
+6 
+
+40 
+0
+0
+0
+OBJ
+1162 
+75 
+A used toilet roll~1
+OBJ
+1163 
+75 
+A pin-up of the system managers~10
+OBJ
+1163 
+75 
+A close up of Mohit~20
+OBJ
+1163 
+75 
+A weirdo card
+MON
+1164 
+75 
+#A demon showercap
+6 
+6 
+55 
+12 
+
+90 
+0
+0
+0
+OBJ
+1164 
+75 
+A bar of soap~5
+OBJ
+1164 
+75 
+A stone axe$5
+MON
+1165 
+100 
+*A drunk piece of cardboard
+6 
+8 
+79 
+16 
+
+120 
+0
+0
+0
+OBJ
+1165 
+75 
+A weirdo card
+MON
+1165 
+100 
+*A weirdo
+8 
+6 
+80 
+15 
+
+150 
+0
+0
+0
+OBJ
+1165 
+75 
+A sunshine gun$4
+OBJ
+1165 
+75 
+Some hypergalactic food
+MON
+1166 
+100 
+*A traffic warden
+2 
+2 
+30 
+7 
+/FO50/
+80 
+0
+0
+0
+OBJ
+1166 
+75 
+A parking ticket~10
+OBJ
+1166 
+75 
+A flint axe$6
+OBJ
+1166 
+50 
+Some gold dust~100
+MON
+1167 
+75 
+*An angry kidney
+9 
+7 
+150 
+20 
+/FO75/
+200 
+0
+0
+0
+OBJ
+1167 
+75 
+The moon~100
+OBJ
+1167 
+75 
+Gavuntiem$5
+MON
+1168 
+100 
+#Zaphod Beedlebrox
+9 
+9 
+250 
+50 
+/PA10/
+350 
+0
+0
+0
+OBJ
+1168 
+75 
+A babelfish
+OBJ
+1168 
+75 
+An aluminium sword$6
+OBJ
+1168 
+75 
+A weirdo card
+OBJ
+1168 
+75 
+his spare head~25
+MON
+1169 
+100 
+#An attractive female translator
+6 
+3 
+40 
+12 
+
+100 
+0
+0
+0
+OBJ
+1169 
+75 
+An adze$5
+OBJ
+1169 
+75 
+A hairdryer
+OBJ
+1169 
+75 
+Some food
+MON
+1170 
+100 
+*A Vogon
+8 
+9 
+75 
+15 
+/FO80/
+200 
+0
+0
+0
+OBJ
+1170 
+75 
+A mouse scientist
+OBJ
+1170 
+75 
+A Vogon cudgel$5
+MON
+1171 
+100 
+*The Vogon chieftain
+10 
+11 
+259 
+32 
+/PA10/
+800 
+0
+0
+0
+OBJ
+1171 
+75 
+A book of Vogon poetry~100
+OBJ
+1171 
+75 
+A poleaxe$6
+OBJ
+1171 
+75 
+A weirdo card
+MON
+1172 
+100 
+#A guardian angel
+9 
+7 
+300 
+29 
+/PA50/
+100 
+0
+0
+0
+OBJ
+1172 
+75 
+A winga sword$5
+OBJ
+1172 
+75 
+Some food
+OBJ
+1172 
+75 
+An automatic Bovril processor
+MON
+1173 
+100 
+#A tyrannosaurus rex
+9 
+5 
+55 
+12 
+/PO05/
+200 
+0
+0
+0
+OBJ
+1173 
+75 
+A piece of flint$3
+OBJ
+1173 
+75 
+An ancient coin~30
+MON
+613 
+100 
+*A West Bromley fighting haddock
+10 
+6 
+50 
+12 
+/FO99/
+1000 
+0
+0
+0
+MON
+1030 
+100 
+#Mr Mean
+10 
+12 
+90 
+16 
+/fo99/
+-100 
+0
+0
+0
+OBJ
+1030 
+99 
+A goblin teapot~50
+MON
+1031 
+99 
+#A bank clerk
+2 
+2 
+20 
+3 
+/fo99/
+35 
+0
+0
+0
+MON
+1033 
+50 
+*An angry battlezoner
+9 
+6 
+85 
+15 
+/pa10/
+50 
+0
+0
+0
+OBJ
+1033 
+30 
+A bribe~50
+MON
+1036 
+75 
+*Marvin the paranoid android
+11 
+9 
+200 
+50 
+/fo99/
+500 
+0
+0
+0
+OBJ
+1036 
+20 
+A cirius cybernetics corp. leaflet~250
+MON
+1037 
+40 
+*Mr Kipling
+10 
+8 
+250 
+16 
+/FO50/
+500 
+0
+0
+0
+OBJ
+1037 
+20 
+A cream bun~150
+MON
+1037 
+40 
+*A lost robot
+11 
+10 
+100 
+20 
+/FO85/
+500 
+0
+0
+0
+OBJ
+1032 
+25 
+An aspirin tablet
+MON
+1038 
+60 
+#A robotic receptionist
+9 
+5 
+50 
+19 
+
+200 
+0
+0
+0
+OBJ
+1037 
+5 
+A helmet~500
+OBJ
+1043 
+8 
+A suit of armour~500
+OBJ
+1044 
+10 
+A mace$7
+OBJ
+1046 
+10 
+A pair of metal gloves~500
+OBJ
+1041 
+5 
+A helmet~500
+OBJ
+1047 
+10 
+A helmet~500
+OBJ
+1042 
+12 
+A shield
+OBJ
+1039 
+10 
+A shield
+OBJ
+1036 
+10 
+An aspirin tablet
+MON
+1041 
+30 
+*A lurker
+6 
+9 
+100 
+10 
+/FO99/PO05/
+250 
+0
+0
+0
+OBJ
+1041 
+50 
+A vacuum cleaner
+MON
+1041 
+50 
+#A lurker
+10 
+8 
+300 
+5 
+/FO99/
+500 
+0
+0
+0
+OBJ
+528 
+30 
+Some food
+OBJ
+528 
+30 
+A gold bar~50
+OBJ
+1048 
+25 
+Some food
+OBJ
+1044 
+40 
+A vacuum cleaner
+MON
+1039 
+30 
+#A tired cleaning lady
+8 
+6 
+100 
+10 
+/fo99/
+150 
+0
+0
+0
+MON
+1039 
+50 
+*A tired cleaning lady
+6 
+6 
+60 
+10 
+
+200 
+0
+0
+0
+MON
+1039 
+45 
+#A household domestic
+8 
+9 
+145 
+10 
+/FO99/
+550 
+0
+0
+0
+MON
+1043 
+60 
+*A monster-raving loony
+9 
+9 
+250 
+15 
+/FO99/
+750 
+0
+0
+0
+MON
+1043 
+30 
+#A rampant Rambo imitator
+10 
+10 
+200 
+25 
+/FO99/
+1000 
+0
+0
+0
+MON
+928 
+50 
+#An odd technician
+4 
+6 
+50 
+10 
+/FO99/
+175 
+0
+0
+0
+MON
+928 
+50 
+*A randy Van der Graaf
+8 
+8 
+125 
+5 
+
+300 
+0
+0
+0
+OBJ
+111 
+99 
+A useless piece of brasier~-100
+OBJ
+92 
+99 
+A Golden Figure of David~50
+OBJ
+92 
+50 
+A Bronze Medallion
+MON
+1044 
+30 
+#An angry BATTLEZONER
+7 
+10 
+185 
+30 
+/FO99/
+450 
+0
+0
+0
+MON
+1046 
+30 
+#A weird robot
+8 
+9 
+260 
+20 
+/PO10/PA30/
+600 
+0
+0
+0
+OBJ
+1046 
+25 
+A pair of metal gloves~500
+OBJ
+1043 
+10 
+A clue
+MON
+1048 
+60 
+#A receptionist
+9 
+5 
+150 
+10 
+
+350 
+0
+0
+0
+OBJ
+1048 
+30 
+Some food
+MON
+1049 
+85 
+*The Chief Battlezoner
+10 
+12 
+350 
+25 
+/PO15/
+850 
+0
+0
+0
+MON
+962 
+30 
+*A tyrannosaurus rex
+8 
+9 
+175 
+21 
+/FO99/
+650 
+0
+0
+0
+OBJ
+961 
+15 
+Key 962
+OBJ
+960 
+30 
+Some food
+OBJ
+1043 
+20 
+Some food
+OBJ
+1045 
+15 
+Some food
+OBJ
+960 
+35 
+An air freshener
+MON
+960 
+30 
+*A red robed monk
+7 
+7 
+250 
+10 
+/PA15/
+300 
+0
+0
+0
+OBJ
+962 
+10 
+An O-Level certificate
+OBJ
+961 
+15 
+An A-Level certificate
+OBJ
+1039 
+15 
+A suit of armour~500
+OBJ
+1040 
+15 
+Some armour~500
+OBJ
+1049 
+18 
+An S-Level certificate~1000
+MON
+1046 
+35 
+#A trendy BATTLEZONER
+8 
+8 
+190 
+15 
+
+650 
+0
+0
+0
+OBJ
+960 
+30 
+A cloth
+MON
+939 
+60 
+#Larry
+8 
+7 
+160 
+8 
+
+500 
+0
+0
+0
+OBJ
+939 
+30 
+Some NI3
+OBJ
+939 
+30 
+A bit of admin~75
+MON
+939 
+99 
+!His beard
+5 
+0 
+1000 
+50 
+
+0 
+0
+0
+0
+MON
+935 
+65 
+#Mc Vitie
+7 
+7 
+175 
+12 
+/pa05/
+600 
+0
+0
+0
+MON
+937 
+70 
+#Ray Davies
+8 
+6 
+80 
+3 
+/PA25/
+150 
+0
+0
+0
+MON
+937 
+95 
+!His corgis
+5 
+0 
+0 
+0 
+
+0 
+0
+0
+0
+MON
+937 
+100 
+!His corgis
+0 
+0 
+0 
+0 
+
+0 
+0
+0
+0
+MON
+928 
+10 
+#Doc Bradford
+11 
+14 
+500 
+16 
+/PA25/
+1500 
+0
+0
+0
+MON
+931 
+10 
+#Doc Bradford
+11 
+14 
+500 
+25 
+/PA25/FO35/
+1600 
+0
+0
+0
+OBJ
+933 
+20 
+A beard~80
+OBJ
+696 
+10 
+A beard~25
+OBJ
+41 
+10 
+A beard~25
+MON
+939 
+95 
+*Genghis Khan
+8 
+6 
+75 
+12 
+/PA05/
+250 
+0
+0
+0
+MON
+1175 
+90 
+#A common person
+7 
+6 
+60 
+15 
+
+30 
+0
+0
+0
+MON
+1177 
+99 
+#Dr Spock
+8 
+8 
+350 
+15 
+/PA35/
+200 
+0
+0
+0
+MON
+ 696 
+ 99 
+#A Tall Yorkshire Barman
+ 6 
+ 5 
+ 200 
+ 8 
+/FO00/
+ 400 
+ 0 
+ 0 
+ 0 
+OBJ
+ 490 
+ 80 
+10 Gold Pieces
+OBJ
+ 823 
+ 99 
+8 Gold Pieces
+OBJ
+ 353 
+ 40 
+10 Gold Pieces
+MON
+ 1301 
+ 50 
+#The man with no name
+ 5 
+ 6 
+ 50 
+ 7 
+
+ 150 
+ 0 
+ 0 
+ 0 
+MON
+ 1310 
+ 70 
+#Bloody Bill Anderson
+ 5 
+ 7 
+ 100 
+ 3 
+
+ 75 
+ 0 
+ 0 
+ 0 
+MON
+ 1313 
+ 70 
+#Buffalo Bill Cody
+ 5 
+ 5 
+ 100 
+ 4 
+
+ 100 
+ 0 
+ 0 
+ 0 
+MON
+ 1315 
+ 70 
+*Sam Bass
+ 6 
+ 10 
+ 250 
+ 8 
+
+ 70 
+ 0 
+ 0 
+ 0 
+MON
+ 1316 
+ 70 
+#Wyatt Earp
+ 10 
+ 8 
+ 170 
+ 10 
+
+ 350 
+ 0 
+ 0 
+ 0 
+MON
+ 1317 
+ 70 
+*A Gang of sleazy cowboys
+ 4 
+ 5 
+ 30 
+ 4 
+
+ 30 
+ 0 
+ 0 
+ 0 
+MON
+ 1318 
+ 70 
+#A small cowboy
+ 2 
+ 2 
+ 15 
+ 4 
+/PA10/
+ 25 
+ 0 
+ 0 
+ 0 
+MON
+ 1320 
+ 70 
+*Old Sawbones
+ 5 
+ 6 
+ 80 
+ 7 
+
+ 125 
+ 0 
+ 0 
+ 0 
+MON
+ 1321 
+ 70 
+*Nat Love
+ 0 
+ 0 
+ 1 
+ 0 
+/F99/
+ 5 
+ 0 
+ 0 
+ 0 
+MON
+ 1322 
+ 70 
+#A Drunk Hillbilly
+ 10 
+ 12 
+ 200 
+ 15 
+
+ 300 
+ 0 
+ 0 
+ 0 
+MON
+ 1324 
+ 70 
+#Dusty fog
+ 11 
+ 6 
+ 60 
+ 15 
+
+ 70 
+ 0 
+ 0 
+ 0 
+MON
+ 1326 
+ 70 
+#The Ysabel Kid
+ 3 
+ 4 
+ 60 
+ 6 
+
+ 50 
+ 0 
+ 0 
+ 0 
+MON
+ 1327 
+ 70 
+*Bat Masterson
+ 4 
+ 5 
+ 45 
+ 9 
+
+ 45 
+ 0 
+ 0 
+ 0 
+MON
+ 1328 
+ 70 
+*An Injun
+ 6 
+ 6 
+ 55 
+ 7 
+
+ 40 
+ 0 
+ 0 
+ 0 
+MON
+ 1331 
+ 70 
+#Calamity Jane
+ 8 
+ 7 
+ 80 
+ 9 
+
+ 95 
+ 0 
+ 0 
+ 0 
+MON
+ 1332 
+ 70 
+#Jesse James
+ 6 
+ 6 
+ 70 
+ 8 
+
+ 80 
+ 0 
+ 0 
+ 0 
+MON
+ 1334 
+ 70 
+*A pretty cowgirl in leather tights
+ 4 
+ 4 
+ 40 
+ 5 
+
+ 40 
+ 0 
+ 0 
+ 0 
+MON
+ 1336 
+ 70 
+#Davy Crockett
+ 8 
+ 8 
+ 110 
+ 9 
+
+ 100 
+ 0 
+ 0 
+ 0 
+MON
+ 1338 
+ 70 
+#A mounted cowboy
+ 6 
+ 7 
+ 130 
+ 7 
+
+ 80 
+ 0 
+ 0 
+ 0 
+MON
+ 1340 
+ 70 
+#A brander
+ 6 
+ 8 
+ 30 
+ 10 
+
+ 50 
+ 0 
+ 0 
+ 0 
+MON
+ 1342 
+ 70 
+*A stable lad
+ 6 
+ 8 
+ 50 
+ 9 
+
+ 40 
+ 0 
+ 0 
+ 0 
+MON
+ 1344 
+ 70 
+*Clint Eastwood
+ 10 
+ 12 
+ 160 
+ 11 
+
+ 70 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1303 
+ 80 
+A Dollar
+OBJ
+ 1307 
+ 80 
+Some food
+OBJ
+ 1308 
+ 50 
+A small brass key
+OBJ
+ 1313 
+ 60 
+A long ladder
+OBJ
+ 1315 
+ 70 
+Some food
+OBJ
+ 1316 
+ 80 
+A Sherriff's badge~15
+OBJ
+ 1321 
+ 80 
+A pair of colt revolvers$5
+OBJ
+ 1322 
+ 70 
+Some empty bottles
+OBJ
+ 1325 
+ 70 
+Some cattle feeed
+OBJ
+ 1325 
+ 70 
+Some cattle feed
+OBJ
+ 1326 
+ 60 
+A rope lasso$5
+OBJ
+ 1332 
+ 60 
+A sack of stolen jewellery
+OBJ
+ 1334 
+ 80 
+Some horse food
+OBJ
+ 1340 
+ 40 
+A Red-hot branding iron$6
+OBJ
+ 1344 
+ 55 
+A fistful of dollars~450
+OBJ
+ 1323 
+ 80 
+A purse
+MON
+ 701 
+ 99 
+#A Desert Sandrat
+ 1 
+ 0 
+ 10 
+ 1 
+
+ 4 
+ 0 
+ 0 
+ 0 
+OBJ
+ 701 
+ 80 
+Some food
+OBJ
+ 703 
+ 80 
+Some food
+MON
+ 704 
+ 99 
+#A lost camel
+ 0 
+ 0 
+ 7 
+ 1 
+
+ 5 
+ 0 
+ 0 
+ 0 
+MON
+ 705 
+ 99 
+#An Arab sentry
+ 1 
+ 0 
+ 5 
+ 1 
+
+ 4 
+ 0 
+ 0 
+ 0 
+OBJ
+ 705 
+ 99 
+Some food
+MON
+ 707 
+ 99 
+#A small beetle
+ 0 
+ 0 
+ 3 
+ 1 
+
+ 1 
+ 0 
+ 0 
+ 0 
+MON
+ 711 
+ 99 
+*An old hermit
+ 2 
+ 10 
+ 20 
+ 4 
+/FO00/
+ 40 
+ 0 
+ 0 
+ 0 
+OBJ
+ 711 
+ 99 
+Some food
+MON
+ 713 
+ 99 
+#An Arabian woman
+ 0 
+ 0 
+ 6 
+ 1 
+
+ 6 
+ 0 
+ 0 
+ 0 
+OBJ
+ 714 
+ 70 
+A curved dagger$4
+MON
+ 717 
+ 99 
+#An Arabian chef
+ 1 
+ 0 
+ 5 
+ 2 
+
+ 5 
+ 0 
+ 0 
+ 0 
+OBJ
+ 717 
+ 99 
+Some food
+MON
+ 718 
+ 99 
+#An Arabian chieftain
+ 2 
+ 1 
+ 20 
+ 3 
+
+ 50 
+ 0 
+ 0 
+ 0 
+OBJ
+ 718 
+ 99 
+Some food
+OBJ
+ 718 
+ 90 
+A small golden statue~10
+OBJ
+ 718 
+ 50 
+A jewelled sword~8
+MON
+ 719 
+ 99 
+#A small scorpion
+ 0 
+ 0 
+ 1 
+ 1 
+
+ 1 
+ 0 
+ 0 
+ 0 
+OBJ
+ 720 
+ 70 
+Some coconuts
+MON
+ 721 
+ 99 
+#A camel
+ 0 
+ 0 
+ 5 
+ 2 
+
+ 6 
+ 0 
+ 0 
+ 0 
+MON
+ 723 
+ 99 
+*The witch doctor
+ 2 
+ 0 
+ 30 
+ 3 
+/PO05/
+ 60 
+ 0 
+ 0 
+ 0 
+OBJ
+ 723 
+ 99 
+A jewelled crucifix~5
+OBJ
+ 723 
+ 80 
+A golden talisman~10
+MON
+ 724 
+ 99 
+#An Arabian dancer
+ 0 
+ 0 
+ 6 
+ 1 
+
+ 6 
+ 0 
+ 0 
+ 0 
+OBJ
+ 724 
+ 99 
+An Exit pass
+MON
+ 725 
+ 99 
+#A small baby
+ 0 
+ 0 
+ 1 
+ 1 
+
+ 0 
+ 0 
+ 0 
+ 0 
+OBJ
+ 725 
+ 50 
+A wooden rattle
+MON
+ 727 
+ 99 
+#Some Arabian children
+ 2 
+ 0 
+ 15 
+ 1 
+
+ 10 
+ 0 
+ 0 
+ 0 
+MON
+ 728 
+ 99 
+#A small child
+ 0 
+ 0 
+ 4 
+ 1 
+
+ 4 
+ 0 
+ 0 
+ 0 
+MON
+ 730 
+ 99 
+#An old woman
+ 0 
+ 1 
+ 10 
+ 1 
+
+ 7 
+ 0 
+ 0 
+ 0 
+OBJ
+ 730 
+ 99 
+A gnarled stick$4
+MON
+ 1904 
+ 99 
+#A Footman
+ 7 
+ 3 
+ 100 
+ 6 
+/pa01/
+ 500 
+ 0 
+ 0 
+ 0 
+MON
+ 1905 
+ 99 
+#A Footman
+ 7 
+ 3 
+ 100 
+ 6 
+/pa15/
+ 512 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1904 
+ 99 
+An Invitation
+OBJ
+ 1905 
+ 79 
+An Invitation
+OBJ
+ 1909 
+ 35 
+A Shoe Horn~10
+MON
+ 1909 
+ 99 
+*The Old Major
+ 8 
+ 9 
+ 250 
+ 8 
+/FO99/
+ 2500 
+ 0 
+ 0 
+ 0 
+MON
+ 1910 
+ 99 
+*The Queen and Goddess in her dancing skirt
+ 2 
+ 12 
+ 60 
+ 6 
+/pa50/
+ 240 
+ 0 
+ 0 
+ 0 
+MON
+ 1911 
+ 99 
+*A Highly Amused Young Princeling
+ 7 
+ 7 
+ 75 
+ 8 
+/fo99/
+ 450 
+ 0 
+ 0 
+ 0 
+MON
+ 1912 
+ 99 
+*The Lord of The Manor
+ 5 
+ 5 
+ 12 
+ 20 
+/pa65
+ 6 
+ 0 
+ 0 
+ 0 
+MON
+ 1913 
+ 99 
+*The King And God
+ 12 
+ 12 
+ 500 
+ 11 
+/pa85/
+ 5000 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1915 
+ 15 
+A Pile of Vomit
+OBJ
+ 1942 
+ 99 
+A Royal Seal
+MON
+ 1942 
+ 99 
+#A Stone Golem
+ 5 
+ 15 
+ 100 
+ 3 
+/pa15/
+ 500 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1900 
+ 89 
+A Ladder
+OBJ
+ 1910 
+ 99 
+A Rope
+MON
+ 1945 
+ 99 
+#A Guardian
+ 10 
+ 7 
+ 100 
+ 7 
+
+ 100 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1945 
+ 99 
+Key 1945
+MON
+ 1946 
+ 99 
+#A Large Guardian
+ 11 
+ 8 
+ 120 
+ 7 
+
+ 120 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1946 
+ 99 
+Key 1946
+MON
+ 1947 
+ 99 
+#A Piggy Bank
+ 11 
+ 9 
+ 100 
+ 7 
+
+ 100 
+ 0 
+ 0 
+ 0 
+OBJ
+ 1947 
+ 99 
+Key 1947
+OBJ
+ 576 
+ 10 
+Key 576
+MON
+ 951 
+ 85 
+*A Large Invisible Sword
+ 30 
+ 0 
+ 20000 
+ 3 
+/FO99/
+ 20000 
+ 0 
+ 0 
+ 0 
+MON
+ 1604 
+ 99 
+#A red robed nun
+ 4 
+ 3 
+ 50 
+ 3 
+/PA30/
+ 150 
+ 0 
+ 0 
+ 0 
+

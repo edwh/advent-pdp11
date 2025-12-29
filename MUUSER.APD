@@ -1,0 +1,6 @@
+28999	IF ERR=154 THEN &
+	PRINT #1%, FNC$;'Waiting for data...'; &
+\	SLEEP 5% &
+\	PRINT #1%, CHR$(13%);SPACE$(50%);CHR$(13%); &
+\	RESUME &
+
