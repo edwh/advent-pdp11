@@ -1,0 +1,115 @@
+1	SUB FREEZE(ARG$) &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+3000	OPEN 'DP2:'+PKG.LOC$+'BORROW.RMS' AS FILE #7%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BORROW, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY B.TICKET$ NODUPLICATES, &
+	ALTERNATE KEY B.SURNAME$ DUPLICATES CHANGES &
+
+5000	S.D$=FNGETARG$ &
+\	GOTO 5011 IF LEN(S.D$) &
+\	PRINT #1%, FNC$;CRLF$;'Freeze/Unfreeze a ticket.';CRLF$;
+
+5010	PRINT #1%, FNC$;CRLF$; &
+	'Ticket number >> '; &
+\	INPUT LINE #1%, S.D$ &
+\	S.D$=CVT$$(S.D$,255%) &
+\	SUBEXIT UNLESS LEN(S.D$) &
+
+5011	T.N.=FNDECODE.TICKET.(S.D$) &
+\	GOTO 5020 IF T.N.<>0. &
+\	PRINT #1%, FNC$;CRLF$;'?Illegal ticket number.' &
+\	GOTO 30000 &
+
+5020	T.N$=CVT%$(T.N.-32768.) &
+\	GET #7%, KEY #0% EQ T.N$ &
+\	GOTO 5040 &
+
+5030	PRINT #1%, FNC$;CRLF$;'?No borrower with that ticket number.' &
+\	GOTO 30000 &
+
+5040	PRINT #1%, FNC$;CRLF$;'Surname';TAB(15%);'>> ';B.SURNAME$ &
+\	PRINT #1%, FNC$;'Forename(s)'; UNLESS B.FLAG% AND 1% &
+\	PRINT #1%, FNC$;'Initials'; IF B.FLAG% AND 1% &
+\	PRINT #1%, TAB(15%);'>> ';B.FORENAME$ &
+\	PRINT #1%, FNC$;'Form'; UNLESS B.FLAG% AND 1% &
+\	PRINT #1%, FNC$;'Department'; IF B.FLAG% AND 1% &
+\	PRINT #1%, TAB(15%);'>> ';B.FORM$ &
+\	PRINT #1%, FNC$;'# of books out';TAB(15%);'>> ';NUM1$(B.BOOKS.OUT%) &
+\	PRINT #1%, FNC$;'Max # allowed';TAB(15%);'>> ';NUM1$(B.BOOKS.MAX%) &
+\	PRINT #1%, FNC$;'Ticket number';TAB(15%);'>> '; &
+	FNPRETTY.TICKET$(T.N.) &
+\	PRINT #1% &
+\	PRINT #1%, FNC$;'This is a member of staff.';CRLF$; IF B.FLAG% AND &
+	1% &
+\	PRINT #1%, FNC$;'This ticket is frozen.' IF B.FLAG% AND 2% &
+
+5050	PRINT #1%, FNC$;CRLF$;'Do you wish this ticket to be frozen <NO> ? '; &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,255%) &
+\	J$='NO' UNLESS LEN(J$) &
+\	IF LEFT('NO',LEN(J$))=J$ THEN &
+	B.FLAG%=B.FLAG% XOR 2% IF B.FLAG% AND 2% &
+\	GOTO 5080 &
+
+5060	IF LEFT('YES',LEN(J$))=J$ THEN &
+	B.FLAG%=B.FLAG% OR 2% &
+\	GOTO 5080 &
+
+5070	PRINT #1%, FNC$;CRLF$;'?Illegal reply.' &
+\	GOTO 5050 &
+
+5080	UPDATE #7% &
+\	PRINT #1%, FNC$;CRLF$;'Updated OK.' &
+\	GOTO 30000 &
+
+5500	PRINT #1%, FNC$;CRLF$;'%Ticket edit/delete aborted.' &
+\	GOTO 32767 &
+
+20000	DEF* FNPRETTY.TICKET$(P.T.N.) &
+\	J1$=NUM1$(P.T.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNPRETTY.TICKET$=LEFT(J1$,3%)+'-'+RIGHT(J1$,4%)+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+20010	DEF* FNDECODE.TICKET.(D.T.N$) &
+\	FNDECODE.TICKET.=0. &
+\	FNEXIT UNLESS LEN(D.T.N$)=7% &
+\	J%=INSTR(1%,D.T.N$,'-') &
+\	FNEXIT UNLESS J% &
+\	CHECK.DIGIT$=RIGHT(D.T.N$,7%) &
+\	D.T.N$=LEFT(D.T.N$,3%)+MID(D.T.N$,5%,2%) &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(D.T.N$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNEXIT UNLESS CHECK.DIGIT$=CHR$(J1%+ASCII('A')) &
+\	J1.=VAL(D.T.N$) &
+\	GOTO 20020 IF J1.<0. OR J1.>65535. &
+\	FNDECODE.TICKET.=J1. &
+\	FNEXIT &
+
+20020	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	JJJ%=CTRLC &
+\	RESUME 32767 IF (ERL=5010 AND ERR=11) OR (ERR=28 AND LINE=5010) &
+\	RESUME 5500 IF ERR=28 &
+\	RESUME 20020 IF ERL=20010 AND ERR=52 &
+\	RESUME 5030 IF ERL=5020 AND ERR=155 &
+
+29000	PRINT #1%, FNC$;CRLF$;'FREEZE : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	SUBEND &
+

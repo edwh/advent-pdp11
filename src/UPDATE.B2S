@@ -1,0 +1,228 @@
+1	ON ERROR GOTO 25000 &
+	&
+	!   U P D A T E . B 2 S  &
+	&
+	&
+	! Program to keep BORROW.RMS upto date with the roll file. &
+	&
+	! Roll file	In BORROW.RMS	Action &
+	! ---- ----	-- ----------	------ &
+	&
+	! On roll	Yes		Updates form if required. &
+	!				Checks surname and forename. &
+	!		No		Enters boy into BORROW.RMS &
+	&
+	! Off roll	Yes		If he's got some books out, then &
+	!				list them and print suitable message &
+	!				Else delete him from BORROW.RMS &
+	!		No		No action taken. &
+	&
+	&
+	! Also has the function of re-initialising FRMMST.RMS which &
+	! contains the list of form masters for RECALL. &
+	&
+	&
+	!	E.D.W. Hibbert  12-Jan-88 &
+
+1000	MAP (BORROW) B.TICKET$=2%, &
+		     B.SURNAME$=18%, &
+		     B.FORENAME$=24%, &
+		     B.FORM$=10%, &
+		     B.BOOKS.OUT%, &
+		     B.BOOKS.MAX%, &
+		     B.FLAG% &
+
+1010	MAP (FORMS)  F.FORM$=10%, &
+		     F.FORM.MASTER$=50%, &
+		     F.FORM.ROOM$=5% &
+
+5000	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	OPEN '_KB:' AS FILE #1% &
+\	PRINT #1%, CRLF$;'Paton Library Update Program';CRLF$;CRLF$; &
+	'Roll file <_DR1:[5,13]ROL.SRT> ? '; &
+\	INPUT LINE #1%, ROL.FILE$ &
+\	PRINT #1% &
+\	ROL.FILE$=CVT$$(ROL.FILE$,255%) &
+\	ROL.FILE$='_DR1:[5,13]ROL.SRT' UNLESS LEN(ROL.FILE$) &
+\	PRINT #1%, 'Form-master list <SY:[4,12]SYSROM.MEN> ? '; &
+\	INPUT LINE #1%, SYSROM.MEN$ &
+\	PRINT #1% &
+\	SYSROM.MEN$=CVT$$(SYSROM.MEN$,255%) &
+\	SYSROM.MEN$='SY:[4,12]SYSROM.MEN' UNLESS LEN(SYSROM.MEN$) &
+
+5010	OPEN ROL.FILE$ FOR INPUT AS FILE #2%, MODE 4096% &
+
+5020	! &
+	! &
+	!	F I E L D   S T A T E M E N T S &
+	! &
+	! &
+	FIELD #2%, &
+		512% AS ZERO$ &
+			! Field whole block to easily zero &
+			! block before new insertion &
+	\ FIELD #2%, &
+		3%  AS ZZZ$ &
+			! Field first 3 characters of block. If &
+			! they are 'ZZZ', the block is unused &
+	\ FIELD #2%, &
+		18% AS BOY.SURNAME$, &
+		24% AS BOY.FORENAME$, &
+		18% AS PARENT.SURNAME$, &
+		8%  AS PARENT.INITIAL$, &
+		5%  AS PARENT.TITLE$, &
+		12% AS PARENT.SUFFIX$, &
+		24% AS HOUSE.NUMBER$, &
+		24% AS ROAD.NAME$, &
+		19% AS DISTRICT$, &
+		18% AS TOWN$, &
+		16% AS COUNTY$, &
+		4%  AS POSTCODE.A$, &
+		3%  AS POSTCODE.B$, &
+		14% AS HOMEPHONE$, &
+		14% AS WORKPHONE$, &
+		8%  AS FORM$(1%), &
+		8%  AS FORM$(2%), &
+		8%  AS FORM$(3%), &
+		8%  AS FORM$(4%), &
+		8%  AS FORM$(5%), &
+		8%  AS FORM$(6%), &
+		8%  AS FORM$(7%), &
+		8%  AS FORM$(8%), &
+		8%  AS FORM$(9%), &
+		8%  AS CURRENT.FORM$, &
+		8%  AS CURRENT.SET$, &
+		8%  AS PREVIOUS.SET$, &
+		1%  AS ONOFF.ROLL$, &
+		3%  AS LEA$, &
+		1%  AS PREFECT$, &
+		1%  AS BROTHER$, &
+		1%  AS INSURANCE$, &
+		1%  AS DINNER$, &
+		4%  AS MGS.SOC$, &
+		1%  AS FEE$, &
+		1%  AS CHECK.ADDRESS$ &
+	\ FIELD #2%, &
+		331% AS JUNK$, &
+		6%  AS DO.ENTRY$, &
+		6%  AS DO.LEAVING$, &
+		6%  AS DO.BIRTH$, &
+		6%  AS LAST.INVOICE$, &
+		6%  AS LAST.UPDATE$, &
+		5%  AS PRIMARY.SCHOOL$, &
+		5%  AS ROL.ACCOUNT.NUMBER$, &
+		5%  AS LEDGER.POINTER$, &
+		5%  AS STANDING.ORDER.REC$ &
+	\ FIELD #2%, &
+		381%+((CT%-1%)*10%) AS JUNK$, &
+		5%  AS DEBTOR.NO$(CT%), &
+		5%  AS AMOUNT$(CT%) &
+		FOR CT% = 1% TO 4% &
+			! Set up standard fields in roll file for &
+			! data explained in variable definitions &
+
+5030	OPEN 'DP2:'+PKG.LOC$+'BORROW.RMS' AS FILE #9%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BORROW, &
+	ACCESS MODIFY, &
+	ALLOW NONE, &
+	PRIMARY KEY B.TICKET$ NODUPLICATES, &
+	ALTERNATE KEY B.SURNAME$ DUPLICATES CHANGES &
+
+5040	OPEN 'DP2:'+PKG.LOC$+'FRMMST.RMS' FOR OUTPUT AS FILE #12%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP FORMS, &
+	ACCESS WRITE, &
+	ALLOW NONE, &
+	PRIMARY KEY F.FORM$ NODUPLICATES &
+\	OPEN SYSROM.MEN$ FOR INPUT AS FILE #11% &
+\	UNTIL 0% &
+
+5050	INPUT #11%, F.FORM.ROOM$,F.FORM.MASTER$,F.FORM$ &
+\	F.FORM$=CVT$$(F.FORM$,255%) &
+\	PUT #12% &
+\	NEXT &
+
+5060	CLOSE #11%,#12% &
+
+6000	FOR BL%=1% TO 1792% &
+\	GET #2%, RECORD BL% &
+\	GOTO 7000 IF ZZZ$='ZZZ' &
+!\	GOTO 7000 IF MID(CURRENT.FORM$,4%,1%)='1' OR &
+!	MID(CURRENT.FORM$,4%,1%)='2' &
+	! Ignore lower school. &
+
+6010	GET #9%, KEY #0% EQ CVT%$(VAL(ROL.ACCOUNT.NUMBER$)-32768.) &
+\	IF BOY.SURNAME$<>B.SURNAME$ OR BOY.FORENAME$<>B.FORENAME$ THEN &
+	PRINT #1%, '%Surname/forename corrected for account number '; &
+	ROL.ACCOUNT.NUMBER$ &
+\	B.SURNAME$=BOY.SURNAME$ &
+\	B.FORENAME$=BOY.FORENAME$ &
+\	UPDATE #9% &
+\	GOTO 7000 &
+
+6020	IF ONOFF.ROLL$='Y' THEN &
+	B.FORM$=CURRENT.FORM$ &
+\	B.BOOKS.MAX%=FNMAX.BOOKS% &
+\	UPDATE #9% &
+\	GOTO 7000 &
+
+6030	! N.B. Check for books out here. &
+	PRINT #1%, ROL.ACCOUNT.NUMBER$;'  ';B.SURNAME$;', ';B.FORENAME$; &
+	' has left, deleted.' &
+\	DELETE #9% &
+\	GOTO 7000 &
+
+6040	GOTO 7000 IF ONOFF.ROLL$<>'Y' &
+\	PRINT #1%, ROL.ACCOUNT.NUMBER$;'  ';BOY.SURNAME$;', ';BOY.FORENAME$; &
+	' entered.' &
+\	B.SURNAME$=BOY.SURNAME$ &
+\	B.FORENAME$=BOY.FORENAME$ &
+\	B.TICKET$=CVT%$(VAL(ROL.ACCOUNT.NUMBER$)-32768.) &
+\	B.FORM$=RIGHT(CURRENT.FORM$,4%) &
+\	B.BOOKS.OUT%=0% &
+\	B.BOOKS.MAX%=FNMAX.BOOKS% &
+\	B.FLAG%=0% &
+\	PUT #9% &
+\	GOTO 7000 &
+
+6050	PRINT #1%, '?Duplicate account number ';ROL.ACCOUNT.NUMBER$ &
+\	GOTO 7000 &
+
+7000	NEXT BL% &
+\	PRINT #1%, CRLF$;'Update complete.' &
+\	GOTO 32767 &
+
+10000	DEF* FNMAX.BOOKS% &
+\	J%=10% &
+\	J%=5% IF INSTR(1%,'45',LEFT(B.FORM$,1%)) &
+\	J%=3% IF MID(B.FORM$,4%,1%)='3' &
+\	J%=2% IF MID(B.FORM$,4%,1%)<'3' &
+\	FNMAX.BOOKS%=J% &
+\	FNEND &
+
+25000	IF ERL=5000 THEN &
+	PRINT #1%, CRLF$;'?Error opening roll file - ';ERT$(ERR) &
+\	RESUME 32767 &
+
+25010	IF ERL=5030 THEN &
+	PRINT #1%, CRLF$;'?Error opening BORROW.RMS - ';ERT$(ERR) &
+\	RESUME 32767 &
+
+25020	RESUME 7000 IF ERL=6010 AND ERR=155 AND (MID(CURRENT.FORM$,4%,1%)= &
+	'1' OR MID(CURRENT.FORM$,4%,1%)='2') &
+\	RESUME 6040 IF ERL=6010 AND ERR=155 &
+\	RESUME 6050 IF ERL=6040 &
+\	RESUME 5060 IF ERL=5050 AND ERR=11 &
+\	IF ERL=5050 AND ERR=153 THEN &
+	PRINT '%Duplicate form ';F.FORM$;' in SYSROM.MEN, ignored...' &
+\	RESUME &
+
+29000	PRINT #1%, CRLF$;'UPDATE : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	END &
+

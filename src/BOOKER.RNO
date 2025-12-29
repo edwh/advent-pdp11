@@ -1,0 +1,268 @@
+.PS 71,80
+.FL 72
+.PG
+.S 15
+.C
+Bookings System Documentation
+.P
+.C
+By E.D.W. Hibbert 1987
+.PG
+.NF
+.NJ
+.IN EH:BOOKER.TOC
+.F
+.J
+.PG
+.CH Introduction
+.HL 1 The System
+.P
+The System that we are using is based around a PDP-11 processor.  We have
+256Kwords of memory, 3 40Mbyte disk drives, and about 20 terminals.  Of
+these, 16 are in the main room and are available for use by any member
+of the school.
+.P
+We are running under the Digital operating system, RSTS version 7.1.
+This is a time-sharing system, allowing upto 63 jobs running simultaneously.
+These jobs run at different priorities (as specified by the System Manager)
+and these priorities specify the importance of the user.
+.P
+RSTS reserves a project(group) of accounts, [1,*], for what are called privileged
+users.  These users should in the main be System Managers, and they can
+look at files in other people's accounts, and do certain things (like
+killing a job) which other users cannot do.
+.P
+To use the system, a user must first 'log on'.  He does this by approaching
+an unused terminal, and typing 'HELLO'.  The system then prompts him
+for the account number he wishes to use, and then for the password to that
+account.  Having answered these questions, the user is now ready to start
+timesharing.  A login text will be displayed, and the user is put into
+the default run-time system (BASIC) which prompts with a 'Ready' message.
+Other run-time systems may be used, usually for different languages, of
+which we have a fair selection.  A list of languages available follows:
+.S
+.LS
+.LE;BASIC - the most common.
+.LE;BASIC PLUS 2 - like BASIC, but with more features (overlaying etc.)
+.LE;PASCAL - quite widely used, but the compiler is not very good.
+.LE;FORTRAN - we only have FORTAN 4, and the compiler is not very
+helpful, so this language does not get used.
+.LE;MODULA - the language that I have selected - see later.
+.ELS
+.P
+RSTS offers concise command language (CCL) - thus to book, the user
+need only type BOOK, and he will be sent into the bookings program.
+.P
+Being at a school, the main use of the system is before school (from
+about 08:20 to 09:20), and at lunch, from 13:05 to 14:10, and these
+are the times for which a bookings system is required (see also the section
+on the problem).
+.P
+The system is, as most presumably are, overused - that is it is not as
+fast as everyone would like it to be.  Recently, however, with the advent
+of the multi-user adventure, which needs only one job to handle upto 10
+terminals, some of the load has been taken off the system.
+The competition for terminals, however, is still intense enough to warrant
+a bookings system.
+.P
+.HL 1 The Problem
+.P
+A bookings system is necessary to allow a fair distribution of terminals.
+Before the bookings system, if you wanted a terminal to use during lunchtime,
+you had to arrive within five minutes of the bell.  A paper system was tried, 
+but was found to be difficult to manage ( for example the regulation of the 
+number of bookings for any account had to be checked manually).  This led to the
+developement of a computerised bookings system.
+.P
+The situation after the implementation of the system is generally acknowledged 
+to be more satisfactory.
+.P
+.HL 1 The form of the solution
+.P
+The solution involved two programs : BOOKER and MASTER.  BOOKER is the program 
+used to make the bookings, whereas MASTER is used for administration and 
+checking of bookings.
+.P
+It was also necessary to decide when the bookings system should operate.  The 
+times settled on were before school and lunchtime.  The competition for 
+terminals is not as intense after school.  Three bookings periods were 
+decided upon :
+.S2
+.LS
+.LEN;08:45-09:15	Period 1
+.LEN;13:10-13:40	Period 2
+.LEN;13:40-14:10	Period 3
+.ELS
+.P
+The bookable terminals are those in the main room (there are presently 16 of
+these). The terminals in the office
+are reserved for Operators and Managers.
+.P
+Each account has a maximum number of bookings which can be held at any one 
+time.  This number increases as the importance of the user increases.  It is 
+found that it is best if the maximum number of bookings be kept fairly low - 
+otherwise the bookings sheets get swamped, and last minute bookings are 
+difficult to make.
+.P
+Data for each day is stored in files specific to a single date - for example 
+the data for 01-Dec-87 would be stored in the file BOOK01.DEC - but all 
+the user's responses are in terms of the day of the week.
+.P
+It would be possible to store all the data in one large file, but this system
+is more flexible.  With the large file system, if bookings files were
+deleted, for example during an analysis, the file would need sorting to
+remove the gaps, and so users would not be able to access the data.
+.P
+Another advantage of the one day-one file system is related to holidays.  It
+is preferable to book for the first day back before term ends.  With the
+system selected users can book for, say, Monday, and a Bookings Operator can
+copy the file to the right date before the start of term.
+.P
+.HL 1 Developement
+.P
+There have been two previous versions of the bookings system.  My first priority
+was to get a system working quickly, so that it could be put into use.  To this
+end, I selected BASIC as the language for the first version.  The second version
+was a rewrite, also in BASIC, which followed fairly quickly after the first.
+There was then a pause, while I assessed the usefullness of the system and
+decided what changes, if any, should be made.  The changes made were, in fact,
+cosmetic ones to make the system easier to use, and none of the basic principles
+of the system were changed.  When it came to the third version, I decided to make
+the system easy to edit - hence a structured language was required.
+.P
+.HL 1 Why Modula-2
+.P
+The choice of language also had to be considered carefully.  Since the task 
+involves data storage and retrieval,  a language with good data structures was 
+required.  The obvious first choice is Pascal, but the version of Pascal which 
+we have is poor, to say the least.  Rather than fight my way through the 
+compiler, I decided to adopt a language which we had recently aquired - Modula-2.
+.P
+Modula is also a creation of Dr. Niklaus Wirth.  The syntax is similar to 
+Pascal, but very low level access to the system is allowed at the same time as 
+the usual advantages offered by high level languages such as Pascal.  In 
+addition, Modula has a large set of (working) library routines, which were
+of use in developing the system.
+.P
+The Modula compiler, though slow, is very thorough.  No bugs have been found
+as yet, and only one minor bug in the library routines.  The modular aspect
+easily allows library modules, so routines used in Booker and Master, like
+DoTrace, can be put in BookLibrary,
+ and so the code does not need to bbe duplicated in each program.
+.P
+.X Defaults
+.HL 1 Defaults
+.P
+All defaults in BOOKER and MASTER are shown in the form <Default>,
+and are selected by hitting carriage routine at the prompt.
+.P
+.X Modules
+.HL 1 Modules
+.P
+A number of files are involved in the bookings system.  A list is given below.  
+In addition, files of the type BOOKnn.mon will be created when the system is 
+running - these store the bookings.  Other files will be created when the 
+system is recompiled.  These will be of the form .LNK, .LST, .REF, .SYM.
+.S
+.LS
+.LE;MODLIB.DEF - This is the definition module for ModLibrary.
+.LE;MODLIB.MOD - This is the implementation module for ModLibrary.
+.LE;BOOKLI.DEF - This is the definition module for BookLibrary.
+.LE;BOOKLI.MOD - This is the implementation module for BookLibrary 
+.LE;BOOKER.MOD - This is the source code for BOOKER.
+.LE;MASTER.MOD - This is the root program for MASTER.  The rest are overlays.
+NB The TRACE command is included in MASTER.MOD.
+.LE;SEND  .MOD - This is the source code for the SEND command.
+.LE;LIST  .MOD - The source code for LIST.
+.LE;VERIFY.MOD - The source code for VERIFY.
+.LE;CHECK .MOD - The source code for CHECK.
+.LE;DELETE.MOD - The source code for DELETE.
+.LE;ANALYS.MOD - The source code for ANALYSE.
+.ELS
+.P
+These modules will be discussed in detail later on.
+.P
+.X Recompilation
+.HL 1 Recompiling
+.P
+Here is an example BATCH control file to recompile all of the bookings 
+system.
+.P
+.NF
+.NJ
+.IN A:[1,95]MODULA.CTL
+.J
+.F
+.P
+.X Dump files
+.X Run-time errors
+.HL 1 Dump files and run-time errors
+.P
+Run-time errors in Modula are rare, but if one occurs, the run-time system
+creates a dump of all the memory.  Two debuggers are provided (one is for use
+on VT52 and VT100 terminals) to analyse the dump file.  These provide the
+facility to find out exactly where the program was when it collapsed, what
+the contents of all the variables were, and so on.
+.P
+If a run-time error occurs, a Bookings Operator should take a copy of the dump
+file for later investigation.
+.PG
+.CH BOOKER
+.P
+.HL 1 .RUN File
+.P
+The .RUN file for BOOKER is BOOKER.RUN.  If required, a CCL should be added 
+using UTILTY.  Note that BOOKER does not accept full CCL entry.
+.P
+Also note that the .RUN file must be privileged (ie on protection 232) so
+that non-privileged users can access the bookings files.
+.P
+.X Notice text (Booker)
+.HL 1 Notice text
+.P
+After printing the program header, BOOKER displays the current notice text (
+if any).  This text is stored in the file _DP1:[1,95]BOOKER.NTC and can be 
+edited by using FED or MFD.  If the file does not exist, BOOKER simply 
+prints no notice text.
+.P
+.X Account used
+.HL 1 Account to be used
+.P
+When BOOKER is first run, the program asks for the account to be used.  This 
+is the account traced, booked for etc.  This should be given in the form 
+[nnn,nnn], or as a logical.
+.P
+The default for this is the account in which the user is running.
+.P
+If the user is non-privileged, BOOKER will prompt for the password to the
+account selected.  The screen echo will be turned off during the password
+routine, for obvious security reasons.
+.P
+This can be changed without re-running the program by using the CHANGE command.
+.P
+.HL 1 Function
+.P
+BOOKER provides the facility to trace bookings already made, to delete bookings 
+and to make further bookings if the maximum is not exceeded.
+.P
+A short description of commands will now follow.  Response to these commands 
+will be considered in the next section.
+.P
+.X Trace (Booker)
+.HL 2 Trace
+.P
+This command traces bookings for the current account as specified on entry or 
+in the CHANGE command, and prints the number used out of the maximum for that 
+account.  The maximum number of bookings is the number which can be held at 
+any one time.
+.P
+For an example of the output format, see the sample run.
+.P
+.IN A:[1,95]B.RNO
+.IN A:[1,95]C.RNO
+.IN A:[1,95]D.RNO
+.IN A:[1,95]E.RNO
+.IN A:[1,95]F.RNO
+.PG
+.DX
+.PG

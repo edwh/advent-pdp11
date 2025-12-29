@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advent MUD - 1987</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #a0ffa0;
+            min-height: 100vh;
+        }
+        header {
+            background: #0f0f1a;
+            padding: 1rem 2rem;
+            border-bottom: 2px solid #a0ffa0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px #a0ffa0;
+        }
+        h1 span { color: #888; font-weight: normal; }
+        nav a {
+            color: #a0ffa0;
+            text-decoration: none;
+            margin-left: 2rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #a0ffa0;
+            transition: all 0.3s;
+        }
+        nav a:hover {
+            background: #a0ffa0;
+            color: #1a1a2e;
+        }
+        main {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        #terminal-container {
+            flex: 1;
+            padding: 0;
+        }
+        #terminal-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 1.2rem;
+        }
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ADVENT <span>// 1987 Multi-User Dungeon</span></h1>
+        <nav>
+            <a href="/docs/resurrection">Resurrection</a>
+            <a href="/docs/provenance">Provenance</a>
+            <a href="/docs/guide">Writer's Guide</a>
+        </nav>
+    </header>
+    <main>
+        <div id="terminal-container">
+            <div class="loading">Connecting to PDP-11</div>
+        </div>
+    </main>
+    <script>
+        // Load terminal after page loads
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('terminal-container').innerHTML =
+                    '<iframe src="/terminal/" title="Advent Terminal"></iframe>';
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+1	SUB DISPF2 &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+5023	GOTO 5026 IF ERR=155 &
+\	IF (L.FLAG% AND 1%)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'This book is out on ticket number '; &
+	FNPRETTY.TICKET$(CVT$%(L.TICKET$)+32768.) IF PRIV% &
+\	PRINT #1%, FNC$;CRLF$;'This book is out.' UNLESS PRIV% &
+\	PRINT #1%, FNC$;'It is due back on ';DATE$(L.DUE%);'.' &
+\	RECALLS%=(L.FLAG% AND 14%)/2% &
+\	IS.OUT%=-1% &
+\	IF RECALLS% AND PRIV% THEN &
+	IF CVT$%(L.TICKET$)+32768.>32767. AND RECALLS%>=2% THEN &
+	PRINT #1%, FNC$;CRLF$;'A staff recall notice has been sent out'; &
+	' for this book.' &
+	ELSE &
+	PRINT #1%, FNC$;CRLF$;'A 1st recall notice has been sent out'; &
+	' for this book.' IF RECALLS%=1% &
+\	PRINT #1%, FNC$;CRLF$;'A 2nd recall notice has been sent out'; &
+	' for this book.' IF RECALLS%=2% &
+\	PRINT #1%, FNC$;CRLF$;'An urgent recall notice has been sent out'; &
+	' for this book.' IF RECALLS%=3% &
+\	PRINT #1%, FNC$;CRLF$;'A final recall notice has been sent out'; &
+	' for this book.' IF RECALLS%=4% &
+\	GOTO 5025 &
+
+5024	IF L.FLAG% AND 1% THEN &
+	PRINT #1%, FNC$;CRLF$;'This book is reserved for ticket number '; &
+	FNPRETTY.TICKET$(CVT$%(L.TICKET$)+32768.); IF PRIV% &
+\	PRINT #1%, FNC$;CRLF$;'This book is reserved'; UNLESS PRIV% &
+\	PRINT #1%, ' until ';DATE$(L.DUE%) UNLESS IS.OUT% &
+
+5025	GET #10% &
+\	GOTO 5023 IF L.ACCESSION$=ACCESSION$ &
+
+5026	SUBEXIT UNLESS FLAG% AND 2%^12% &
+\	CLOSE #10% &
+\	PRINT #1% &
+\	OPEN 'DP2:'+PKG.LOC$+'COMENT.RMS' AS FILE #10%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP COMENT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY C.ACCESSION$ DUPLICATES &
+
+5027	GET #10%, KEY #0% EQ ACCESSION$ &
+
+5028	PRINT #1%, CVT$$(C.COMMENTS$,128%); &
+\	GET #10% &
+\	GOTO 5028 IF C.ACCESSION$=ACCESSION$ &
+
+5030	CLOSE #10% &
+\	OPEN 'DP2:'+PKG.LOC$+'LOANS.RMS' AS FILE #10%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP LOANS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY L.TICKET$ DUPLICATES, &
+	ALTERNATE KEY L.ACCESSION$ DUPLICATES &
+\	SUBEXIT &
+
+20090	DEF* FNPRETTY.TICKET$(P.T.N.) &
+\	J1$=NUM1$(P.T.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNPRETTY.TICKET$=LEFT(J1$,3%)+'-'+RIGHT(J1$,4%)+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	J%=CTRLC &
+\	RESUME 32767 IF ERR=28 &
+\	RESUME 5030 IF ERL=5027 AND ERR=155 &
+\	RESUME 5030 IF ERL=5028 AND ERR=11 &
+\	RESUME 5026 IF ERL=5025 AND ERR=11 &
+
+29000	PRINT #1%, FNC$;CRLF$;'DISPF2 : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+30000
+
+32767	SUBEND &
+

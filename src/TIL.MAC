@@ -1,0 +1,340 @@
+	.title	TIL
+	$rsx
+	$rwdef
+
+start:	mov	sp,savsp
+	.lmargin
+	.newline
+	.print	#hed1
+	.errprt	#0
+	.print	#boast
+	.newline
+	.newline
+
+doit:	clr	@#24
+	cmp	sp,savsp
+	ble	doit1
+	.newline
+	.print	#spovr
+	.newline
+	mov	savsp,sp
+doit1:	.newline
+	.print	#prompt
+	.input	#linbuf
+	mov	by$cnt,r0
+	add	#linbuf,r0
+	clrb	(r0)
+	mov	#linbuf,r2
+	mov	#doit,@#24
+
+next:	cmpb	(r2),#32.
+	blt	doit
+1$:	cmpb	(r2),#32.
+	bne	2$
+	inc	r2
+	br	1$
+2$:	mov	dst,r3
+
+nd:	mov	r3,r0
+	add	#2,r0
+	mov	r2,r1
+
+check:	tstb	(r0)
+	beq	found
+	cmpb	(r0)+,(r1)+
+	beq	check
+	mov	(r3),r3
+	beq	num
+	br	nd
+
+found:	mov	r0,r5
+	inc	r5
+	mov	r1,r2
+	bit	#1,r5
+	beq	1$
+	inc	r5
+
+1$:	mov	(r5)+,r0
+	tst	state
+	beq	10$
+	cmp	r0,#scolon
+	bne	11$
+	call	scolon
+	jmp	next
+11$:	mov	cmpil,r1
+	mov	r0,(r1)+
+	mov	r1,cmpil
+	jmp	next
+10$:	call	(r0)
+	tst	(r5)
+	bne	1$
+	jmp	next
+
+num:	clr	r0
+1$:	movb	(r2)+,-(sp)
+	clrb	1(sp)
+	cmp	(sp),#32.
+	ble	got
+	cmp	(sp),#'0
+	blt	err
+	cmp	(sp),#'9
+	bgt	err
+	sub	#'0,(sp)
+	mul	#10.,r0
+	add	(sp)+,r1
+	mov	r1,r0
+	br	1$
+err:	tst	(sp)+
+	.print	#q
+	.newline
+	jmp	doit
+got:	tst	state
+	beq	1$
+	mov	cmpil,r1
+	mov	#litcon,(r1)+
+	mov	r0,(r1)+
+	mov	r1,cmpil
+	jmp	next
+1$:	mov	r0,(sp)
+	jmp	next
+q:	.asciz	<13.><10.>/?/
+
+savsp:	.word	0
+spovr:	.asciz	/SP overflow./
+	.even
+
+litcon:	mov	(sp),r0
+	mov	(r5)+,(sp)
+	mov	r0,-(sp)
+	return
+dot:	mov	2(sp),r0
+	.wrdec	r0
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+plus:	mov	2(sp),r0
+	add	4(sp),r0
+	mov	r0,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+minus:	mov	4(sp),r0
+	sub	2(sp),r0
+	mov	r0,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+times:	mov	2(sp),r0
+	mul	4(sp),r0
+	mov	r1,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+divide:	mov	4(sp),r1
+	clr	r0
+	div	2(sp),r0
+	mov	r0,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+colon:	mov	dst,r0
+	mov	dend,dst
+	mov	dend,r1
+	mov	r0,(r1)+
+
+1$:	cmpb	(r2),#32.
+	ble	2$
+
+3$:	movb	(r2)+,(r1)+
+	br	1$
+
+2$:	inc	r2
+	clrb	(r1)+
+	bit	#1,r1
+	beq	4$
+	inc	r1
+4$:	mov	#1,state
+	mov	r1,cmpil
+	return
+
+scolon:	clr	state
+	mov	cmpil,r0
+	clr	(r0)+
+	mov	r0,dend
+	return
+
+vlist:	.newline
+	mov	dst,r0
+1$:	mov	r0,r1
+	add	#2,r1
+	.print	r1
+	.newline
+	mov	(r0),r0
+	bne	1$
+	return
+
+dup:	unsave	<r0>
+	mov	(sp),-(sp)
+	save	<r0>
+	return
+
+mod:	mov	4(sp),r1
+	clr	r0
+	div	2(sp),r0
+	mov	r1,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+eq:	clr	r0
+	cmp	4(sp),2(sp)
+	bne	1$
+	inc	r0
+1$:	mov	r0,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+lt:	clr	r0
+	cmp	4(sp),2(sp)
+	bge	1$
+	inc	r0
+1$:	mov	r0,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+gt:	clr	r0
+	cmp	4(sp),2(sp)
+	ble	1$
+	inc	r0
+1$:	mov	r0,4(sp)
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+
+bye:	.newline
+	.print	#byemes
+	.newline
+	.newline
+	.exit
+
+begin:	mov	begsp,r0
+	mov	r5,(r0)+
+	mov	r0,begsp
+	return
+
+end:	tst	2(sp)
+	bne	1$
+	mov	begsp,r0
+	mov	-(r0),r5
+	mov	(sp),2(sp)
+	add	#2,sp
+	return
+1$:	mov	(sp),2(sp)
+	add	#2,sp
+	sub	#2,begsp
+	return
+
+byemes:	.asciz	/Have fun./
+	.even
+
+swap:	mov	4(sp),r0
+	mov	2(sp),4(sp)
+	mov	r0,2(sp)
+	return
+
+state:	.word	0
+cmpil:	.word	0
+hed1:	.asciz	/TIL V1.0 /
+	.even
+boast:	.asciz	/Ed's Threaded Interpretive Language./
+	.even
+prompt:	.asciz	/TIL>/
+	.even
+linbuf:	.blkb	256.
+dp:	.word	dict
+dst:	.word	dict
+dend:	.word	edict
+dict:
+ddot:	.word	dplus
+	.asciz	/./
+	.word	dot
+	.word	0
+dplus:	.word	dminus
+	.asciz	/+/
+	.word	plus
+	.word	0
+dminus:	.word	dtimes
+	.asciz	/-/
+	.word	minus
+	.word	0
+dtimes:	.word	ddiv
+	.asciz	/*/
+	.word	times
+	.word	0
+ddiv:	.word	dcolon
+	.asciz	'/'
+	.word	divide
+	.word	0
+dcolon:	.word	dscolon
+	.asciz	/:/
+	.word	colon
+	.word	0
+dscolon: .word	dvlist
+	.asciz	/;/
+	.word	scolon
+	.word	0
+dvlist:	.word	ddup
+	.asciz	/VLIST/
+	.word	vlist
+	.word	0
+ddup:	.word	dmod
+	.asciz	/DUP/
+	.word	dup
+	.word	0
+dmod:	.word	deq
+	.asciz	/MOD/
+	.word	mod
+	.word	0
+deq:	.word	dlt
+	.asciz	/=/
+	.word	eq
+	.word	0
+dlt:	.word	dbye
+	.asciz	/</
+	.word	lt
+	.word	0
+dbye:	.word	dbegin
+	.asciz	/BYE/
+	.word	bye
+	.word	0
+dbegin:	.word	ddend
+	.asciz	/BEGIN/
+	.word	begin
+	.word	0
+ddend:	.word	dswap
+	.asciz	/END/
+	.word	end
+	.word	0
+dswap:	.word	dgt
+	.asciz	/SWAP/
+	.even
+	.word	swap
+	.word	0
+dgt:	.word	0
+	.asciz	/>/
+	.word	gt
+	.word	0
+edict:
+	.blkb	2000.
+begsp:	.word	begstck
+begstck: .blkb	100.
+
+	.end	start
+

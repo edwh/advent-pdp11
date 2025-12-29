@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 60
+
+spawn telnet localhost 2323
+expect "Connected"
+sleep 2
+send "\r"
+
+expect "User:" { send "\[1,2\]\r" }
+expect "Password:" { send "Digital1977\r" }
+expect { "Job number" { send "\r" } "$ " { } }
+expect "$ "
+
+puts "\n=== Running MKFILES to create data files ===\n"
+send "RUN DM1:\[1,3\]MKFILES\r"
+
+set timeout 120
+expect {
+    "successfully" { puts "\n*** FILES CREATED ***\n" }
+    "Error" { puts "\n*** ERROR in MKFILES ***\n" }
+    "$ " { puts "\n*** MKFILES completed ***\n" }
+    timeout { puts "\n*** MKFILES TIMEOUT ***\n" }
+}
+
+expect "$ "
+
+puts "\n=== Now testing ADVENT ===\n"
+send "RUN DM1:\[1,2\]ADVENT\r"
+
+set timeout 60
+expect {
+    "Welcome" { puts "\n**** SUCCESS! GAME WORKS! ****\n" }
+    ">" { puts "\n*** GOT GAME PROMPT ***\n" }
+    "INITIALIZING" { puts "Initializing..."; exp_continue }
+    -re "\\?.*" { puts "\n*** ERROR ***\n" }
+    "Stop at" { puts "\n*** STOPPED ***\n" }
+    timeout { puts "\n*** TIMEOUT ***\n" }
+}
+
+puts "\n=== DONE ===\n"

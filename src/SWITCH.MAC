@@ -1,0 +1,33 @@
+
+		.title		Switch V1.0
+
+		.nlist		bin
+
+		$rsx
+		$rwdef
+
+start:		calls		$zapxrb
+		calls		$zapfqb
+		movb		corcom, R0
+		dec		R0
+		mov		#corcom + 1, R1
+nextchar:	cmpb		(R1)+, #32.		; Is it a space?
+		beq		foundspace
+		sob		R0, nextchar
+		.exit					; Default RTS
+foundspace:	mov		R1, xrb + xrloc
+		mov		R0, xrb + xrlen
+		mov		R0, xrb + xrbc
+		.fss
+		mov		firqb, R0
+		bne		error
+		mov		#-1, firqb + fqext
+		.rts
+		mov		firqb, R0
+error:		.errprt		R0
+		calls		$zapfqb
+		.rts
+		mov		^RRSX, firqb + fqnam1
+		.rts
+
+		.end		start

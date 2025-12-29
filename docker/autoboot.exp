@@ -1,0 +1,35 @@
+#!/usr/bin/expect -f
+# Autoboot RSTS/E V10.1 - handle boot prompts then exit
+
+set timeout 120
+log_user 1
+
+sleep 3
+spawn telnet localhost 2322
+expect "Connected"
+sleep 2
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+    }
+    ">>>" {
+        send "boot hk0\r"
+        expect "Today's date?"
+        send "1-JAN-92\r"
+    }
+    timeout { puts "Timeout"; exit 1 }
+}
+
+expect "Current time?" { send "12:00\r" }
+
+expect {
+    "Start timesharing?" { send "Y\r"; exp_continue }
+    "Option:" { send "\r"; exp_continue }
+    "User:" { puts "\nRSTS/E V10.1 booted!" }
+    timeout { puts "Boot completed" }
+}
+
+close
+exit 0

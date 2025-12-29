@@ -1,0 +1,45 @@
+#!/usr/bin/expect -f
+# Quick game test - assumes RSTS/E is already booted
+log_user 1
+set timeout 60
+
+spawn telnet localhost 2323
+expect "Connected"
+sleep 2
+send "\r"
+sleep 1
+
+expect {
+    "User:" { send "\[1,2\]\r" }
+    timeout { puts "No login prompt"; exit 1 }
+}
+expect "Password:" { send "Digital1977\r" }
+expect {
+    "Job number" { send "\r" }
+    "$ " { }
+}
+expect "$ "
+puts "\n=== LOGGED IN ===\n"
+
+send "RUN DM1:\[1,2\]ADVENT\r"
+
+# Capture whatever comes back
+set timeout 45
+expect {
+    "Welcome" { puts "\n*** GAME WORKS! ***\n" }
+    ">" { puts "\n*** GOT GAME PROMPT ***\n" }
+    "INITIALIZING" { puts "Initializing..."; exp_continue }
+    -re "\\?.*" { puts "\n*** ERROR: $expect_out(0,string) ***\n" }
+    eof { puts "\n*** CONNECTION CLOSED ***\n" }
+    timeout { puts "\n*** TIMEOUT - checking what happened ***\n" }
+}
+
+# Send ctrl-c and check prompt
+send "\003"
+sleep 2
+send "\r"
+expect {
+    "$ " { puts "\n=== Back at DCL prompt ===\n" }
+    ">" { puts "\n=== At game prompt ===\n" }
+    timeout { puts "\n=== Unknown state ===\n" }
+}

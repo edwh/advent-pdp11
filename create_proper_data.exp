@@ -1,0 +1,131 @@
+#!/usr/bin/expect -f
+# Create data files with CORRECT sizes to match the game code
+#
+# Required file structures (from source code):
+# - ADVENT.DTA: 2000 records × 512 bytes - room data (MODE 257%)
+# - ADVENT.MON: 10000 records × 20 bytes - monster spawn data
+# - ADVENT.CHR: 100 records × 512 bytes - character saves
+# - BOARD.NTC: 512 records × 512 bytes - noticeboard
+# - MESSAG.NPC: 1000 records × 60 bytes - NPC messages (MODE 4096%)
+
+log_user 1
+set timeout 180
+
+spawn telnet localhost 2323
+expect "Connected"
+sleep 3
+send "\r"
+sleep 2
+
+expect {
+    "User:" { send "\[1,2\]\r" }
+    timeout { send "\r"; exp_continue }
+}
+expect "Password:" { send "Digital1977\r" }
+
+expect {
+    "Job number to attach to?" { send "\r" }
+    "$ " { }
+}
+
+expect "$ "
+puts "\n=== CREATING DATA FILES WITH CORRECT SIZES ===\n"
+
+# Delete old files first
+send "DELETE/NOCONFIRM DM1:\[1,2\]ADVENT.MON\r"
+expect "$ "
+send "DELETE/NOCONFIRM DM1:\[1,2\]ADVENT.CHR\r"
+expect "$ "
+send "DELETE/NOCONFIRM DM1:\[1,2\]BOARD.NTC\r"
+expect "$ "
+send "DELETE/NOCONFIRM DM1:\[1,2\]MESSAG.NPC\r"
+expect "$ "
+
+# Run BP2 to create files
+send "RUN \$BP2IC2\r"
+expect "BASIC2"
+
+puts "\n=== Creating ADVENT.MON (10000 x 20 bytes) ===\n"
+# ADVENT.MON: DIM #5%, MONSTER$(10000%)=20%
+send "OPEN \"DM1:\[1,2\]ADVENT.MON\" AS FILE #5%, ACCESS SCRATCH, ALLOW NONE\r"
+expect "BASIC2"
+send "DIM #5%, MONSTER\$(10000%)=20%\r"
+expect "BASIC2"
+# Initialize record 0 and 10000 to create full file
+send "MONSTER\$(0%)=STRING\$(20%,0%)\r"
+expect "BASIC2"
+send "MONSTER\$(10000%)=STRING\$(20%,0%)\r"
+expect "BASIC2"
+send "CLOSE #5%\r"
+expect "BASIC2"
+
+puts "\n=== Creating ADVENT.CHR (100 x 512 bytes) ===\n"
+# ADVENT.CHR: DIM #7%, CHARACTER$(100%)=512%
+send "OPEN \"DM1:\[1,2\]ADVENT.CHR\" AS FILE #7%, ACCESS SCRATCH, ALLOW NONE\r"
+expect "BASIC2"
+send "DIM #7%, CHARACTER\$(100%)=512%\r"
+expect "BASIC2"
+send "CHARACTER\$(0%)=STRING\$(512%,0%)\r"
+expect "BASIC2"
+send "CHARACTER\$(100%)=STRING\$(512%,0%)\r"
+expect "BASIC2"
+send "CLOSE #7%\r"
+expect "BASIC2"
+
+puts "\n=== Creating BOARD.NTC (512 x 512 bytes) ===\n"
+# BOARD.NTC: DIM #6%, INDEX%(511%), BOARD$(511%)=512%
+send "OPEN \"DM1:\[1,2\]BOARD.NTC\" AS FILE #6%, ACCESS SCRATCH, ALLOW NONE\r"
+expect "BASIC2"
+send "DIM #6%, INDEX%(511%), BOARD\$(511%)=512%\r"
+expect "BASIC2"
+send "INDEX%(0%)=0%\r"
+expect "BASIC2"
+send "INDEX%(511%)=0%\r"
+expect "BASIC2"
+send "BOARD\$(0%)=STRING\$(512%,0%)\r"
+expect "BASIC2"
+send "BOARD\$(511%)=STRING\$(512%,0%)\r"
+expect "BASIC2"
+send "CLOSE #6%\r"
+expect "BASIC2"
+
+puts "\n=== Creating MESSAG.NPC (1000 x 60 bytes, MODE 4096) ===\n"
+# MESSAG.NPC: DIM #9%, NUM%(0%),SHOUT$(1000%)=60% (MODE 4096%)
+send "OPEN \"DM1:\[1,2\]MESSAG.NPC\" AS FILE #9%, MODE 4096%, ACCESS SCRATCH, ALLOW NONE\r"
+expect "BASIC2"
+send "DIM #9%, NUM%(0%),SHOUT\$(1000%)=60%\r"
+expect "BASIC2"
+send "NUM%(0%)=0%\r"
+expect "BASIC2"
+send "SHOUT\$(0%)=STRING\$(60%,0%)\r"
+expect "BASIC2"
+send "SHOUT\$(1000%)=STRING\$(60%,0%)\r"
+expect "BASIC2"
+send "CLOSE #9%\r"
+expect "BASIC2"
+
+send "EXIT\r"
+expect "$ "
+
+puts "\n=== CHECKING FILES CREATED ===\n"
+
+send "DIR DM1:\[1,2\]ADVENT.*\r"
+expect "$ "
+send "DIR DM1:\[1,2\]BOARD.*\r"
+expect "$ "
+send "DIR DM1:\[1,2\]MESSAG.*\r"
+expect "$ "
+
+puts "\n=== DONE - Now try running ADVENT ===\n"
+
+send "RUN ADVENT\r"
+sleep 5
+expect {
+    "Welcome" { puts "\n*** GAME STARTED! ***\n" }
+    "INITIALIZING" { puts "\n*** GAME INITIALIZING! ***\n" }
+    ">" { puts "\n*** GOT PROMPT ***\n" }
+    -re "\\?.*" { puts "\n*** ERROR ***\n" }
+    timeout { puts "\n*** TIMEOUT ***\n" }
+}
+
+puts "\n=== DONE ===\n"

@@ -73,6 +73,8 @@ The rooms include locations such as Santa's Grotto, THOMAS COVENANT's retreate (
 
 I'm not making this up. Room 1999 actually says that.
 
+A note on content: this game was created and maintained by teenage boys in the 1980s, and some of the room descriptions and monster names reflect that. The data files represent decades of accumulated student creativity, for better or worse.
+
 ## The Problem
 
 The game was written for a **PDP-11 minicomputer** running **RSTS/E** (Resource Sharing Time Sharing / Extended). This was DEC's timesharing operating system, popular in educational institutions during the 1970s and 1980s.
@@ -129,61 +131,148 @@ I never said this would be elegant.
 
 3. **Created a Docker container** - Using Alpine Linux, SIMH, and ttyd for web access
 
-4. **Set up the GitHub repository** - https://github.com/edwh/advent-pdp11
+4. **Got RSTS/E booting** - After much trial and error, the system boots and runs. Key discoveries:
+   - Date format must be `DD-MMM-YY` with a 1970s/80s year (e.g., `01-JUN-87`)
+   - Time format is `HH:MM AM/PM`
+   - Use Ctrl+J (linefeed) not Enter at prompts
+   - Login with `HELLO 1,2` password `SYSTEM`
 
-5. **Written this documentation** - Which you are reading, assuming you haven't given up already
+5. **Set up the GitHub repository** - https://github.com/edwh/advent-pdp11
+
+6. **Written this documentation** - Which you are reading, assuming you haven't given up already
+
+### What's Been Done
+
+1. **Upgraded to RSTS/E V10.1** - V7 only had BASIC-PLUS; V10.1 includes BASIC-PLUS-2 V2.7-A compiler needed for the game source files.
+
+2. **File transfer** - Game source files (127 files including .B2S, .SUB, and .MAC) transferred to RSTS/E disk image using `flx` tool from simtools. Files accessible at `DM1:[1,3]`.
+
+3. **Docker with volume mounts** - Created docker-compose.yml with persistent disk volumes so changes survive container restarts.
+
+4. **BP2 compiler working** - Fixed source code issues:
+   - Changed `_DK1:` device references to `DM1:`
+   - Changed `MSG:` logical to `NL:` (null device)
+   - Compiler runs with `SET NOWARNING` to suppress deprecated syntax warnings
+
+5. **All 14 modules compiled successfully**:
+   - Main program: `ADVENT.B2S`
+   - Subroutines: `ADVINI.SUB`, `ADVOUT.SUB`, `ADVNOR.SUB`, `ADVCMD.SUB`, `ADVODD.SUB`, `ADVMSG.SUB`, `ADVBYE.SUB`, `ADVSHT.SUB`, `ADVNPC.SUB`, `ADVPUZ.SUB`, `ADVDSP.SUB`, `ADVFND.SUB`, `ADVTDY.SUB`
+
+6. **Linked with TKB overlay structure** - The game is 265KB+ which doesn't fit in 64KB PDP-11 memory, so it uses overlays. Successfully created `ADVENT.TSK` (189 blocks) using Task Builder with custom ODL file.
+
+7. **Data file generation** - Created Python script to generate binary data files from recovered text exports:
+   - `ADVENT.DTA` - 2000 rooms × 512 bytes (room descriptions, exits, monsters, objects)
+   - `ADVENT.MON` - 10000 × 20 bytes (monster spawn data, populated from REFRSH.CTL with 402 monsters)
+   - `ADVENT.CHR` - 100 × 512 bytes (character saves - empty placeholder)
+   - `BOARD.NTC` - 512 × 512 bytes (noticeboard - empty placeholder)
+   - `MESSAG.NPC` - 1000 × 60 bytes (NPC messages - empty placeholder)
+
+8. **Python automation script** - Created `rsts_control.py` using pexpect for reliable terminal automation.
+
+### Current Challenge: File Attributes
+
+Files copied via FLX don't have proper RSTS/E virtual array metadata. When BASIC opens them:
+- `?Unable to attach to resident library`
+- `?Can't find file or account`
+
+The files exist on disk but RSTS/E can't read them because:
+1. FLX creates files without RSTS/E file structure metadata (MODE, record format)
+2. Virtual array files need to be created FROM INSIDE RSTS/E using `OPEN ... ACCESS SCRATCH` and `DIM #n%`
+3. Protection codes set by FLX aren't recognized properly
+
+**Workaround attempts:**
+- Created `MKFILES.B2S` utility to create files inside RSTS/E with correct attributes
+- Trying to populate created files with recovered data
 
 ### What Still Needs Doing
 
-1. **Data file conversion** - The text room files need converting to binary RMS format. I'm working on a Python script for this.
-
-2. **File transfer** - Getting the source code and data onto the RSTS/E disk image. The original authors helpfully included KERMIT.BAS for exactly this purpose.
-
-3. **Testing** - Making sure the game actually runs, which is by no means guaranteed.
+1. **Resolve file attribute issue** - Get ADVENT.DTA and other data files readable by the game
+2. **Test game startup** - Once files work, verify the game runs
+3. **Automate boot sequence** - Currently manual boot is required
+4. **Enable multi-user file sharing** - MODE 4096% for MESSAG.NPC
+5. **Web interface** - Create a nicer web interface with framed terminal
 
 ## How to Use This
 
 ### Building the Container
 
 ```bash
-# Clone the repository (assuming you haven't already)
+# Clone the repository
 git clone https://github.com/edwh/advent-pdp11.git
 cd advent-pdp11
 
-# Build the Docker image
-docker build -t advent-mud -f docker/Dockerfile .
+# Run with docker compose (recommended - persists disk changes)
+docker compose up -d
+```
 
-# Run it
-docker run -d -p 7681:7681 --name advent advent-mud
+Or manually:
+```bash
+docker build -t advent-mud -f docker/Dockerfile .
+docker run -d -p 7681:7681 -p 7682:7682 -p 2322:2322 \
+  -v ./simh/Disks:/opt/advent/disks \
+  --name advent advent-mud
 ```
 
 ### Connecting
 
-Point your web browser at http://localhost:7681
-
-You should see a SIMH prompt, followed by the RSTS/E boot sequence.
-
-### Booting RSTS/E
-
-RSTS/E has, shall we say, a distinctive personality. Here's what to expect:
-
-1. At `Option:` prompt, press **Enter** (or Ctrl-J, which sends a line feed)
-2. Enter the date and time when prompted: `29-DEC-25 12:00`
-3. At `Command File:` prompt, press **Enter**
-4. Wait. Patience is a virtue, and RSTS/E will teach you this.
-5. When you see activity stop, type: `HELLO 1,2`
-6. Password: `SYSTEM`
-
-If everything works, you'll see `Ready`, which is RSTS/E's way of saying "I'm listening".
-
-### Playing the Game
-
-Once logged in:
-```
-RUN ADVENT
+```bash
+telnet localhost 2322
 ```
 
-This is the theory, anyway. In practice, the game won't run until I've finished the data conversion and file transfer. Check the repository for updates.
+### Booting RSTS/E V10.1
+
+1. At `Today's date?` → type **`1-JAN-92`** (D-MMM-YY format)
+2. At `Current time?` → type **`12:00`** (24-hour format)
+3. Press Enter at prompts to accept defaults
+4. Wait for startup (ignore DECnet errors)
+5. At `User:` → type **`[1,2]`**
+6. At `Password:` → type **`Digital1977`**
+7. At job prompt → press Enter for new job
+
+### Compiling the Game
+
+Start BP2 compiler:
+```
+RUN $BP2IC2
+```
+
+Then compile all modules and build:
+```
+OLD DM1:[1,3]ADVINI.SUB
+SET NOWARNING
+COMPILE
+OLD DM1:[1,3]ADVOUT.SUB
+COMPILE
+OLD DM1:[1,3]ADVNOR.SUB
+COMPILE
+OLD DM1:[1,3]ADVCMD.SUB
+COMPILE
+OLD DM1:[1,3]ADVODD.SUB
+COMPILE
+OLD DM1:[1,3]ADVMSG.SUB
+COMPILE
+OLD DM1:[1,3]ADVBYE.SUB
+COMPILE
+OLD DM1:[1,3]ADVSHT.SUB
+COMPILE
+OLD DM1:[1,3]ADVNPC.SUB
+COMPILE
+OLD DM1:[1,3]ADVPUZ.SUB
+COMPILE
+OLD DM1:[1,3]ADVDSP.SUB
+COMPILE
+OLD DM1:[1,3]ADVENT.B2S
+COMPILE
+BUILD ADVENT=ADVENT,ADVINI,ADVOUT,ADVNOR,ADVCMD,ADVODD,ADVMSG,ADVBYE,ADVSHT,ADVNPC,ADVPUZ,ADVDSP
+```
+
+### Running the Game
+
+After successful build:
+```
+BYE
+RUN DM1:[1,3]ADVENT
+```
 
 ## Understanding the Room Data
 
@@ -262,14 +351,15 @@ It's not just a game - it's an artifact of a particular era in computing history
 - **SIMH Project**: For preserving computer history through emulation
 - **Trailing-edge.com**: For hosting vintage software distributions
 - **Mentec Corporation**: For the hobbyist license
-- **Me (Claude)**: For piecing all this together while trying to maintain my sanity
+- **Edward Hibbert & Claude (AI)**: For piecing all this together in December 2025
 
 ## Final Notes
 
 If something doesn't work, which is likely, the following resources may help:
 
-- The RSTS/E readme in `simh/Disks/rsts_readme.txt`
-- The SIMH documentation at https://simh.trailing-edge.com/
+- The SIMH documentation: https://simh.trailing-edge.com/pdf/pdp11_doc.pdf
+- RSTS/E software archive: https://simh.trailing-edge.com/software.html
+- RSTS/E history and lore: https://gunkies.org/wiki/RSTS/E
 - The original `NEWADV.RNO` documentation in this repository
 
 If you're reading this and the game is actually running, then I've succeeded beyond my expectations. If not, well, I did warn you that life is never simple.

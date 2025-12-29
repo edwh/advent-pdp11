@@ -1,0 +1,81 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 120
+
+# Connect to terminal port, not console
+spawn telnet localhost 2323
+
+expect "Connected"
+sleep 2
+
+# Send enter to get login prompt
+send "\r"
+
+expect "User:" { send "\[1,2\]\r" }
+expect "Password:" { send "Digital1977\r" }
+
+# Handle job attachment prompt
+expect {
+    "Job number to attach to?" { send "\r" }
+    "$ " { }
+}
+
+expect "$ "
+puts "\n\n=== LOGGED IN VIA TERMINAL ===\n"
+
+# List current files
+send "DIR SY:\[1,2\]ADVENT.*\r"
+expect "$ "
+
+# Delete old files
+send "DELETE/NOCONFIRM SY:\[1,2\]ADVENT.ODL\r"
+expect "$ "
+send "DELETE/NOCONFIRM SY:\[1,2\]ADVENT.CMD\r"
+expect "$ "
+send "DELETE/NOCONFIRM SY:\[1,2\]ADVENT.TSK\r"
+expect "$ "
+
+puts "\n=== USING ATPK TO BUILD ===\n"
+
+# Run ATPK with the BUILD command it generates
+send "RUN \$ATPK\r"
+expect "*"
+send "SY:\[1,2\]ADVENT\r"
+sleep 1
+
+# Wait for ATPK to finish
+set timeout 180
+expect {
+    "FATAL" {
+        puts "\n*** FATAL ERROR ***\n"
+        exp_continue
+    }
+    "DIAG" {
+        puts "\n*** DIAGNOSTIC ***\n"
+        exp_continue
+    }
+    "$ " { }
+}
+
+puts "\n=== CHECKING FOR TSK FILE ===\n"
+send "DIR SY:\[1,2\]ADVENT.TSK\r"
+expect "$ "
+
+# Check what ATPK generated
+puts "\n=== CHECKING ATPK-GENERATED FILES ===\n"
+send "TYPE SY:\[1,2\]ADVENT.ODL\r"
+expect "$ "
+send "TYPE SY:\[1,2\]ADVENT.CMD\r"
+expect "$ "
+
+puts "\n=== TRYING TO RUN GAME ===\n"
+send "RUN SY:\[1,2\]ADVENT\r"
+sleep 3
+expect {
+    "Welcome" { puts "\n*** GAME STARTED! ***\n" }
+    "INITIALIZING" { puts "\n*** GAME INITIALIZING ***\n" }
+    -re "\\?.*" { puts "\n*** RUN ERROR ***\n" }
+    timeout { puts "\n*** TIMEOUT ***\n" }
+}
+
+puts "\n=== DONE ===\n"

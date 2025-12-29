@@ -1,0 +1,89 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 60
+
+spawn telnet localhost 2322
+
+# Wait for already-booted system or boot prompts
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?" { send "12:00\r" }
+        expect "Option:" { send "\r" }
+        exp_continue
+    }
+    "User:" { }
+    "$ " { }
+    timeout { puts "Timeout waiting for prompt"; exit 1 }
+}
+
+# Login if needed
+expect {
+    "User:" {
+        send "\[1,2\]\r"
+        expect "Password:" { send "Digital1977\r" }
+        expect -re "\\?" { send "\r" }
+    }
+    "$ " { }
+}
+
+expect "$ "
+
+# Delete old files
+send "DELETE SY:\[1,2\]ADVENT.ODL;*\r"
+expect "$ "
+send "DELETE SY:\[1,2\]ADVENT.CMD;*\r"
+expect "$ "
+
+# Create ODL
+send "COPY TT: SY:\[1,2\]ADVENT.ODL\r"
+expect "TT:"
+send "\t.ROOT USER\r"
+expect "TT:"
+send "USER:\t.FCTR SY:\[1,2\]ADVENT-SY:\[1,2\]ADVINI-SY:\[1,2\]ADVOUT-SY:\[1,2\]ADVNOR-SY:\[1,2\]ADVCMD-SY:\[1,2\]ADVODD-SY:\[1,2\]ADVMSG-SY:\[1,2\]ADVBYE-SY:\[1,2\]ADVSHT-SY:\[1,2\]ADVNPC-SY:\[1,2\]ADVPUZ-SY:\[1,2\]ADVDSP-SY:\[1,2\]ADVFND-SY:\[1,2\]ADVTDY-LIBR\r"
+expect "TT:"
+send "LIBR:\t.FCTR LB:BP2OTS/LB\r"
+expect "TT:"
+send "\t.END\r"
+expect "TT:"
+send "\x1a"
+expect "$ "
+
+# Create CMD
+send "COPY TT: SY:\[1,2\]ADVENT.CMD\r"
+expect "TT:"
+send "SY:\[1,2\]ADVENT/FP=SY:\[1,2\]ADVENT/MP\r"
+expect "TT:"
+send "UNITS=13\r"
+expect "TT:"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TT:"
+send "EXTTSK=2048\r"
+expect "TT:"
+send "//\r"
+expect "TT:"
+send "\x1a"
+expect "$ "
+
+# Verify files
+send "TYPE SY:\[1,2\]ADVENT.ODL\r"
+expect "$ "
+send "TYPE SY:\[1,2\]ADVENT.CMD\r"
+expect "$ "
+
+# Run ATPK to build
+send "RUN \$ATPK\r"
+expect ">" { send "ADVENT\r" }
+
+# Wait for build
+sleep 10
+expect {
+    "*DIAG*" { puts "\nBuild had warnings/errors" }
+    "$ " { }
+}
+
+# Check result
+send "DIR SY:\[1,2\]ADVENT.TSK\r"
+expect "$ "
+
+puts "\nBuild complete. Check output above."

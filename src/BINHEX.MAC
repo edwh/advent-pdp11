@@ -1,0 +1,94 @@
+	.title	binhex
+	$rsx
+	$rwdef
+;
+;	Converts a file from binary to hex (in BINHEX.TMP) for use in
+;	tranferring files across systems.  Use in conjunction with
+;	HEXBIN.
+;
+;	Compilation:  MACR BINHEX=PA:DEFS,SY:BINHEX
+;		      TKB BINHEX=BINHEX,PA:IOLIB/LB
+;
+;
+;	Edward D.W. Hibbert August 1987
+;
+
+start:	.print	#prompt
+	.input	#fil
+	mov	by$cnt,xrb
+	mov	by$cnt,xrb+2
+	mov	#fil,xrb+4
+	clr	xrb+10
+	clr	xrb+12
+	.fss
+	tstb	firqb
+	bne	start
+	movb	#opnfq,firqb+fqfun
+	movb	#2,firqb+fqfil
+	calfip
+	calls	$zapfqb
+	mov	#^RBIN,firqb+fqnam1
+	mov	#^RHEX,firqb+fqnam1+2
+	mov	#^RTMP,firqb+fqext
+	movb	#crefq,firqb+fqfun
+	movb	#4,firqb+fqfil
+	calfip
+	tstb	firqb
+	beq	1$
+	movb	firqb,r0
+	.wrdec	r0
+	.exit
+
+1$:	mov	#512.,xrb
+	clr	xrb+2
+	mov	#buf1,xrb+4
+	mov	#2,xrb+6
+	clr	xrb+xrblk
+	clr	xrb+xrtime
+	clr	xrb+xrmod
+	.read
+	tstb	firqb
+	beq	5$
+	inc	err
+
+5$:	clr	r0
+	mov	#buf2,r2
+
+2$:	clr	r5
+	bisb	buf1(r0),r5
+	clr	r4
+	div	#16.,r4
+	movb	hex(r4),(r2)+
+	movb	hex(r5),(r2)+
+	inc	r0
+	cmp	r0,#512.
+	blt	2$
+	mov	#1024.,xrb
+	mov	#1024.,xrb+2
+	mov	#buf2,xrb+4
+	mov	#4,xrb+xrci
+	clr	xrb+xrblk
+	clr	xrb+xrmod
+	.write
+	tst	err
+	bne	10$
+	br	1$
+
+10$:	movb	#2,firqb+fqfil
+	movb	#clsfq,firqb+fqfun
+	calfip
+	movb	#4,firqb+fqfil
+	movb	#clsfq,firqb+fqfun
+	calfip
+	.exit
+
+prompt:	.asciz	/Input file >> /
+	.even
+fil:	.blkb	50.
+buf1:	.blkb	512.
+buf2:	.blkb	1024.
+err:	.word	0
+hex:	.asciz	/0123456789ABCDEF/
+	.even
+
+	.end	start

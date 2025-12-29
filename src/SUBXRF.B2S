@@ -1,0 +1,189 @@
+1	ON ERROR GOTO 25000 &
+
+1020	MAP (SUBJCT) S.ACCESSION$=2%,	! Accession number &
+		     S.SUBJECT$=20%	! This subject &
+	&
+	&
+	! For multiple subjects for one book have multiple records &
+
+1050	MAP (SUBCNT) SC.SUBJECT$=20%,	! The subject &
+		     SC.NO%,		! The number of books &
+		     SC.DEWEY$=10%	! Dewey number for this subject &
+
+1060	MAP (XRFTMP) X.SUBJECT$=20% &
+
+1070	MAP (SUBXRF) SX.MAIN.SUBJECT$=20%, &
+		     SX.ASSOC.SUBJECT$=20% &
+
+1500	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	J$=SYS(CHR$(6%)+CHR$(26%)) &
+\	PPN%=SWAP%(CVT$%(RIGHT(J$,21%))) &
+\	OPEN '_KB:' AS FILE #1% &
+\	PRINT #1%, CRLF$;'Paton Library Subject Cross-Reference '; &
+	'Program.';CRLF$;CRLF$; &
+	'This is your last chance to save/print out any previous output'; &
+	CRLF$;'in _SY:SUBXRF.LST or _SY:SUBXRF.SEQ.  Once you answer '; &
+	CRLF$;'the following questions'; &
+	'any such output will be lost.';CRLF$;CRLF$ &
+\	LINES.THIS.PAGE%=100% &
+\	HEADER$='M.G.S. Paton Library : Subject Keyword Cross-Reference '+ &
+	'Listing' &
+
+2020	OPEN 'DP2:'+PKG.LOC$+'SUBJCT.RMS' AS FILE #5%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+
+2030	OPEN 'DP2:'+PKG.LOC$+'SUBJCT.RMS' AS FILE #7%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+
+2050	OPEN 'DP2:'+PKG.LOC$+'SUBCNT.RMS' AS FILE #6%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBCNT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY SC.SUBJECT$ NODUPLICATES, &
+	ALTERNATE KEY SC.DEWEY$ DUPLICATES CHANGES &
+
+3000	PRINT #1%, 'Subject keyword to start at <START OF FILE> ? '; &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,36%) &
+\	IF J$='' THEN &
+	RESTORE #7%, KEY #1% &
+\	GOTO 5000 &
+
+3010	GET #7%, KEY #1% EQ J$ &
+\	GOTO 3050 &
+
+3020	PRINT #1%, CRLF$;'?Keyword does not exist.';CRLF$ &
+\	GOTO 3000 &
+
+3050	INPUT #1%, 'Starting Page Number <1> ? ';PAGES% &
+\	PAGES%=1% UNLESS PAGES% &
+\	GOTO 5000 IF PAGES%>=1% &
+
+3060	PRINT #1%, CRLF$;'?Illegal page number.' &
+\	GOTO 3050 &
+
+5000	OPEN '_SY:SUBXRF.LST' FOR OUTPUT AS FILE #2% &
+\	OPEN '_SY:SUBXRF.SEQ' FOR OUTPUT AS FILE #8%, &
+	ORGANIZATION SEQUENTIAL FIXED, &
+	MAP SUBXRF, &
+	ACCESS WRITE, &
+	ALLOW NONE &
+
+5010	GET #7% &
+\	UNLOCK #7% &
+\	GOTO 5010 IF CVT$%(S.ACCESSION$)+32768.>=60000. &
+
+5020	THIS.ACCESSION$=S.ACCESSION$ &
+\	THIS.SUBJECT$=S.SUBJECT$ &
+\	OPEN '_SY:SUBXRF.TMP' FOR OUTPUT AS FILE #3%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP XRFTMP, &
+	ACCESS MODIFY, &
+	ALLOW NONE, &
+	PRIMARY KEY X.SUBJECT$ NODUPLICATES &
+
+5050	GET #5%, KEY #0% EQ THIS.ACCESSION$ &
+\	UNLOCK #5% &
+
+5060	IF S.SUBJECT$<>THIS.SUBJECT$ THEN &
+	X.SUBJECT$=S.SUBJECT$ &
+\	PUT #3% &
+
+5070	GET #5% &
+\	UNLOCK #5% &
+\	GOTO 5060 IF S.ACCESSION$=THIS.ACCESSION$ &
+
+5080	GET #7% &
+\	UNLOCK #7% &
+\	GOTO 5080 IF CVT$%(S.ACCESSION$)+32768.>=60000. &
+\	THIS.ACCESSION$=S.ACCESSION$ &
+\	GOTO 5050 IF S.SUBJECT$=THIS.SUBJECT$ &
+\	GOSUB 10000 &
+\	GOTO 5020 &
+
+9000	PRINT #1%, CRLF$;'Listing in _SY:SUBXRF.LST';CRLF$; &
+	'Sequential file in _SY:SUBXRF.SEQ';CRLF$;CRLF$; &
+	'N.B. To update file LIBR uses for XREF you need to IFL';CRLF$; &
+	'SUBXRF.SEQ into an empty SUBXRF.RMS, using switch /NOSO';CRLF$; &
+	'as in :';CRLF$;CRLF$; &
+	'IFL>SUBXRF.RMS=SUBXRF.SEQ/NOSO/DE:DR0:DR1:DR2:';CRLF$ &
+\	CLOSE #2%,#8% &
+\	GOTO 32767 &
+
+10000	J5$=THIS.SUBJECT$+'  ' &
+\	RESTORE #3% &
+
+10005	IF LINES.THIS.PAGE%>=60% THEN &
+	LINES.THIS.PAGE%=5% &
+\	PRINT #2%, CHR$(12%); &
+\	PRINT #2%, STRING$(132%,ASCII('-')) &
+\	J1$='' &
+\	J1$='Page '+NUM1$(PAGES%) IF PAGES%>1% &
+\	J$=SPACE$(66%-LEN(CVT$$(HEADER$,132%))/2%) &
+\	J$=J$+CVT$$(HEADER$,132%) &
+\	J$=J$+SPACE$(131%-LEN(J$)-LEN(J1$))+J1$ &
+\	PRINT #2%, J$ &
+\	PRINT #2%, STRING$(132%,ASCII('-')) &
+\	PRINT #2%, 'Subject Keyword       Associated Keyword   '; &
+	'Associated Keyword   Associated Keyword   Associated Keyword'; &
+	'   Associated Keyword' &
+\	PRINT #2%, STRING$(132%,ASCII('-')) &
+\	PAGES%=PAGES%+1% &
+
+10010	GET #3% &
+\	PRINT #2%, J5$;X.SUBJECT$;' '; &
+\	SX.MAIN.SUBJECT$=THIS.SUBJECT$ &
+\	SX.ASSOC.SUBJECT$=X.SUBJECT$ &
+\	PUT #8% &
+
+10020	FOR I%=1% TO 4% &
+\	GET #3% &
+\	PRINT #2%, X.SUBJECT$;' '; &
+\	SX.MAIN.SUBJECT$=THIS.SUBJECT$ &
+\	SX.ASSOC.SUBJECT$=X.SUBJECT$ &
+\	PUT #8% &
+\	NEXT I% &
+\	LINES.THIS.PAGE%=LINES.THIS.PAGE%+1% &
+\	J5$=SPACE$(22%) &
+\	PRINT #2% &
+\	GOTO 10005 &
+
+10025	PRINT #2% &
+
+10030	LINES.THIS.PAGE%=LINES.THIS.PAGE%+1% &
+\	RETURN &
+
+25000	! ERRORS &
+	&
+	&
+	RESUME 5080 IF ERL=5070 AND ERR=11 &
+\	RESUME 9000 IF ERL=5080 AND ERR=11 &
+\	RESUME 5070 IF ERL=5060 &
+\	RESUME 10025 IF ERL=10020 AND ERR=11 &
+\	RESUME 10030 IF ERL=10010 AND ERR=11 &
+\	RESUME 3020 IF ERL=3010 AND ERR=155 &
+\	RESUME 3060 IF ERL=3050 &
+
+28999	IF ERR=154 THEN &
+	SLEEP 1% &
+\	RESUME &
+
+29000	PRINT 'SUBXRF : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	END &
+

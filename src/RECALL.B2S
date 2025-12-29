@@ -1,0 +1,459 @@
+1	ON ERROR GOTO 25000 &
+	&
+	!  R E C A L L . B 2 S  &
+	&
+	&
+	! Program to send out recall notices. &
+
+1000	MAP (BORROW) B.TICKET$=2%, &
+		     B.SURNAME$=18%, &
+		     B.FORENAME$=24%, &
+		     B.FORM$=10%, &
+		     B.BOOKS.OUT%, &
+		     B.BOOKS.MAX%, &
+		     B.FLAG% &
+
+1010	MAP (LOANS) L.ACCESSION$=2%, &
+		    L.TICKET$=2%, &
+		    L.DUE%, &
+		    L.FLAG% &
+
+1020	MAP (BOOKS) ACCESSION$=2%,	! Accession number &
+		    DEWEY$=10%,		! Dewey number or F for fiction &
+		    ISBN$=10%,		! ISBN number &
+		    TITLE$=47%,		! Title &
+		    JUNK$=25%, &
+		    PUBLISHER$=26%,	! Publisher &
+		    FLAG%,		! General flag word &
+					! Bit value	Meaning &
+					!	0	Loan &
+					!	1	Short term loan &
+					!	2	Ref. only &
+					!	3	Quick ref. &
+					!	4	Special collection &
+					!	5,6,7,8	Unused &
+					!	9	On order &
+					!	10	Under repair &
+					!	11	Missing &
+		    ILLUS%,		! No. of illustrations &
+		    PAGES%,		! No. of pages &
+		    FIRST.PUB%,		! Date first published &
+		    THIS.PUB%,		! Date this edition published &
+		    THIS.PRINT%		! Date this edition printed &
+
+1030	MAP (RECALL)	R.FORM.AND.WHOLENAME$=60%, &
+			R.TICKET$=2%, &
+			R.ACCESSION$=2%, &
+			R.FLAG% &
+
+1040	MAP (AUTHOR)	A.ACCESSION$=2%, &
+			A.AUTHOR$=72% &
+
+1050	MAP (FORMS)	F.FORM$=10%, &
+			F.FORM.MASTER$=50%, &
+			F.FORM.ROOM$=5% &
+
+5000	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	J$=SYS(CHR$(6%)+CHR$(26%)) &
+\	PPN%=SWAP%(CVT$%(RIGHT(J$,21%))) &
+!\	PPN%=PEEK(PEEK(PEEK(520%)+8%)+24%) &
+\	PROJ%=SWAP%(PPN%) AND 255% &
+\	PROG%=PPN% AND 255% &
+\	GOTO 32767 UNLESS PROJ%=1% OR (PROJ%=5% AND (PROG%=13% OR PROG%=11%))&
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	HEADER$='The Manchester Grammar School Library' &
+\	OPEN '_KB:' AS FILE #1% &
+\	FIELD #1%, 1% AS YN$ &
+\	PRINT #1%, CRLF$;'Paton Library Recall Program';CRLF$;CRLF$; &
+\	TODAY%=FNDATE.OF%(DATE$(0%)) &
+
+5010	PRINT #1%, 'Paper type <A4> >> '; &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,255%) &
+\	J$='A4' UNLESS LEN(J$) &
+\	GOTO 5030 IF J$='LP' &
+\	IF J$='A4' THEN &
+	A4%=-1% &
+\	GOTO 5030 &
+
+5020	PRINT #1%, CRLF$;'?Illegal reply.';CRLF$ &
+\	GOTO 5010 &
+
+5030	OPEN 'DP2:'+PKG.LOC$+'BORROW.RMS' AS FILE #9%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BORROW, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY B.TICKET$ NODUPLICATES, &
+	ALTERNATE KEY B.SURNAME$ DUPLICATES CHANGES &
+
+5040	OPEN 'DP2:'+PKG.LOC$+'LOANS.RMS' AS FILE #10%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP LOANS, &
+	ACCESS MODIFY, &
+	ALLOW NONE, &
+	PRIMARY KEY L.TICKET$ DUPLICATES, &
+	ALTERNATE KEY L.ACCESSION$ DUPLICATES &
+
+5050	OPEN 'DP2:'+PKG.LOC$+'BOOKS.RMS' FOR INPUT AS FILE #3%, &
+	ORGANIZATION UNDEFINED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY &
+
+5060	OPEN '_SY:RECALL.TMP' FOR OUTPUT AS FILE #13%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP RECALL, &
+	ACCESS MODIFY, &
+	ALLOW NONE, &
+	PRIMARY KEY R.FORM.AND.WHOLENAME$ DUPLICATES &
+\	KILL '_SY:RECALL.TMP' &
+
+5070	OPEN 'DP2:'+PKG.LOC$+'AUTHOR.RMS' AS FILE #4%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP AUTHOR, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY A.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY A.AUTHOR$ DUPLICATES CHANGES &
+
+5080	OPEN 'DP2:'+PKG.LOC$+'FRMMST.RMS' AS FILE #12%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP FORMS, &
+	ACCESS READ, &
+	ALLOW NONE, &
+	PRIMARY KEY F.FORM$ NODUPLICATES &
+
+6000	PRINT #1%, CRLF$;'Output file <LP:>  ? '; &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,255%) &
+\	J$='LP:' UNLESS LEN(J$) &
+
+6010	OPEN J$ FOR OUTPUT AS FILE #2% &
+
+6020	RESTORE #10% &
+
+6030	GET #10% &
+\	UNLOCK #10% &
+\	GOTO 6030 IF (L.FLAG% AND 1%) &
+	! Skip reservation records. &
+\	GOTO 6030 UNLESS FNSUB.DATE%(L.DUE%,TODAY%)>=10% &
+	! Skip books which aren't at least 10 days overdue. &
+
+6040	GET #9%, KEY #0% EQ L.TICKET$ &
+\	UNLOCK #9% &
+\	J$=CVT$$(B.SURNAME$,128%)+', ' &
+\	J$=J$+LEFT(B.FORENAME$,1%)+'.' UNLESS B.FLAG% AND 1% &
+\	J$=J$+B.FORENAME$ IF B.FLAG% AND 1% &
+\	R.FORM.AND.WHOLENAME$=B.FORM$+J$ &
+\	R.TICKET$=L.TICKET$ &
+\	R.ACCESSION$=L.ACCESSION$ &
+\	R.FLAG%=B.FLAG% &
+\	PUT #13% &
+\	GOTO 6030 &
+
+6050	PRINT #1%, CRLF$;'Recalls collected, now producing notices...' &
+\	RECALLS.SENT%=0% &
+
+6060	RESTORE #13% &
+
+6070	GET #13% &
+
+6080	GET #3%, KEY #0% EQ R.ACCESSION$ &
+\	UNLOCK #3% &
+	! Find the book. &
+\	GOTO 6070 IF FLAG% AND 2% &
+	! Skip short term loans, that's for another program. &
+
+6090	GET #4%, KEY #0% EQ R.ACCESSION$ &
+\	UNLOCK #4% &
+	! Find an author for it. &
+
+6095	F.FORM.MASTER$='' &
+\	GET #12%, KEY #0% EQ MID(R.FORM.AND.WHOLENAME$,4%,6%) &
+\	UNLOCK #12% &
+	! Find the form master for this form. &
+
+6100	GET #10%, KEY #1% EQ R.ACCESSION$ &
+	! Get the loan record. &
+\	RECALLS%=(L.FLAG% AND 14%)/2% &
+	! Get the number of recalls : &
+	&
+	!	0	==>	None sent for this book. &
+	!	1	==>	First recall has been sent. &
+	!	2	==>	Second recall has been sent. &
+	!	3	==>	Urgent recall has been sent. &
+	!	4	==>	Final recall has been sent. &
+	&
+	!	After urgent recalls, it sends final ones. &
+\	RECALLS.SENT%=RECALLS.SENT%+1% &
+\	GOTO 6150 UNLESS RECALLS%<=1% AND (R.FLAG% AND 1%)=0% &
+\	PRINT #2% &
+\	PRINT #2% IF A4% &
+\	PRINT #2%, FNCENTRE$(HEADER$) &
+\	PRINT #2% FOR I%=1% TO 2% &
+\	J$='1st' &
+\	J$='2nd' IF RECALLS% &
+\	J$=J$+' Recall Notice' &
+\	PRINT #2%, FNCENTRE$(J$) &
+\	PRINT #2% FOR I%=1% TO 2% &
+\	PRINT #2%, 'Name: ';CVT$$(RIGHT(R.FORM.AND.WHOLENAME$,11%),128%); &
+	TAB(38%);'Title: ';CVT$$(LEFT(TITLE$,47%),128%) &
+\	PRINT #2% &
+\	PRINT #2%, 'Ticket Number: '+FNPRETTY.TICKET$(CVT$%(R.TICKET$)+ &
+	32768.);TAB(38%);'Accession Number: '+FNPRETTY.ACCESSION$( &
+	CVT$%(R.ACCESSION$)+32768.) &
+\	PRINT #2% &
+\	PRINT #2%, 'Form: '+LEFT(R.FORM.AND.WHOLENAME$,10%);TAB(38%); &
+	'Author: ';CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	PRINT #2% &
+\	PRINT #2%, 'Form Master: '; &
+\	PRINT #2%, CVT$$(F.FORM.MASTER$,128%); &
+	'<';CVT$$(F.FORM.ROOM$,128%);'>'; IF CVT$$(F.FORM.MASTER$,255%)<>'' &
+\	PRINT #2%, TAB(38%); &
+	'Classification: ';LEFT(DEWEY$,10%) &
+\	PRINT #2% &
+\	PRINT #2%, 'Date: ';DATE$(0%);TAB(38%);'Date due back: '; &
+	DATE$(L.DUE%) &
+\	PRINT #2% FOR I%=1% TO 2% &
+\	PRINT #2% IF A4% &
+\	PRINT #2%, 'This book is now at least 10 days overdue.';CRLF$ &
+	UNLESS RECALLS% &
+\	PRINT #2%, 'This book is now at least 15 days overdue.';CRLF$ &
+	IF RECALLS% &
+\	PRINT #2%, 'Please return it as quickly as possible.';CRLF$ &
+\	PRINT #2%, 'A fine of ';NUM1$(10%*(RECALLS%+2%));'p will be'; &
+	' payable.';CRLF$ &
+\	PRINT #2% IF A4% &
+\	PRINT #2%, 'If you think that you have already returned this '; &
+	'book, or if there is any';CRLF$;'other problem, please bring'; &
+	' this notice to the library.';CRLF$ &
+\	J$='L.A. Witton. (Mrs.)' &
+\	PRINT #2%, FNCENTRE$(J$) &
+\	PRINT #2% FOR I%=1% TO 3% &
+\	PRINT #2% FOR I%=1% TO 2% IF A4% &
+\	GOTO 7000 &
+
+6150	GOTO 6200 IF R.FLAG% AND 1% &
+\	PRINT #2% &
+\	PRINT #2% &
+\	PRINT #2% FOR I%=1% TO 2% IF RECALLS%>=3% &
+\	PRINT #2%, FNCENTRE$(HEADER$) &
+\	PRINT #2% FOR I%=1% TO 3% &
+\	PRINT #2%, FNCENTRE$('Final Recall Notice') IF RECALLS%>=3% &
+\	PRINT #2%, FNCENTRE$('Urgent!') IF RECALLS%=2% &
+\	PRINT #2% FOR I%=1% TO 2% &
+\	PRINT #2%, 'To:';TAB(38%);'Book Details:';CRLF$ IF RECALLS%=2% &
+\	PRINT #2%, 'Name: '+CVT$$(RIGHT(R.FORM.AND.WHOLENAME$,11%),128%); &
+	TAB(38%);'Title: ';CVT$$(LEFT(TITLE$,47%),128%);CRLF$ &
+\	PRINT #2%, 'Ticket Number: '+FNPRETTY.TICKET$(CVT$%(R.TICKET$)+ &
+	32768.);TAB(38%);'Accession Number: '+FNPRETTY.ACCESSION$( &
+	CVT$%(R.ACCESSION$)+32768.) &
+\	PRINT #2% &
+\	PRINT #2%, 'Form: ';LEFT(R.FORM.AND.WHOLENAME$,10%);TAB(38%); &
+	'Author: ';LEFT(A.AUTHOR$,25%);CRLF$ &
+\	PRINT #2%, 'Form Master: '; &
+\	PRINT #2%, CVT$$(F.FORM.MASTER$,128%); &
+	'<';CVT$$(F.FORM.ROOM$,128%);'>'; IF CVT$$(F.FORM.MASTER$,255%)<>'' &
+\	PRINT #2%, TAB(38%); &
+	'Classification: ';LEFT(DEWEY$,10%) &
+\	PRINT #2%, CRLF$;'Date: ';DATE$(0%);TAB(38%);'Due back on: ';DATE$(L.DUE%);&
+	CRLF$;CRLF$ &
+\	PRINT #2% IF A4% &
+\	PRINT #2%, 'This book is now very overdue. Please return it to me'; &
+	' in person by 4.00 PM';CRLF$ IF RECALLS%>=3% &
+\	PRINT #2%, 'If you have lost it, I must now charge you #10.00 '; &
+	'for its replacement.';CRLF$ IF RECALLS%>=3% &
+\	PRINT #2%,  'Please see me by Friday.';CRLF$;CRLF$ IF RECALLS%>=3% &
+\	PRINT #2%, 'This book is now very overdue. Please return it to me '; &
+	'in person by 4.00 PM';CRLF$;CRLF$; &
+	'on Friday. The fine will be 50p';CRLF$ IF RECALLS%=2% &
+\	PRINT #2%, 'If you have mislaid the book please come and discuss '; &
+	'the matter with me.';CRLF$;CRLF$ IF RECALLS%=2% &
+\	PRINT #2% IF A4% &
+\	PRINT #2%, FNCENTRE$('L.A. Witton. (Mrs.)') &
+\	PRINT #2% &
+\	PRINT #2% FOR I%=1% TO 3% IF A4% &
+\	GOTO 7000 &
+
+6200	IF RECALLS%=2% THEN &
+	PRINT #2%, FOR I%=1% TO 4% &
+\	PRINT #2%, FNCENTRE$(HEADER$) &
+\	PRINT #2%, FOR I%=1% TO 3% &
+\	PRINT #2%, 'From the Librarian';TAB(64%);'Date: ';DATE$(0%) &
+\	PRINT #2%, FOR I%=1% TO 2% &
+\	PRINT #2%, 'Our computerized records inform us that you '; &
+	' still have the book shown below.';CRLF$ &
+\	PRINT #2%, 'I would be grateful if you could return or renew it '; &
+	'as soon as possible';CRLF$ &
+\	PRINT #2%, 'so that we can update our records.  Thanks,';CRLF$ &
+\	PRINT #2%, '                                      LYAW.'; &
+	CRLF$;CRLF$;CRLF$ &
+\	PRINT #2% IF A4% &
+\	PRINT #2%, 'To:';TAB(38%);'Book Details:';CRLF$ &
+\	PRINT #2%, 'Name: ';CVT$$(RIGHT(R.FORM.AND.WHOLENAME$,11%),128%); &
+	TAB(38%);'Title: ';CVT$$(LEFT(TITLE$,47%),128%);CRLF$ &
+\	PRINT #2%, 'Ticket Number: '+FNPRETTY.TICKET$(CVT$%(R.TICKET$)+ &
+	32768.);TAB(38%);'Accession Number: '+FNPRETTY.ACCESSION$( &
+	CVT$%(R.ACCESSION$)+32768.) &
+\	PRINT #2% &
+\	PRINT #2%, 'Dept: ';LEFT(R.FORM.AND.WHOLENAME$,10%);TAB(38%); &
+	'Author: ';LEFT(A.AUTHOR$,25%);CRLF$ &
+\	PRINT #2%, TAB(38%);'Classification: ';LEFT(DEWEY$,10%);CRLF$ &
+\	PRINT #2%, 'Date: ';DATE$(0%);TAB(38%);'Due back on: ';DATE$(L.DUE%); &
+	CRLF$;CRLF$;CRLF$ &
+!\	PRINT #2% FOR I%=1% TO 3% &
+!\	PRINT #2% FOR I%=1% TO 2% IF A4% &
+\	GOTO 7000 &
+
+6210	RECALLS.SENT%=RECALLS.SENT%-1% &
+
+7000	IF RECALLS%<4% THEN &
+	RECALLS%=RECALLS%+1% &
+\	RECALLS%=0% IF (B.FLAG% AND 1%) AND RECALLS%=3% &
+\	L.FLAG%=L.FLAG% XOR 2%^I% IF L.FLAG% AND 2%^I% FOR I%=1% TO 3% &
+\	L.FLAG%=L.FLAG% OR RECALLS%*2% &
+\	UPDATE #10% &
+
+7010	PRINT #2%, CHR$(12%) IF (RECALLS.SENT%/2%*2%)=RECALLS.SENT% &
+	UNLESS A4% &
+\	GOTO 6070 &
+
+10000	PRINT #1%, CRLF$;'Recall check complete.' &
+\	GOTO 32767 &
+
+15000	DEF* FNCENTRE$(CE$) &
+\	UL%=LEN(CE$) &
+\	FNCENTRE$=SPACE$((80%-UL%)/2%)+CE$ &
+\	FNEND &
+
+20000	DEF* FNINC.DATE%(DAT%) &
+\	D%=DAT% &
+\	D%=D%+1% &
+\	D%=D%+1% WHILE DATE$(D%)='00-XXX-00' &
+\	FNINC.DATE%=D% &
+\	FNEND &
+	! Increment RSTS format date. &
+
+20010	DEF* FNWEEK.DAY.OF%(DAT%) &
+\	Y%=DAT%/1000%+70% &
+\	D%=DAT%-1000%*(Y%-70%) &
+\	D%=365%*Y%+(Y%+3%)/4%+D%-1% &
+\	D%=D%-D%/7%*7% &
+\	D%=7% UNLESS D% &
+\	FNWEEK.DAY.OF%=D% &
+\	FNEND &
+	! 1 = Monday ... 7 = Sunday &
+
+20020	DEF* FNNEXT.WEEK.DAY%(DAT%) &
+\	N.D%=DAT% &
+\	N.D%=FNINC.DATE%(N.D%) &
+\	N.D%=FNINC.DATE%(N.D%) WHILE FNWEEK.DAY.OF%(N.D%)>5% &
+\	FNNEXT.WEEK.DAY%=N.D% &
+\	FNEND &
+	! Find next week day. &
+
+20030	DEF* FNDATE.OF%(J$) &
+\	J$=J$+RIGHT(DATE$(0%),3%) UNLESS INSTR(1%,J$,'-') &
+\	J$='0'+J$ IF INSTR(1%,J$,'-')<3% &
+\	J$=J$+RIGHT(DATE$(0%),7%) UNLESS INSTR(4%,J$,'-') &
+\	J$=CVT$$(J$,255%) &
+\	FNDATE.OF%=0% &
+\	J%=VAL(RIGHT(J$,8%)) &
+\	I%=INSTR(1%,'JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC',MID(J$,4%,3%)) &
+\	GOTO 20050 UNLESS I% &
+\	J%=1000%*(J%-70%)+28%*((I%-1%)/3%) &
+\	GOTO 20040 IF CVT$$(DATE$(I%),255%)=J$ FOR I%=J% TO J%+100% &
+\	GOTO 20050 &
+
+20040	FNDATE.OF%=I% &
+
+20050	FNEND &
+
+20060	DEF* FNPRETTY.TICKET$(P.T.N.) &
+\	J1$=NUM1$(P.T.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNPRETTY.TICKET$=LEFT(J1$,3%)+'-'+RIGHT(J1$,4%)+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+20061	DEF* FNPRETTY.ACCESSION$(P.A.N.) &
+\	J1$=NUM1$(P.A.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	J1$=RIGHT(J1$,2%) WHILE LEFT(J1$,1%)='0' &
+\	FNPRETTY.ACCESSION$=J1$+'-'+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+20070	DEF* FNDECODE.TICKET.(D.T.N$) &
+\	FNDECODE.TICKET.=0. &
+\	FNEXIT UNLESS LEN(D.T.N$)=7% &
+\	J%=INSTR(1%,D.T.N$,'-') &
+\	FNEXIT UNLESS J% &
+\	CHECK.DIGIT$=RIGHT(D.T.N$,7%) &
+\	D.T.N$=LEFT(D.T.N$,3%)+MID(D.T.N$,5%,2%) &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(D.T.N$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNEXIT UNLESS CHECK.DIGIT$=CHR$(J1%+ASCII('A')) &
+\	J1.=VAL(D.T.N$) &
+\	GOTO 20080 IF J1.<0. OR J1.>65535. &
+\	FNDECODE.TICKET.=J1. &
+\	FNEXIT &
+
+20080	FNEND &
+
+20090	DEF* FNSUB.DATE%(D1%,D2%) &
+\	IF D2%<=D1% THEN &
+	FNSUB.DATE%=0% &
+\	FNEXIT &
+
+20100	S.I%=1% &
+\	IF FNNEXT.WEEK.DAY%(D1%)<>D2% THEN &
+	S1%=0% &
+\	UNTIL D1%>=D2% &
+\	S.I%=S.I%+1% &
+\	D1%=FNNEXT.WEEK.DAY%(D1%) &
+\	NEXT &
+\	S.I%=S.I%-1% &
+
+20110	FNSUB.DATE%=S.I% &
+\	FNEND &
+
+25000	! Errors &
+	&
+	&
+	IF ERL>5000 AND ERL<6000 THEN PRINT #1%, &
+	CRLF$;'Catalogue is locked (';ERT$(ERR);'), please try later.' &
+\	RESUME 32767 &
+
+25010	RESUME 20050 IF ERL=20030 AND ERR=52 &
+\	RESUME 6070 IF ERL=6100 AND ERR=155 &
+\	RESUME 6070 IF ERL=6080 AND ERR=155 &
+\	RESUME 20080 IF ERL=20070 AND ERR=52 &
+\	RESUME 6050 IF ERL=6030 AND ERR=11 &
+\	RESUME 10000 IF ERL=6070 AND ERR=11 &
+\	RESUME 6100 IF ERL=6095 AND ERR=155 &
+\	IF ERL=6010 AND ERR=8 THEN &
+	PRINT #1%, 'Device in use, waiting...'; &
+\	SLEEP 5% &
+\	PRINT #1%, CHR$(13%);SPACE$(70%);CHR$(13%); &
+\	RESUME &
+
+26000	IF ERR=154 THEN &
+	PRINT #1%, 'Waiting for catalogue...'; &
+\	SLEEP 5% &
+\	PRINT #1%, CHR$(13%);SPACE$(50%);CHR$(13%); &
+\	RESUME &
+
+29000	PRINT #1%, CRLF$;'RECALL : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	END &
+

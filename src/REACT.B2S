@@ -1,0 +1,179 @@
+1	ON ERROR GOTO 25000 &
+
+10	MAP (M) PPN$=2%, &
+		OWNER$=50% &
+
+100	OPEN '_KB:' AS FILE #1% &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	DISK$='' &
+\	DIM V%(30%) &
+\	GOTO 110 IF CCL% &
+\	PRINT #1%, CHR$(24%);'REACT V1.0 ';ERT$(0%);' at '; &
+	TIME$(0%);' on ';DATE$(0%);CRLF$;CRLF$ &
+
+105	PRINT #1%, FNC$;CRLF$;'Disk <SY:> ? '; &
+\	INPUT #1%, DISK$ &
+\	DISK$=CVT$$(DISK$,255%) &
+
+110	DISK$='_SY:' UNLESS LEN(DISK$) &
+\	ON ERROR GOTO 120 &
+\	OPEN DISK$+'$ACCT.RMS' AS FILE #2%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP M, &
+	ACCESS MODIFY, &
+	ALLOW NONE, &
+	PRIMARY KEY PPN$ NODUPLICATES, &
+	ALTERNATE KEY OWNER$ DUPLICATES &
+\	GOTO 1000 &
+
+120	IF ERR=2 THEN &
+	PRINT #1%, FNC$;'?Illegal disk.' &
+\	RESUME 105 &
+
+130	! PUT IN CHECK FOR NO MULTI-USER &
+	GOTO 25000 &
+
+1000	GOTO 32767 IF CCL% &
+\	ON ERROR GOTO 25000 &
+\	PRINT #1%, FNC$;CRLF$;'Command > '; &
+\	INPUT LINE #1%, ARG$ &
+\	ARG$=CVT$$(ARG$,4%) &
+
+1010	COM$=FNGETARG$ &
+\	COM$=CVT$$(COM$,255%) &
+\	IF LEN(COM$)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'Type SUMMARY to get a summary of commands.' &
+\	GOTO 1000 &
+
+1020	J%=INSTR(1%,'/EXIT      /TRACE     /NAME      /CHANGE    '+ &
+	'/QUOTA     ' &
+	,'/'+COM$) &
+\	IF J%=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal command.' &
+\	GOTO 1000 &
+
+1030	COM%=(J%-1%)/10%+1% &
+\	ON COM% GOTO 32767,2000,3000,4000,5000 &
+
+2000	! TRACE &
+	&
+	&
+	ON ERROR GOTO 2010 &
+\	ARG$=CVT$$(ARG$,255%) &
+\	ARG$=FNGET.ACCOUNT$ UNLESS LEN(ARG$) &
+\	ARG$='('+ARG$+')' UNLESS INSTR(1%,ARG$,'(') OR INSTR(1%,ARG$,':') &
+\	J$=FSS$(ARG$,1%) &
+\	GOTO 2050 &
+
+2010	IF ERR=2 THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal account.' &
+\	RESUME 1000 &
+
+2020	RESUME 1000 IF ERL=2050 AND ERR=155 &
+\	GOTO 25000 &
+
+2050	GET #2%, KEY #0% EQ MID(J$,5%,2%) &
+\	PRINT #1%, FNC$;CRLF$;FNPRINT.ACCOUNT$ &
+\	GOTO 1000 &
+	! Put in wildcard account searches here. &
+
+3000	! NAME &
+	&
+	&
+	IF LEN(ARG$)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'Name <UNUSED> ? '; &
+\	INPUT #1%, ARG$ &
+\	ARG$='UNUSED' UNLESS LEN(ARG$) &
+
+3010	ARG$=CVT$$(ARG$,255%) &
+\	GOTO 3000 UNLESS LEN(ARG$) &
+\	GET #2%, KEY #1% GE ARG$ &
+\	GOTO 3020 IF LEFT(OWNER$,LEN(ARG$))<>ARG$ &
+\	PRINT #1% &
+\	UNTIL 0% &
+\	PRINT #1%, FNC$;FNPRINT.ACCOUNT$ &
+\	GET #2% &
+\	GOTO 1000 IF LEFT(OWNER$,LEN(ARG$))<>ARG$ &
+\	NEXT &
+
+3020	PRINT #1%, FNC$;CRLF$;'No matches for ';ARG$ &
+\	GOTO 1000 &
+
+4000	! CHANGE &
+	&
+	&
+	ACC$=FNGETARG$ &
+\	ACC$=FNGET.ACCOUNT$ UNLESS LEN(ACC$) &
+\	ACC$=CVT$$(ACC$,255%) &
+\	ACC$=FNDA$(ACC$) &
+
+4010	GET #2%, KEY #0% EQ MID(FSS$(ACC$,1%),5%,2%) &
+\	NEW.PASS$=FNGETARG$ &
+\	IF NEW.PASS$='' THEN &
+	PRINT #1%, FNC$;CRLF$;'New password <*> ? '; &
+\	INPUT #1%, NEW.PASS$ &
+\	NEW.PASS$='*' UNLESS LEN(NEW.PASS$) &
+
+15000	DEF* FNC$ &
+\	FNC$='' &
+\	FNC$=CRLF$ IF CCPOS(1%) &
+\	FNEND &
+
+15010	DEF* FNPRINT.ACCOUNT$ &
+\	J%=SWAP%(CVT$%(PPN$)) &
+\	J$='['+NUM1$(SWAP%(J%) AND 255%)+','+ &
+	NUM1$(J% AND 255%)+']' &
+\	J$=J$+' ' WHILE LEN(J$)<10% &
+\	CHANGE SYS(CHR$(6%)+CHR$(14%)+STRING$(4%,0%)+PPN$) TO V% &
+\	BLOCKS.USED.=V%(6%)*256%+V%(5%) &
+\	QUOTA.=V%(27%)+V%(28%)*256% &
+\	J$=J$+FORMAT$(QUOTA.,'#######')+'     '+ &
+	FORMAT$(BLOCKS.USED.,'#######')+'      '+CVT$$(OWNER$,128%) &
+\	FNPRINT.ACCOUNT$=J$ &
+\	FNEND &
+
+15020	DEF* FNGET.ACCOUNT$ &
+\	PRINT #1%, FNC$;CRLF$;'Account ? '; &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,255%) &
+\	GOTO 15020 UNLESS LEN(J$) &
+\	FNGET.ACCOUNT$=J$ &
+\	FNEND &
+
+15470	! FNGETARG &
+	&
+	&
+	! This function is used in routines to allow the specification of &
+	! all the command arguments on the command line. &
+	&
+	DEF* FNGETARG$ &
+\	FNGETARG$='' &
+\	GOTO 15490 UNLESS LEN(ARG$) &
+\	JJ%=INSTR(1%,ARG$,' ') &
+\	IF JJ%=0% THEN &
+	FNGETARG$=ARG$ &
+\	ARG$='' &
+\	GOTO 15490 &
+
+15480	FNGETARG$=LEFT(ARG$,JJ%-1%) &
+\	ARG$=RIGHT(ARG$,JJ%+1%) &
+
+15490	FNEND &
+
+15500	DEF* FNDA$ &
+\	J$=FNDA$ &
+\	J$='('+J$+')' UNLESS INSTR(1%,J$,'(') OR INSTR(1%,J$,':') &
+\	FNDA$=J$ &
+\	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	RESUME 3020 IF ERL=3010 AND ERR=155 &
+\	RESUME 1000 IF ERL=3010 AND ERR=11 &
+\	RESUME 32767 IF ERL=1000 AND ERR=11 &
+
+29000	PRINT #1%, FNC$;CRLF$;'REACT : ';ERT$(ERR);' at line';ERL &
+
+32767	END &
+

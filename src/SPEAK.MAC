@@ -1,0 +1,831 @@
+        .title    speak run-time system.
+        o.dext==^RRUN
+        o.flag==pf.rem!pf.ner!pf.rw!pf.1us!pf.kbm
+        o.msiz==28.
+        o.size==0
+        pflag=pf.kbm!pf.ner!pf.rw!pf.1us
+        defext=^RRUN
+        deforg     .99997
+	.SBTTL	USEFUL ROUTINES.
+	.NLIST	BEX
+	.LIST	TTM
+	.ENABL	LC
+	.GLOBL	CLRFQB,MESSAG,GETLIN,CLRXRB
+	.GLOBL	PRTNO,CRLF,TAB,GETNO,VAL
+	.GLOBL	DEBUG,COMMA,SLASH,SPCPAD
+
+init::  jmp     init2
+CLRFQB:	MOV	#XRB,R0
+1$:	CLR	-(R0)
+	CMP	R0,#FIRQB
+	BNE	1$
+	RETURN
+
+CLRXRB:	MOV	#14,R0
+1$:	CLRB	XRB(R0)
+	SOB	R0,1$
+	CLRB	XRB
+	RETURN
+
+MESSAG:	MOV	(R5),XRB	; BUFFER LENGTH
+	MOV	(R5),XRB+XRBC	; BYTES TO WRITE
+	MOV	R5,XRB+XRLOC	; START
+	ADD	#2,XRB+XRLOC
+	CLR	XRB+XRCI	; CHANNEL 0
+	
+	.WRITE			; DO IT
+
+	RETURN
+
+GETLIN:	MOV	#256.,XRB+XRLEN	; KEYBOARD BUFFER LENGTH
+	CLR	XRB+XRBC
+	MOV	R5,XRB+XRLOC
+	ADD	#2,XRB+XRLOC
+	CLR	XRB+XRCI
+	CLR	XRB+XRBLK
+	CLR	XRB+XRTIME
+	CLR	XRB+XRMOD
+
+	.READ
+
+	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	CLR	R0
+1$:	MOV	R5,R1
+	ADD	#2,R1
+	ADD	R0,R1
+	CMPB	(R1),#10.
+	BEQ	2$
+	CMPB	(R1),#13.
+	BEQ	2$
+	CMPB	(R1),#27.
+	BNE	10$
+	MOV	R5,R1
+	MOV	#CRLF,R5
+	CALL	MESSAG
+	MOV	R1,R5
+	BR	2$
+10$:	INC	R0
+	CMP	R0,XRB+XRBC
+	BLT	1$
+	DEC	R0
+2$:	MOV	R0,XRB+XRBC
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	MOV	XRB+XRBC,(R5)
+	RETURN
+
+PRTNO:	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	MOV	R2,-(SP)
+	MOV	R3,-(SP)
+	MOV	R4,-(SP)
+	MOV	R5,-(SP)
+	CLR	PRTNEG
+	MOV	#8.,R4
+	MOV	#10.,R0
+1$:	CLRB	KBBUF(R0)
+	DEC	R0
+	BGE	1$
+	CLR	R3
+	TST	R5
+	BEQ	5$
+	BGT	2$
+	INC	PRTNEG
+	NEG	R5
+2$:	MOV	R5,R2
+3$:	TST	R2
+	BEQ	4$
+	MOV	R2,R3
+	CLR	R2
+	DIV	#10.,R2
+	ADD	#48.,R3
+	MOVB	R3,KBBUF(R4)
+	DEC	R4
+	BNE	3$
+4$:	TST	PRTNEG
+	BEQ	9$
+	MOVB	#45.,KBBUF(R4)
+	DEC	R4
+9$:	TST	SPCPAD
+	BEQ	15$
+	MOV	#8.,R1
+	SUB	R4,R1
+	MOV	SPCPAD,R0
+	SUB	R1,R0
+	TST	R0
+	BLE	11$
+10$:	MOVB	#32.,KBBUF(R4)
+	DEC	R4
+	SOB	R0,10$
+11$:	CLR	SPCPAD
+15$:	MOV	#KBBUF1,R5
+	CALL	MESSAG
+	MOV	(SP)+,R5
+	MOV	(SP)+,R4
+	MOV	(SP)+,R3
+	MOV	(SP)+,R2
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	RETURN
+
+5$:	MOVB	#48.,KBBUF+8.
+	MOV	#7.,R4
+	BR	4$
+
+PRTEMP:	.WORD	0
+PRTNEG:	.WORD	0
+SPCPAD:	.WORD	0
+KBBUF1:	.WORD	10.
+KBBUF:	.BLKW	10.
+
+CRLF:	.WORD	2
+	.ASCII	<13.><10.>
+
+COMMA:	.WORD	1
+	.ASCII	/,/
+	.EVEN
+
+SLASH:	.WORD	1
+	.ASCII	"/"
+	.EVEN
+
+TAB:	.WORD	1
+	.ASCII	<9.>
+	.EVEN
+
+GETNO:	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	MOV	R2,-(SP)
+	MOV	R3,-(SP)
+	MOV	R4,-(SP)
+	MOV	R5,-(SP)
+	CLR	NEG
+	MOV	R5,R4
+	ADD	#2,R4
+	CMPB	(R4),#'-
+	BNE	1$
+	INC	NEG
+	MOVB	#'0,(R4)
+1$:	MOV	(R5),R4
+	ADD	R5,R4
+	INC	R4
+	MOV	#1,R0
+	CLR	GETTMP
+2$:	MOVB	(R4),R3
+	CMP	R3,#48.
+	BLT	10$
+	CMP	R3,#57.
+	BGT	10$
+	SUB	#48.,R3
+	MOV	R0,GTTMP1
+	MUL	R3,R0
+	ADD	R1,GETTMP
+	DEC	R4
+	DEC	R4
+	CMP	R4,R5
+	BEQ	3$
+	INC	R4
+	MOV	GTTMP1,R0
+	MUL	#10.,R0
+	MOV	R1,R0
+	BR	2$
+3$:	MOV	GETTMP,R5
+	TST	NEG
+	BEQ	4$
+	NEG	R5
+	MOV	(SP),R0
+	ADD	#2,R0
+	MOVB	#'-,(R0)
+4$:	MOV	(SP)+,R4
+	MOV	(SP)+,R4
+	MOV	(SP)+,R3
+	MOV	(SP)+,R2
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	CLC
+	BR	11$
+10$:	MOV	(SP)+,R4
+	MOV	(SP)+,R4
+	MOV	(SP)+,R3
+	MOV	(SP)+,R2
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	SEC
+	BR	11$
+11$:	RETURN
+
+GETTMP:	.WORD	0
+GTTMP1:	.WORD	0
+NEG:	.WORD	0
+
+VAL:	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	CLR	VALLEN
+	MOV	R5,R0
+1$:	CMPB	(R0),#'-
+	BEQ	2$
+	CMPB	(R0),#48.
+	BLT	3$
+	CMPB	(R0),#57.
+	BGT	3$
+2$:	MOV	#VALTMP,R1
+	ADD	VALLEN,R1
+	MOVB	(R0),(R1)
+	INC	VALLEN
+	INC	R0
+	BR	1$
+3$:	MOV	#VALLEN,R5
+	CALL	GETNO
+	BCS	6$
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	CLC
+	BR	7$
+6$:	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	SEC
+	BR	7$
+7$:	RETURN
+
+VALLEN:	.WORD	0
+VALTMP:	.BLKW	10.
+
+DEBUG:	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	MOV	R2,-(SP)
+	MOV	R3,-(SP)
+	MOV	R4,-(SP)
+	MOV	R5,-(SP)
+	MOV	R0,R5
+	CALL	PRTNO
+	MOV	#TAB,R5
+	CALL	MESSAG
+	MOV	R1,R5
+	CALL	PRTNO
+	MOV	#TAB,R5
+	CALL	MESSAG
+	MOV	R2,R5
+	CALL	PRTNO
+	MOV	#TAB,R5
+	CALL	MESSAG
+	MOV	R3,R5
+	CALL	PRTNO
+	MOV	#TAB,R5
+	CALL	MESSAG
+	MOV	R4,R5
+	CALL	PRTNO
+	MOV	#TAB,R5
+	CALL	MESSAG
+	MOV	(SP)+,R5
+	CALL	PRTNO
+	MOV	R5,-(SP)
+	MOV	#CRLF,R5
+	CALL	MESSAG
+	MOV	(SP)+,R5
+	MOV	(SP)+,R4
+	MOV	(SP)+,R3
+	MOV	(SP)+,R2
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	RETURN
+
+       
+	.TITLE SPEAK
+        .dsect
+v.cc::   .blkw    1
+v.2cc::  .blkw    1
+v.cfqb:: .blkw    1
+v.cxrb:: .blkw    1
+         .psect   .99997
+	.LIST TTM
+	.NLIST BIN
+	.ENABL GBL
+start:  clr    ccl
+	MOV #NAMES+10.,R1
+	CALL CLRFQB
+	MOVB #UU.SYS,FIRQB+FQFUN
+	.UUO
+	MOVB FIRQB+27,PROJ
+	MOVB FIRQB+26,PROG
+4$:	CMP R1,#NAMEND+10.
+	BEQ PPN
+	CMPB (R1),PROJ
+	BNE 5$
+	INC R1
+	CMPB (R1),PROG
+	BNE 2$
+	MOV R1,NAME
+	BR 3$
+5$:	INC R1
+2$:	ADD #21.,R1
+	BR 4$
+3$:	SUB #11.,R1
+	MOV #MESSM,R0
+	MOV #10.,R2
+10$:	MOVB (R1),(R0)
+	INC R0
+	INC R1
+	SOB R2,10$
+	BR TSTCCL
+PPN:	MOVB PROJ,R1
+	TSTB R1
+	BPL 2$
+	ADD #256.,R1
+2$:	CLR R0
+	DIV #10.,R0
+	ADD #48.,R1
+	MOVB R1,#MESSM+3.
+	MOV R0,R1
+	CLR R0
+	DIV #10.,R0
+	ADD #48.,R1
+	MOVB R1,#MESSM+2.
+	ADD #48.,R0
+	MOVB R0,#MESSM+1.
+	MOVB PROG,R1
+	TSTB R1
+	BPL 3$
+	ADD #256.,R1
+3$:	CLR R0
+	DIV #10.,R0
+	ADD #48.,R1
+	MOVB R1,#MESSM+7.
+	MOV R0,R1
+	CLR R0
+	DIV #10.,R0
+	ADD #48.,R1
+	MOVB R1,#MESSM+6.
+	ADD #48.,R0
+	MOVB R0,#MESSM+5.
+	CMPB #MESSM+1.,#48.
+	BNE 4$
+	MOVB #32.,#MESSM+1.
+	CMPB #MESSM+2.,#48.
+	BNE 4$
+	MOVB #32.,#MESSM+2.
+4$:	CMPB #MESSM+5.,#48.
+	BNE TSTCCL
+	MOVB #32.,#MESSM+5.
+	CMPB #MESSM+6.,#48.
+	BNE TSTCCL
+	MOVB #32.,#MESSM+6.
+TSTCCL:	TST CCL
+	BEQ MAINLP
+	MOVB CORCMN,R0
+	MOVB #13.,CORCMN+1(R0)
+	MOV #CORCMN+6,COMMND
+	BR CCLENT
+MAINLP:	TST CCL
+	BNE 27$
+	MOV #PROMPT,R5
+	CALL MESSAG
+	MOV #KBLEN,R5
+	CALL GETLIN
+	TST FIRQB
+	BEQ 1$
+27$:	.EXIT
+1$:	MOV #KBUF,COMMND
+CCLENT:	CMPB #32.,@COMMND
+	BEQ 99$
+	CMPB #10.,@COMMND
+	BEQ 98$
+	CMPB #13.,@COMMND
+	BEQ 98$
+	CMPB #27.,@COMMND
+	BEQ 98$
+	CMPB #9.,@COMMND
+	BNE 2$
+99$:	INC COMMND
+	BR CCLENT
+98$:	CLR CCL
+	BR MAINLP
+2$:	MOV #12.,R0
+	MOV #10.,DEST
+3$:	MOVB #32.,DEST(R0)
+	SOB R0,3$
+	MOV #10.,DEST
+	CLR INVIS
+	CLR FILE
+	CLR UNGAG
+10$:	CMPB #45.,@COMMND
+	BNE 11$
+	INC INVIS
+	BR 20$
+11$:	CMPB #64.,@COMMND
+	BNE 12$
+	INC FILE
+	BR 20$
+12$:	CMPB #43.,@COMMND
+	BNE 13$
+	INC UNGAG
+20$:	INC COMMND
+	BR 10$
+13$:	MOV #1,R0
+	MOV #14.,MESS
+	CLR BADTEL
+MOVDST:	INC R0
+	CMP #12.,R0
+	BEQ 11$
+	CMPB #32.,@COMMND
+	BEQ 11$
+	CMPB #9.,@COMMND
+	BEQ 11$
+	CMPB #10.,@COMMND
+	BEQ 11$
+	CMPB #13.,@COMMND
+	BEQ 11$
+	CMPB #27.,@COMMND
+	BEQ 11$
+	CMPB #97.,@COMMND
+	BGT 20$
+	CLR R1
+	MOVB @COMMND,R1
+	SUB #32.,R1
+	MOVB R1,@COMMND
+20$:	MOVB @COMMND,DEST(R0)
+	INC COMMND
+	BR MOVDST
+11$:	CMPB #32.,@COMMND
+	BEQ 12$
+	CMPB #9.,@COMMND
+	BEQ 12$
+	CMPB #10.,@COMMND
+	BEQ NOMESS
+	CMPB #13.,@COMMND
+	BEQ NOMESS
+	CMPB #27.,@COMMND
+	BEQ NOMESS
+	INC COMMND
+	BR 11$
+12$:	INC COMMND
+	CMPB #32.,@COMMND
+	BEQ 12$
+	CMPB #9.,@COMMND
+	BEQ 12$
+	MOV #14.,MESS
+MOVMES:	CMPB #10.,@COMMND
+	BEQ NOMESS
+	CMPB #13.,@COMMND
+	BEQ NOMESS
+	CMPB #27.,@COMMND
+	BEQ NOMESS
+	CMPB #124.,@COMMND
+	BNE 1$
+	MOVB #127.,@COMMND
+1$:	MOV #MESSM,R1
+	ADD MESS,R1
+	MOVB @COMMND,(R1)
+	INC MESS
+	INC COMMND
+	BR MOVMES
+NOMESS:	MOV MESS,R1
+	ADD #MESSM,R1
+	MOVB #13.,(R1)
+	INC R1
+	INC MESS
+	MOVB #10.,(R1)
+	INC MESS
+	MOV #DESTM,R1
+	MOV #10.,R0
+20$:	CMPB #9.,(R1)
+	BNE 21$
+	MOVB #32.,(R1)
+21$:	INC R1
+	SOB R0,20$
+	MOV #NAMES,NAMPL
+	CLR NAMFOU
+1$:	CMP NAMPL,#BIGEND
+	BEQ 4$
+	MOV #DESTM,COMMND
+	MOV #10.,R0
+	MOV NAMPL,R1
+2$:	CMPB #32.,@COMMND
+	BEQ 10$
+	CMPB @COMMND,(R1)
+	BNE 3$
+	INC COMMND
+	INC R1
+	SOB R0,2$
+10$:	MOV NAMPL,NAME
+	INC NAMFOU
+	CMP #2,NAMFOU
+	BNE 3$
+	MOV #M.MANY,R5
+	CALL MESSAG
+	JMP MAINLP
+3$:	ADD #22.,NAMPL
+	BR 1$
+4$:	TST NAMFOU
+	BEQ SPKKB
+	MOV NAME,NAMPL
+	ADD #12.,NAMPL
+	MOV #10.,R0
+	MOV #DESTM,R1
+30$:	MOVB @NAMPL,(R1)
+	INC R1
+	INC NAMPL
+	SOB R0,30$
+	CMPB #32.,DESTM
+	BLE SPKKB
+	.EXIT
+SPKKB:	CALL CLRXRB
+	MOV #DESTM,COMMND
+	CMPB #75.,@COMMND
+	BNE SPKJOB
+	INC COMMND
+	CMPB #66.,@COMMND
+	BNE 1$
+	INC COMMND
+1$:	CMPB #48.,@COMMND
+	BGT 11$
+	CMPB #57.,@COMMND
+	BLT 10$
+	MOV COMMND,R5
+	CALL VAL
+	TST R5
+	BMI 10$
+2$:	INC COMMND
+	CMPB #48.,@COMMND
+	BGT 3$
+	CMPB #58.,@COMMND
+	BGT 2$
+3$:	CMPB #58.,@COMMND
+	BNE 4$
+	INC COMMND
+4$:	CMPB #32.,@COMMND
+	BNE 10$
+	CALL SENDKB
+	JMP MAINLP
+11$:	CMPB #42.,@COMMND
+	BNE 10$
+	INC COMMND
+	CMPB #32.,@COMMND
+	BEQ 20$
+	CMPB #58.,@COMMND
+	BNE 10$
+20$:	MOV #0,R5
+	INC BADTEL
+21$:	MOV R5,JOB
+	CALL SENDKB
+	MOV JOB,R5
+	INC R5
+	CMPB #51.,R5
+	BNE 21$
+	JMP MAINLP
+10$:	JMP B.DEST
+SPKJOB:	NOP			; NOT IMPLEMENTED
+PPNNAM:	MOV #10.,XRB+XRLEN
+	MOV #10.,XRB+XRBC
+	MOV #DESTM,XRB+XRLOC
+	.FSS
+	BIT #2001,XRB+10
+	BEQ 1$
+2$:	JMP B.DEST
+1$:	TST XRB+XRBC
+	BNE 2$
+	BIT #200,XRB+10
+	BEQ 2$
+	BIT #17,XRB+12
+	BNE 2$
+	CLR PROJ
+	CLR PROG
+	MOVB FIRQB+7,PROJ
+	MOVB FIRQB+6,PROG
+	CLR ANYPRJ
+	CLR ANYPRG
+	BIT #400,XRB+10
+	BEQ 3$
+	INC ANYPRJ
+3$:	BIT #1000,XRB+10
+	BEQ 4$
+	INC ANYPRG
+4$:	CLR JOB
+5$:	INC JOB
+	CALL CLRFQB
+	MOVB #UU.SYS,FIRQB+FQFUN
+	MOVB JOB,FIRQB+4.
+	.UUO
+	CMPB #10.,FIRQB
+	BEQ 5$
+	CMPB #18.,FIRQB
+	BNE 20$
+	JMP MAINLP
+20$:	MOVB FIRQB+5.,R5
+	TST R5
+	BMI 10$
+	TST ANYPRJ
+	BNE 6$
+	CMPB PROJ,FIRQB+27
+	BNE 10$
+6$:	TST ANYPRG
+	BNE 7$
+	CMPB PROG,FIRQB+26
+	BNE 10$
+7$:	CALL SENDKB
+10$:	BR 5$
+SENDKB:	CALL CLRXRB
+	TST UNGAG
+	BEQ 10$
+	CALL CLRFQB
+	MOVB #UU.TRM,FIRQB+FQFUN
+	MOVB R5,FIRQB+5
+	.UUO
+	MOVB FIRQB+35,GAGSET
+	CALL CLRFQB
+	MOVB #UU.TRM,FIRQB+FQFUN
+	MOVB R5,FIRQB+5
+	MOVB #128.,FIRQB+35
+	.UUO
+10$:	MOV #6.,XRB
+	MOV CRLF,XRB+2
+	MOV #CRLF+2,XRB+4
+	MOVB #TTYHND,XRB+7
+	MOV R5,XRB+10
+	.SPEC
+	MOV MESS,XRB+2
+	MOV #MESSM,XRB+4
+	TST INVIS
+	BEQ 20$
+	SUB #14.,XRB+2
+	ADD #14.,XRB+4
+20$:	.SPEC
+	TST UNGAG
+	BEQ 11$
+	CALL CLRFQB
+	MOVB #UU.TRM,FIRQB+FQFUN
+	MOVB R5,FIRQB+5
+	MOVB GAGSET,FIRQB+35
+	.UUO
+11$:	MOV R5,R0
+	TST BADTEL
+	BNE 1$
+	TST XRB+2
+	BEQ 2$
+	MOV #M.NOTS,R5
+	BR 3$
+2$:	MOV #M.TO,R5
+3$:	CALL MESSAG
+	MOV R0,R5
+	CALL PRTNO
+	MOV #CRLF,R5
+	CALL MESSAG
+1$:	RETURN
+B.DEST:	MOV #M.DEST,R5
+	CALL MESSAG
+	JMP MAINLP
+TTYOUT:	MOVB R5,CHAR+2
+	MOV #CHAR,R5
+	JMP MESSAG
+KBLEN:	.WORD 0
+KBUF:	.BLKB 512.
+PROMPT:	.WORD 7
+	.ASCII "SPEAK> "
+	.EVEN
+CHAR:	.WORD 1.
+	.WORD 0.
+M.DEST:	.WORD 22.
+	.ASCII "?Invalid destination"<13.><10.>
+M.MANY:	.WORD 18.
+	.ASCII "?Name not unique"<13.><10.>
+M.TO:	.WORD 18.
+	.ASCII "Message sent to KB"
+M.NOTS:	.WORD 26.
+	.ASCII "Message failed to reach KB"
+COMMND:	.WORD 0
+NAMES:	.ASCII "MARK      "<015.><008.>"[ 15,  8] "
+	.ASCII "CHRIS     "<001.><055.>"[  1, 55] "
+	.ASCII "SGO       "<001.><060.>"[  1, 60] "
+	.ASCII "DELWYN    "<001.><069.>"[  1, 69] "
+	.ASCII "TOM       "<001.><070.>"[  1, 70] "
+	.ASCII "ACP       "<001.><080.>"[  1, 80] "
+	.ASCII "JDS       "<001.><090.>"[  1, 90] "
+	.ASCII "NAS       "<002.><001.>"[  2,  1] "
+	.ASCII "GJ        "<002.><005.>"[  2,  5] "
+	.ASCII "SHUTUP    "<009.><009.>"[  9,  9] "
+	.ASCII "MOHIT     "<015.><001.>"[ 15,  1] "
+	.ASCII "DAVID     "<015.><002.>"[ 15,  2] "
+	.ASCII "STEVEN    "<015.><003.>"[ 15,  3] "
+	.ASCII "KARL      "<015.><004.>"[ 15,  4] "
+	.ASCII "PAUL      "<015.><005.>"[ 15,  5] "
+	.ASCII "RIK       "<015.><006.>"[ 15,  6] "
+	.ASCII "SHAKEEL   "<015.><007.>"[ 15,  7] "
+	.ASCII "GERBIL    "<015.><009.>"[ 15,  9] "
+	.ASCII "SANJI     "<015.><010.>"[ 15, 10] "
+	.ASCII "EDWARD    "<015.><011.>"[ 15, 11] "
+NAMEND:	.ASCII "EVERYONE  "<000.><000.>"[  *,  *] "
+	.ASCII "CONSOLE   "<000.><000.>"KB0:      "
+	.ASCII "ALLKB     "<000.><000.>"KB*:      "
+COMS:	.ASCII "HELP      "<000.><000.><001.>"         "
+	.ASCII "LIST      "<000.><000.><002.>"         "
+	.ASCII "SELF      "<000.><000.><003.>"         "
+BIGEND:	.EVEN
+BADTEL:	.WORD 0.
+INVIS:	.WORD 0.
+FILE:	.WORD 0.
+UNGAG:	.WORD 0.
+GAGSET:	.WORD 0.
+CCL:	.WORD 0.
+NAMPL:	.WORD 0.
+NAMFOU:	.WORD 0.
+NAME:	.WORD 0.
+KB:	.WORD 0.
+PROJ:	.WORD 0.
+PROG:	.WORD 0.
+JOB:	.WORD 0.
+ANYPRG:	.WORD 0.
+ANYPRJ:	.WORD 0.
+DEST:	.WORD 10.
+DESTM:	.BLKB 10.
+MESS:	.WORD 14.
+MESSM:	.ASCII "[000,000]  >> "
+	.BLKB 512.
+init2::  
+       mov     #0,@#xrb
+       .core
+       tstb     @#firqb
+       beq      110$
+       call     crsdmp
+110$:  mov      r1,@#xrb
+       mov      #clrfqb,@#v.cfqb
+       mov      #clrxrb,@#v.cxrb
+       jmp      start
+p$new::
+       mov      #crsdmp,r0
+       mov      r0,@#v.cc
+       mov      r0,@#v.2cc
+       jmp      start
+p$run::
+       jmp      crsdmp
+crsdmp::
+       mov      #m.fatl,r0
+       mov      #l.fatl,r1
+       call     prttxt
+       .exit
+
+       cr = 13.
+       lf = 11.
+m.fatl:.ascii   /Fatal Runtime system error/<cr><lf>
+l.fatl = .-m.fatl
+        .even
+prttxt::
+        mov      r1,@#xrb
+        mov      r1,@#xrb+2
+        mov      r0,@#xrb+4
+        clr      @#xrb+6
+        clr      @#xrb+10
+        clr      @#xrb+12
+        clr      @#xrb+14
+        .write
+        rts      pc
+p$cc::  
+        tst      @#v.cc
+        bne      120$
+        jmp      crsdmp
+120$:   mov      (sp)+,(sp)
+        jmp      @v.cc
+p$2cc:: tst      @#v.2cc
+        bne      121$
+        jmp      crsdmp
+121$:   mov      (sp)+,(sp)
+        jmp      @v.2cc
+p$bad:: jmp      crsdmp
+p$bpt:: rti
+p$iot:: halt
+p$emt:: jmp      crsdmp
+p$trap:: rti
+p$fis:: jmp      crsdmp
+p$cras:: jmp     crsdmp
+p$strt:: jmp     crsdmp
+p$fpp:: jmp      crsdmp
+
+
+        deforg    .99998
+  .macro    psuvec    a,b
+            $$$$$$=.
+            .macro    psuvec    label,value
+                      .=$$$$$$+label-p.off
+                      .word      value
+            .endm
+            psuvec    <a>,<b>
+  .endm
+            deforg    .99999
+ psuvec p.flag,pflag
+ psuvec p.dext,defext
+ psuvec p.isiz,0
+ psuvec p.fis,p$fis
+ psuvec p.cras,p$cras
+ psuvec p.strt,p$strt
+ psuvec p.bad,p$bad
+ psuvec p.bpt,p$bpt
+ psuvec p.iot,p$iot
+ psuvec p.emt,p$emt
+ psuvec p.trap,p$trap
+ psuvec p.fpp,p$fpp
+ psuvec p.msiz,1
+ psuvec p.new,p$new
+ psuvec p.run,p$run
+ psuvec p.cc,p$cc
+ psuvec p.2cc,p$2cc
+ psuvec p.size,28.
+ .end      init

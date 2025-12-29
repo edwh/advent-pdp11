@@ -1,0 +1,70 @@
+1	! MKFILES.B2S - Create Advent data files with correct RSTS/E attributes
+2	! Run once: RUN DM1:[1,3]MKFILES
+3	!
+10	ON ERROR GOTO 900
+11	PRINT "Creating Advent data files..."
+12	PRINT
+20	! Delete existing files
+21	PRINT "Deleting old files..."
+22	KILL "DM1:[1,2]ADVENT.MON"
+23	KILL "DM1:[1,2]ADVENT.CHR"
+24	KILL "DM1:[1,2]BOARD.NTC"
+25	KILL "DM1:[1,2]MESSAG.NPC"
+26	ON ERROR GOTO 900
+30	!
+100	! ADVENT.MON - Monster spawn data: 10000 records x 20 bytes
+101	PRINT "Creating ADVENT.MON (10000 x 20 bytes)..."
+102	OPEN "DM1:[1,2]ADVENT.MON" AS FILE #5%, ACCESS SCRATCH, ALLOW NONE
+103	DIM #5%, MONSTER$(10000%)=20%
+104	MONSTER$(0%)=STRING$(20%,0%)
+105	MONSTER$(9999%)=STRING$(20%,0%)
+106	CLOSE #5%
+107	PRINT "  Done."
+110	!
+200	! ADVENT.CHR - Character saves: 100 records x 512 bytes
+201	PRINT "Creating ADVENT.CHR (100 x 512 bytes)..."
+202	OPEN "DM1:[1,2]ADVENT.CHR" AS FILE #7%, ACCESS SCRATCH, ALLOW NONE
+203	DIM #7%, CHARACTER$(100%)=512%
+204	CHARACTER$(0%)=STRING$(512%,0%)
+205	CHARACTER$(99%)=STRING$(512%,0%)
+206	CLOSE #7%
+207	PRINT "  Done."
+210	!
+300	! BOARD.NTC - Noticeboard: 512 records
+301	PRINT "Creating BOARD.NTC (512 x 512 bytes)..."
+302	OPEN "DM1:[1,2]BOARD.NTC" AS FILE #6%, ACCESS SCRATCH, ALLOW NONE
+303	DIM #6%, INDEX%(511%), BOARD$(511%)=512%
+304	INDEX%(0%)=0%
+305	INDEX%(511%)=0%
+306	BOARD$(0%)=STRING$(512%,0%)
+307	BOARD$(511%)=STRING$(512%,0%)
+308	CLOSE #6%
+309	PRINT "  Done."
+310	!
+400	! MESSAG.NPC - NPC messages: 1000 records x 60 bytes, MODE 4096
+401	PRINT "Creating MESSAG.NPC (1000 x 60 bytes, MODE 4096)..."
+402	OPEN "DM1:[1,2]MESSAG.NPC" AS FILE #9%, MODE 4096%, ACCESS SCRATCH, ALLOW NONE
+403	DIM #9%, NUM%(0%), SHOUT$(1000%)=60%
+404	NUM%(0%)=0%
+405	SHOUT$(0%)=STRING$(60%,0%)
+406	SHOUT$(999%)=STRING$(60%,0%)
+407	CLOSE #9%
+408	PRINT "  Done."
+410	!
+500	! ADVENT.DTA - Room data needs MODE 257%, but already exists
+501	! Just verify it opens correctly
+502	PRINT "Verifying ADVENT.DTA..."
+503	OPEN "DM1:[1,2]ADVENT.DTA" AS FILE #3%, MODE 257%
+504	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, 312% AS DESC$
+505	GET #3%, RECORD 1%
+506	PRINT "  Room 1 exists: ";LEFT$(DESC$,40%)
+507	CLOSE #3%
+510	!
+800	PRINT
+801	PRINT "All files created successfully!"
+802	PRINT "You can now run: RUN DM1:[1,2]ADVENT"
+803	GOTO 999
+900	! Error handler
+901	PRINT "Error ";ERR;" at line ";ERL
+902	RESUME 999
+999	END

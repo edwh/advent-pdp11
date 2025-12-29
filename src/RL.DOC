@@ -1,0 +1,12 @@
+Just a few notes on memory resident overlays to remind me when I forget:
+
+1. You put your overlays in a resident library.
+
+2. You MAKSIL the resident library, after TKBing.
+
+3. You ADD the resident library RW.
+
+4. You TKB your root.
+
+5. You run the root and it falls over.
+

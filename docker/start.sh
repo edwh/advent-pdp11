@@ -1,23 +1,47 @@
 #!/bin/bash
 # Advent MUD Startup Script
-# Starts SIMH PDP-11 with RSTS/E via web terminal
+# Runs SIMH PDP-11 with RSTS/E V10.1 and web terminals
 
 echo "=============================================="
 echo "  Advent MUD - 1987 Multi-User Dungeon"
-echo "  Running on SIMH PDP-11 / RSTS/E V7"
+echo "  Running on SIMH PDP-11 / RSTS/E V10.1"
 echo "=============================================="
 echo ""
-echo "Web terminal will be available on port 7681"
+echo "Starting SIMH emulator..."
+
+# Start SIMH in background (listens on TCP ports 2322 and 2323)
+/usr/src/simh/BIN/pdp11 /opt/advent/pdp11.ini &
+SIMH_PID=$!
+
+# Wait for SIMH to open ports
+sleep 2
+
+echo "Running autoboot..."
+/opt/advent/autoboot.exp &
+BOOT_PID=$!
+
+# Wait for boot to complete
+wait $BOOT_PID
+echo "Autoboot finished."
+
 echo ""
-echo "RSTS/E Login Instructions:"
-echo "  1. Press Enter at 'Option:' prompt"
-echo "  2. Enter date/time when prompted (e.g., 29-DEC-25 12:00)"
-echo "  3. Press Enter at 'Command File:' prompt"
-echo "  4. Login with: HELLO 1,2"
-echo "  5. Password: SYSTEM"
-echo ""
-echo "Starting emulator..."
+echo "Web interfaces:"
+echo "  Port 7681 = Game (connect to Advent)"
+echo "  Port 7682 = Admin (RSTS/E console)"
 echo ""
 
-# Start ttyd with SIMH
-exec ttyd -p 7681 -W /usr/local/bin/pdp11 /opt/advent/pdp11.ini
+# Start game interface (port 7681) - connects to DZ11 terminal
+ttyd -p 7681 -W /opt/advent/game_connect.exp &
+GAME_PID=$!
+
+# Start admin interface (port 7682) - direct console
+ttyd -p 7682 -W /opt/advent/admin_connect.sh &
+ADMIN_PID=$!
+
+echo "All services started. RSTS/E is ready."
+
+# Wait for any process to exit
+wait -n $SIMH_PID $GAME_PID $ADMIN_PID
+
+# If any exits, kill the others
+kill $SIMH_PID $GAME_PID $ADMIN_PID 2>/dev/null

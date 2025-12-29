@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  advent:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: advent
+    ports:
+      - "7681:7681"   # Game web terminal
+      - "7682:7682"   # Admin web terminal
+      - "2322:2322"   # Console telnet
+      - "2323:2323"   # Player terminals
+    volumes:
+      - ./simh/Disks:/opt/advent/disks
+    restart: unless-stopped

@@ -1,0 +1,27 @@
+	.title	prime5
+	$rsx
+	$rwdef
+
+start:	mov	#3,r3
+1$:	cmpb	store(r3),#0
+	bne	4$
+	cmp	r3,#182.
+	bge	4$	; 3$ to print, 4$ not to
+	mov	r3,r4
+	mul	r3,r4
+2$:	cmp	r4,#32767.
+	bhi	4$	; 3$ to print, 4$ not to
+	movb	#1,store(r4)
+	add	r3,r4
+	br	2$
+3$:	.wrdec	r3
+	.newline
+4$:	add	#2,r3
+	cmp	r3,#32767.
+	blo	1$
+	.exit
+
+store:	.blkb	32767.
+	.even
+
+	.end	start

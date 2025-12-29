@@ -1,0 +1,116 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 180
+
+spawn telnet localhost 2322
+
+# Wait for connection
+expect "Connected to the PDP-11"
+sleep 2
+
+# Handle boot prompts
+expect "Today's date?" { send "1-JAN-92\r" }
+expect "Current time?" { send "12:00\r" }
+expect "Start timesharing?" { send "\r" }
+
+# Wait for disk rebuild and startup
+expect "Proceed with system startup?" { send "\r" }
+
+# Wait for system to fully start
+expect "RSTS/E is on the air"
+sleep 5
+
+# Send enter to get login prompt
+send "\r"
+expect "User:" { send "\[1,2\]\r" }
+expect "Password:" { send "Digital1977\r" }
+
+# Handle job attachment prompt - press Enter to start new job
+expect {
+    "Job number to attach to?" { send "\r" }
+    "$ " { }
+}
+
+expect "$ "
+puts "\n\n=== LOGGED IN ===\n"
+
+# Delete old build files with DELETE command (not PIP)
+send "DELETE SY:\[1,2\]ADVENT.ODL;*\r"
+expect "$ "
+send "DELETE SY:\[1,2\]ADVENT.CMD;*\r"
+expect "$ "
+
+# Create ODL file using CREATE instead of EDT to ensure clean file
+send "CREATE SY:\[1,2\]ADVENT.ODL\r"
+expect ">"
+send "\t.ROOT USER\r"
+expect ">"
+send "USER:\t.FCTR SY:\[1,2\]ADVENT-SY:\[1,2\]ADVINI-SY:\[1,2\]ADVOUT-SY:\[1,2\]ADVNOR-SY:\[1,2\]ADVCMD-SY:\[1,2\]ADVODD-SY:\[1,2\]ADVMSG-SY:\[1,2\]ADVBYE-SY:\[1,2\]ADVSHT-SY:\[1,2\]ADVNPC-SY:\[1,2\]ADVPUZ-SY:\[1,2\]ADVDSP-SY:\[1,2\]ADVFND-SY:\[1,2\]ADVTDY-LIBR\r"
+expect ">"
+send "LIBR:\t.FCTR LB:BP2OTS/LB\r"
+expect ">"
+send "\t.END\r"
+expect ">"
+send "\x1a"
+expect "$ "
+
+puts "\n=== ODL FILE CREATED ===\n"
+send "TYPE SY:\[1,2\]ADVENT.ODL\r"
+expect "$ "
+
+# Create CMD file
+send "CREATE SY:\[1,2\]ADVENT.CMD\r"
+expect ">"
+send "SY:\[1,2\]ADVENT/FP=SY:\[1,2\]ADVENT/MP\r"
+expect ">"
+send "UNITS=13\r"
+expect ">"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect ">"
+send "EXTTSK=2048\r"
+expect ">"
+send "//\r"
+expect ">"
+send "\x1a"
+expect "$ "
+
+puts "\n=== CMD FILE CREATED ===\n"
+send "TYPE SY:\[1,2\]ADVENT.CMD\r"
+expect "$ "
+
+# Delete old TSK file before rebuild
+send "DELETE SY:\[1,2\]ADVENT.TSK;*\r"
+expect "$ "
+
+puts "\n=== RUNNING TKB ===\n"
+send "TKB @SY:\[1,2\]ADVENT\r"
+
+set timeout 120
+expect {
+    -re "\\?.*error" {
+        puts "\n*** ERROR ***\n"
+        exp_continue
+    }
+    "*DIAG*" {
+        puts "\n*** BUILD HAD WARNINGS ***\n"
+        exp_continue
+    }
+    "$ " { }
+}
+
+puts "\n=== CHECKING FOR TSK FILE ===\n"
+send "DIR SY:\[1,2\]ADVENT.TSK\r"
+expect "$ "
+
+puts "\n=== TRYING TO RUN GAME ===\n"
+send "RUN SY:\[1,2\]ADVENT\r"
+sleep 2
+expect {
+    "Welcome" { puts "\n*** GAME STARTED! ***\n" }
+    "INITIALIZING" { puts "\n*** GAME INITIALIZING ***\n" }
+    -re "\\?.*" { puts "\n*** ERROR ***\n" }
+    "$ " { }
+    timeout { puts "\n*** TIMEOUT ***\n" }
+}
+
+puts "\n=== BUILD SCRIPT COMPLETE ===\n"

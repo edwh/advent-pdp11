@@ -1,0 +1,125 @@
+1	SUB DISPLP &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+4999	J%=VAL('A') &
+	! Force ERR<>28 &
+
+5000	BOOKS.LISTED%=BOOKS.LISTED%+1% &
+\	AUT$=LEFT(A.AUTHOR$,25%) &
+\	LIST.AUTHOR$=CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+	! Save current author in case of LIST special output &
+	! N.B. Still want to get the other authors so that we can print &
+	! + if required. &
+\	AUT$='' &
+\	GET #4%, KEY #0% EQ ACCESSION$ &
+\	UNLOCK #4% &
+\	AUT$=CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	UNTIL 0% &
+
+5010	GET #4% &
+\	UNLOCK #4% &
+\	GOTO 7000 UNLESS A.ACCESSION$=ACCESSION$ &
+\	AUT$=AUT$+' & '+CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	NEXT &
+
+7000	GOTO 7005 UNLESS BOOKS.THIS.PAGE%=0% &
+\	PAGES.LISTED%=PAGES.LISTED%+1% &
+\	J%=FNP%(CHR$(12%)) &
+\	J%=FNP%(STRING$(132%,ASCII('-'))) &
+\	J1$='' &
+\	J1$='Page '+NUM1$(PAGES.LISTED%) IF PAGES.LISTED%>1% &
+\	J$=SPACE$(66%-LEN(CVT$$(HEADER$,132%))/2%) &
+\	J$=J$+CVT$$(HEADER$,132%) &
+\	J$=J$+SPACE$(131%-LEN(J$)-LEN(J1$))+J1$ &
+\	J%=FNP%(J$) &
+\	J%=FNP%(STRING$(132%,ASCII('-'))) &
+\	PRINT #2%, 'A/N';TAB(8%);'Title (* => On Order) '; &
+	TAB(56%);'Author (+ => and Others)';TAB(82%);'Publisher'; &
+	TAB(109%);'Dewey/ISBN';TAB(122%);'Stat/Date' &
+\	J%=FNP%(STRING$(132%,ASCII('-'))) &
+
+7005	BOOKS.THIS.PAGE%=BOOKS.THIS.PAGE%+1% &
+\	BOOKS.THIS.PAGE%=0% IF BOOKS.THIS.PAGE%>=50% &
+\	J1$=' ' &
+\	J1$='*' IF FLAG% AND 512% &
+\	J%=INSTR(1%,AUT$,'&') &
+\	IF J%=0% THEN &
+	J2$=' '+AUT$ &
+	ELSE &
+	J2$='+'+LEFT(AUT$,J%-2%) &
+
+7010	J2$=LEFT(J2$,1%)+LIST.AUTHOR$ IF (SWITCH% AND 4%) &
+	! We want the current author for LIST output. &
+\	J3$='          ' &
+\	J3$=ISBN$ IF CVT$$(ISBN$,255%)<>'N/A' &
+\	J3$=DEWEY$ UNLESS FLAG% AND 2%^9% &
+\	J$='' &
+\	J$='L' IF FLAG% AND 1% &
+\	J$='S' IF FLAG% AND 2% &
+\	J$='R' IF FLAG% AND 4% &
+\	J$='Q' IF FLAG% AND 8% &
+\	J$='SC' IF FLAG% AND 16% &
+\	J$=J$+',UR' IF FLAG% AND 1024% &
+\	J$=J$+',M' IF FLAG% AND 2048% &
+\	J$=J$+',AR' IF FLAG% AND 2%^8% &
+\	J$=DEWEY$ IF FLAG% AND 2%^9% &
+
+7020	PRINT #2%, FNPRETTY.ACCESSION$(CVT$%(ACCESSION$)+32768.);TAB(7%); &
+	J1$;TITLE$; &
+	TAB(55%);J2$;TAB(82%);PUBLISHER$;TAB(109%);J3$; &
+	TAB(122%);J$ &
+\	SUBEXIT &
+
+15010
+15020
+15030
+15040
+15060
+15070
+15080
+15090
+15100
+15110
+15120
+20050	DEF* FNP%(A$) &
+
+20060	PRINT #2%, A$ &
+\	FNEXIT &
+
+20070	PRINT #1%, 'Line printer hung, put online to continue...';CHR$(13%); &
+\	SLEEP 3% &
+\	PRINT #1%, SPACE$(70%);CHR$(13%); &
+\	PRINT #2%, RECORD 4%, CHR$(0%) &
+\	SUBEXIT IF ERL=7020 &
+\	FNEXIT &
+
+20080	FNEND &
+
+20100	DEF* FNPRETTY.ACCESSION$(P.A.N.) &
+\	JJJ1$=NUM1$(P.A.N.) &
+\	JJJ1$=STRING$(5%-LEN(JJJ1$),ASCII('0'))+JJJ1$ &
+\	JJJ1%=0% &
+\	JJJ1%=JJJ1%+I%*(ASCII(RIGHT(JJJ1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	JJJ1%=JJJ1%-JJJ1%/26%*26% &
+\	JJJ1$=RIGHT(JJJ1$,2%) WHILE LEFT(JJJ1$,1%)='0' &
+\	FNPRETTY.ACCESSION$=JJJ1$+'-'+CHR$(JJJ1%+ASCII('A')) &
+\	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	RESUME 7000 IF ERL=5010 AND ERR=11 &
+\	RESUME 5000 IF ERL=4999 &
+\	RESUME 32767 IF ERR=28 &
+\	RESUME 7000 IF ERL=5000 AND ERR=155 &
+
+26000	RESUME 20070 IF ERR=14 &
+
+29000	PRINT #1%, FNC$;CRLF$;'DISPLP : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	SUBEND &
+

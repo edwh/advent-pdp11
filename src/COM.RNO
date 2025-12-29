@@ -1,0 +1,220 @@
+.S
+.FL 72
+.PS 68,72
+.C ;Inter-System Communications
+.C ;---------------------------
+.S
+.P
+Here is what you need to know to be able to log in on another system over
+a keyboard link and to be able to transfer files between systems.
+.HL 1 Keyboards used
+At the time of writing, there are keyboard links between Beta and Gamma, and
+between Beta and Alpha.  If you want to go to Gamma from Alpha, go via Beta.
+.S
+.TS 10,20,30,40
+System	Keyboard	Speed	Use
+.BR
+------	--------	-----	---
+.BR
+Alpha	KB37:	9600	Communication with Beta.
+.S
+Beta	KB29:	9600	Communication with Alpha.
+.BR
+	KB28:	4800	Communication with Gamma.
+.S
+Gamma	KB9:	4800	Communication with Beta.
+.S
+.TS
+.P
+These keyboards at these speeds will transfer with no errors.
+.HL 1 Characteristics
+Both terminals should be set at the same speed and have XON set.  For long
+files, having LOCAL ECHO set on the receiving terminal seems to alleviate
+the problem of transfer stopping halfway through a file.
+.HL 1 Setting up
+This procedure should be followed if something goes wrong and you want to
+restore the keyboards to their orginal state.
+.LS
+.LE;Disconnect the lead inside the patch panel.
+.LE;Force both terminals _^C_^C.
+.LE;Reconnect the lead.
+.ELS
+.HL 1 Logging in on another system
+Here is an example of logging in on Alpha from Beta.
+.S
+.NF
+.NJ
+KERMIT
+
+Kermit-11 T3.53  Last edit: 13Aug-86  (Command line editing)
+
+Check SHOW RELEAS NOTES for possible incompatabilities
+with previous releases of Kermit-11 and other Kermits.
+Kermit-11>SET PROMPT BETA>
+BETA>SET LINE
+Device name ? KB39:
+BETA>CONNECT
+Connecting to: KB39: Speed:   9600
+Type Control _\C to return to the local Kermit-11
+
+HELLO
+
+RSTS V7.2-04 * MGS ALPHA+ *  Job 10  <Local>  KB37  04-Sep-87  12:13 PM
+
+Account Number > 11,3
+Password > 
+1 other user is logged in under this account
+
+             The Manchester Grammar School Computer Centre
+
+
+                          RSTS/E is on the air
+
+
+Ready
+
+SY/S
+
+RSTS V7.2-04 * MGS ALPHA+ * status at 04-Sep-87 , 12:13 PM
+
+.PS ,132
+Job    Who    Where    What    Size    State    Run-Time  Pri/RB   RTS
+ 1    11,3    KB39    NONAME   2/31K   _^C         1:17.6  -16/6   BASIC      
+ 2     1,2    Det     ERRCPY   5/31K   SR            1.9    0/6   BASIC      
+ 3     1,2    Det     SHUTDE   9/31K   SL D09       44.7    0/6   BASIC      
+ 4     1,2    Det     INDEXQ   8/16K   SR D08        1.3   -8/9   BASIC      
+ 5     5,15   KB27    ...LIB  27/31K   KB            2.7  -16/6   BP2COM     
+ 6     5,12   Det     TRACER  16/31K   SR           12.7   -8/6   BASIC      
+ 7    11,1    Det     ALMRUN   6/28K   SR            0.3   -8/4   BASIC      
+ 8     5,11   KB29    NONAME   2/31K   _^C            0.9  -16/6   BASIC      
+ 9    11,1    KB40    NONAME   2/31K   _^C         2:03.8   -8/6   BASIC      
+10    11,3    KB37    SYSTAT   8/31K   RN            1.7  -16/6   ...RSX     
+11     4,12   KB31    ROLAMD  20/31K   _^C         9:01.9   -8/6   BP2COM     
+12     4,12   KB8     NONAME   2/31K   _^C           45.1   -8/6   BASIC      
+13     4,18   KB14    PERVEW  22/31K   KB            5.4   -8/6   BP2COM     
+14     7,1    KB30    AMEND   28/31K   KB         3:11.5  -16/6   BP2COM     
+15    11,1    KB0     ...JOB  15/31K   KB            4.5  -16/6   ...RSX     
+.PS ,72
+
+
+Ready
+
+BYE F
+168 blocks in use on DR0, 4832 blocks are free
+0 blocks in use on DR1, 200 blocks are free
+60 blocks in use on DR2, 140 blocks are free
+
+Good Afternoon
+
+See you again soon, Edward
+
+
+
+
+
+
+
+
+
+
+
+                        MANCHESTER GRAMMAR SCHOOL
+                        ---------- ------- ------
+
+                            SYSTEM ALPHA PLUS
+                            -----------------
+
+
+                     _\                             _\
+                  _\     _\         _\                _\
+                _\         _\      _\                 _\
+               _\           _\    _\                  _\
+              _\             _\  _\                   _\
+              _\             _\ _\          _\ _\ _\ _\ _\ _\ _\ _\ _\ _\ _\
+              _\             _\  _\                   _\
+               _\           _\    _\                  _\
+                _\         _\      _\                 _\
+                  _\     _\         _\                _\
+                     _\                             _\
+
+
+            Passwords should be changed at least once per month.
+            Accounts with static passwords will be assumed to be
+            inactive and their passwords will be scrambled.
+
+.F
+.J
+.S
+You then type Control and backslash at the same time, followed by C.
+This takes you back to Beta.
+.S
+There is one annoying thing about this method - if you want to send _^C
+or _^S etc., you have to wait for buffers to clear.
+.S
+.HL 1 Copying Text files and Programs
+Copying files which contain no control codes is simple.  
+If you want to copy a file from the system you are currently logged in on, use
+KERMIT to log onto the destination system, and run a receive program.  The
+current receive program is called REC, and is in the following accounts:
+.S
+.TS 10,20
+System	Account
+.BR
+------	-------
+.BR
+Alpha	[11,3]
+.BR
+Beta	[1,95]
+.BR
+Gamma	[1,95]
+.S
+.TS
+Then escape back to your host system and run a send program.  The current
+send program has different names depending on the host system and
+the destination system.
+.S
+.TS 10,20
+System	Name
+.BR
+------	----
+.BR
+Alpha	[11,3]SEND.BAC
+.BR
+Beta	[1,95]SENDA.BAC to send to Alpha
+.BR
+	[1,95]SENDG.BAC to send to Gamma
+.BR
+Gamma	[1,95]SEND.BAC
+.S
+.TS
+.S
+The send program will say 'Complete.' when it has finished.
+.P
+If you want to get a file from another system, use KERMIT to log onto that
+system, and run the send program.  Type the input file, followed by a slash
+and then the delay to wait before sending eg TEST.BAS/10.  Escape back to
+your host system, and run the receive program.
+.HL 1 Copying Binary Files
+You can't just send the file, because of all the control characters.  There
+should exist on all three systems (in the same place as SEND), two programs
+called BINHEX.TSK and HEXBIN.TSK.  BINHEX takes a binary file and produces
+a file called BINHEX.TMP (containing the ascii codes in hex), and HEXBIN
+takes BINHEX.TMP and produces an output file.  The procedure for
+transferring a binary file is, therefore, to run BINHEX, transfer BINHEX.TMP,
+and then run HEXBIN.  Don't forget to set the protection code, RTS of the file,
+and you may want to make it contiguous too.
+.HL 1 Notes
+Here are a few things to remember:
+.BR
+.LS
+.LEB;The CONNECT command is the only useful thing in KERMIT.  If we get
+RSTS V8, KERMIT may be able to do file transfers too, but will probably
+be slower than the existing transfer programs since it will do some
+checking.
+.LEB;KERMIT has to wake up every time you type something on its keyboard.
+It can therefore take large amounts of runtime.  Please use it at -24.
+.LEB;Don't forget to log BOTH your terminals out!
+.ELS
+.S
+.C ;E.D.W Hibbert  September 1987
+.S

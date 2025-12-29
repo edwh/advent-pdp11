@@ -1,0 +1,23 @@
+10	ON ERROR GOTO 25000 &
+
+20	INPUT PROJ%,PROG% &
+\	OPEN "MSG:LOG"+NUM1$(PROJ%)+"."+NUM1$(PROG%) AS FILE #1%, MODE 2% &
+\	PRINT #1% &
+
+30	PRINT CHR$(9%); &
+\	INPUT LINE A$ &
+\	PRINT #1%, CHR$(9%);A$; &
+\	GOTO 30 &
+
+40	PRINT #1% &
+\	PRINT #1%, CHR$(9%)+CHR$(9%)+"Edward  "+DATE$(0%) &
+\	PRINT #1% &
+\	CLOSE #1% &
+\	GOTO 32767 &
+
+25000	RESUME 40 IF ERL=30 AND ERR=11 &
+\	PRINT ERR,ERL &
+\	RESUME 32767 &
+
+32767	END &
+
