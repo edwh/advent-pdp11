@@ -1,0 +1,16 @@
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.pyc
+__pycache__/
+
+# Large binary files (keep in simh/)
+*.tar
+*.tar.Z
