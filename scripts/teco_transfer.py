@@ -123,16 +123,22 @@ def transfer_file(local_path, remote_name):
     time.sleep(0.5)
     recv_all(sock, 0.5)
 
-    # Transfer data in batches
+    # Transfer data in chunks
+    # TECO has limited buffer, so we use P command to write chunks to disk
     # Each byte becomes "nI$$" where n is the ASCII code and $$ is ESC ESC
     print(f"\nTransferring {file_size} bytes...")
     start_time = time.time()
     last_report = 0
 
+    # TECO buffer is limited - write every ~500 bytes to be safe
+    CHUNK_SIZE = 500
+    chunk_count = 0
+
     batch = []
     for i, byte_val in enumerate(data):
         # Add byte as complete "nI$$" command
         batch.append(f"{byte_val}I\x1b\x1b")
+        chunk_count += 1
 
         # Send batch when full
         if len(batch) >= BATCH_SIZE:
@@ -149,6 +155,14 @@ def transfer_file(local_path, remote_name):
                 sock.recv(4096)
             except socket.timeout:
                 pass
+
+        # Write chunk to disk when buffer is getting full
+        if chunk_count >= CHUNK_SIZE:
+            # P command writes buffer to output file and clears buffer
+            sock.send(b"P\x1b\x1b")
+            time.sleep(0.1)
+            recv_all(sock, 0.1)
+            chunk_count = 0
 
         # Progress report every 10%
         percent = (i + 1) * 100 // file_size
