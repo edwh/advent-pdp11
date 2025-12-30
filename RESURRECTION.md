@@ -169,28 +169,103 @@ I never said this would be elegant.
 
 8. **Python automation script** - Created `rsts_control.py` using pexpect for reliable terminal automation.
 
-### Current Challenge: File Attributes
+### The File Transfer Problem (A Tale of Woe)
 
-Files copied via FLX don't have proper RSTS/E virtual array metadata. When BASIC opens them:
-- `?Unable to attach to resident library`
-- `?Can't find file or account`
+Here's a problem I did not anticipate: getting files *into* a running RSTS/E system is absurdly difficult.
 
-The files exist on disk but RSTS/E can't read them because:
-1. FLX creates files without RSTS/E file structure metadata (MODE, record format)
-2. Virtual array files need to be created FROM INSIDE RSTS/E using `OPEN ... ACCESS SCRATCH` and `DIM #n%`
-3. Protection codes set by FLX aren't recognized properly
+You might think, "It's an emulator! Just copy files to the disk image!" And you'd be half right. The `flx` tool from simtools can read and write RSTS/E disk images directly - but only if the disk was "properly dismounted." If RSTS/E is running, or crashed, or you looked at it funny, `flx` refuses to write:
 
-**Workaround attempts:**
-- Created `MKFILES.B2S` utility to create files inside RSTS/E with correct attributes
-- Trying to populate created files with recovered data
+```
+?FLX -- Disk was not properly dismounted; use /RS switch to examine
+```
+
+The `/RS` switch lets you read, but not write. To write, you must shut down RSTS/E cleanly, which defeats the purpose of "real-time" file transfer.
+
+**What about paper tape?** SIMH emulates a paper tape reader (ptr device). I configured it:
+
+```ini
+set ptr enable
+attach ptr /opt/advent/disks/myfile.txt
+```
+
+Then in RSTS/E:
+```
+$ COPY PR: DM1:[1,2]MYFILE.TXT
+?Not a valid device
+```
+
+The paper tape device driver isn't loaded in RSTS/E V10.1. The hardware exists in the emulator, but the OS doesn't know about it.
+
+**What about Kermit?** There's a KERMIT.MAC file on the disk - source code only, not compiled. Even if I compiled it, Kermit requires a working serial connection and both ends running compatible software. Over a telnet connection to an emulator, this gets... complicated.
+
+**What about FTP/SCP/NFS?** RSTS/E V10.1 has no TCP/IP stack. It uses DECnet for networking, which requires additional setup and a proper DECnet implementation on the host side. This is theoretically possible but practically insane.
+
+**What about the CREATE command?** Ah, yes. I can type files in character by character:
+
+```
+$ CREATE MYFILE.TXT
+This is line one
+This is line two
+^Z
+```
+
+This works! Until you try to transfer BASIC-PLUS-2 source code. BP2 uses a peculiar line continuation format: ampersand at end of line, backslash-tab at the start of the next:
+
+```basic
+10  COMMON A%, B%, C%, &
+\	D%, E%, F%
+```
+
+The CREATE command mangles this. The backslash-tab becomes... something else. The compiler then complains:
+```
+?Illegal line format or missing continuation
+```
+
+**What about EDT (the editor)?** Same problem. EDT also corrupts the continuation format when saving.
+
+**The solution I eventually found:** Edit files *in place* on RSTS/E using EDT's search-and-replace, avoiding any new line creation. This works for simple changes like `_DK1:` → `_DM1:`.
+
+For transferring entirely new files? Boot RSTS/E, shut it down cleanly, use `flx` to write to the disk image, boot again. Each cycle takes about a minute. This is... suboptimal.
+
+The 1980s solution would have been a proper tape drive or DECnet connection. The 2020s solution remains elusive.
+
+### Current Challenge: File Creation and BP2 Library
+
+**BP2 Resident Library Issue (SOLVED):**
+After boot, must install BP2 resident library:
+```
+RUN $UTLMGR
+INSTALL/LIBRARY SY:[0,1]BP2RES.LIB
+^Z
+```
+This should be added to SY:[0,1]START.COM for automatic installation.
+
+**File Device Assignment Issue (ONGOING):**
+When creating virtual array files in BASIC, only the first file goes to the specified device (DM1:), subsequent files default to SY:. This is a BASIC-PLUS-2 quirk.
+
+Workaround needed: Exit and re-enter BASIC for each file, or use DCL file operations.
+
+**ADVENT.TSK Needs Rebuild:**
+Game executable was accidentally deleted during testing. Can be rebuilt using TKB:
+```
+RUN $TKB
+DM1:[1,2]ADVENT/FP=DM1:[1,3]ADVENT.ODL
+/
+```
+
+**Data Files:**
+Virtual array files need to be created inside RSTS/E with proper structure, then populated with room/monster data.
 
 ### What Still Needs Doing
 
-1. **Resolve file attribute issue** - Get ADVENT.DTA and other data files readable by the game
-2. **Test game startup** - Once files work, verify the game runs
-3. **Automate boot sequence** - Currently manual boot is required
-4. **Enable multi-user file sharing** - MODE 4096% for MESSAG.NPC
-5. **Web interface** - Create a nicer web interface with framed terminal
+1. **Rebuild ADVENT.TSK** - Game executable was accidentally deleted, needs to be rebuilt with TKB
+2. **Add BP2RES to START.COM** - Automate BP2 library installation on boot
+3. **Fix file device assignment** - Files going to SY: instead of DM1:
+4. **Create and populate data files** - ADVENT.DTA needs room data from recovered files
+5. **Test game startup** - Verify the game runs
+6. **Automate boot sequence** - Currently requires manual intervention
+7. **Enable multi-user file sharing** - MODE 4096% for MESSAG.NPC
+8. **Web interface** - Create a nicer web interface with framed terminal
 
 ## How to Use This
 

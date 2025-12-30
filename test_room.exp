@@ -1,0 +1,93 @@
+#!/usr/bin/expect -f
+# Test if we can read a room from ADVENT.DTA
+
+log_user 1
+set timeout 120
+
+spawn telnet localhost 2323
+expect "Connected"
+sleep 3
+send "\r"
+sleep 2
+
+# Login
+expect {
+    "User:" { send "\[1,2\]\r" }
+    timeout { send "\r"; exp_continue }
+}
+expect "Password:" { send "Digital1977\r" }
+
+expect {
+    "Job number to attach to?" { send "\r" }
+    "$ " { }
+}
+
+expect "$ "
+puts "\n=== LOGGED IN ===\n"
+
+# Setup
+send "ASSIGN DM1:\[1,2\] MSG:\r"
+expect "$ "
+
+# Create a simple test program
+puts "\n=== CREATING TEST PROGRAM ===\n"
+send "DELETE/NOCONFIRM DM1:\[1,2\]RTEST.B2S\r"
+expect "$ "
+send "CREATE DM1:\[1,2\]RTEST.B2S\r"
+expect "Enter text below"
+
+# Simple test - read rooms one by one (no FOR loop to avoid syntax issues)
+send "1\tON ERROR GOTO 9000\r"
+send "\r"
+send "10\tOPEN \"_DM1:\[1,2\]ADVENT.DTA\" AS FILE #3%, MODE 257% &\r"
+send "\\\tFIELD #3%, 1% AS ROOM\$, 16% AS EX\$, 83% AS PEOPLE\$, 100% AS OBJECT\$, 312% AS DESC\$\r"
+send "\r"
+send "20\tPRINT \"Testing rooms in ADVENT.DTA...\"\r"
+send "\r"
+send "30\tGET #3%, RECORD 1% &\r"
+send "\\\tPRINT \"Room 1: \";LEFT(DESC\$,50%)\r"
+send "\r"
+send "40\tGET #3%, RECORD 10% &\r"
+send "\\\tPRINT \"Room 10: \";LEFT(DESC\$,50%)\r"
+send "\r"
+send "50\tGET #3%, RECORD 100% &\r"
+send "\\\tPRINT \"Room 100: \";LEFT(DESC\$,50%)\r"
+send "\r"
+send "60\tGET #3%, RECORD 449% &\r"
+send "\\\tPRINT \"Room 449: \";LEFT(DESC\$,50%)\r"
+send "\r"
+send "70\tCLOSE #3% &\r"
+send "\\\tPRINT \"Test complete.\" &\r"
+send "\\\tEND\r"
+send "\r"
+send "9000\tPRINT \"Error \";ERR;\" at line \";ERL &\r"
+send "\\\tEND\r"
+send "\x1a"
+expect "$ "
+
+# Compile
+puts "\n=== COMPILING ===\n"
+send "BASIC/BP2 DM1:\[1,2\]RTEST.B2S\r"
+set timeout 30
+expect "$ "
+
+# Check OBJ
+send "DIR DM1:\[1,2\]RTEST.OBJ\r"
+expect "$ "
+
+# Link
+send "LINK/BP2 DM1:\[1,2\]RTEST\r"
+expect "$ "
+
+# Run
+puts "\n=== RUNNING TEST ===\n"
+send "RUN DM1:\[1,2\]RTEST\r"
+set timeout 30
+expect {
+    "Test complete" { puts "\n*** TEST PASSED ***\n" }
+    "Error" { puts "\n*** ERROR ***\n" }
+    timeout { puts "\n*** TIMEOUT ***\n" }
+}
+expect "$ "
+
+puts "\n=== DONE ===\n"
