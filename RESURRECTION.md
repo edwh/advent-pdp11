@@ -256,16 +256,60 @@ DM1:[1,2]ADVENT/FP=DM1:[1,3]ADVENT.ODL
 **Data Files:**
 Virtual array files need to be created inside RSTS/E with proper structure, then populated with room/monster data.
 
+### Recent Progress (December 2025)
+
+**Single-User Mode Working!**
+
+After extensive debugging, we got the game to start in single-user mode:
+
+1. **Fixed ADVINI.SUB** - Changed `_KB11:` (multi-keyboard device) to `_KB:` (single terminal). Removed message receiver SYS() calls that fail without the multi-user messaging system.
+
+2. **Fixed starting room** - The original code tried to read room 449 (the cloud starting area), but the test data file only had 100 rooms. Changed to start at room 1.
+
+3. **Game now starts!** - Shows welcome message, displays command prompt (`>`), accepts commands (LOOK, NORTH, QUIT).
+
+**Successful test output:**
+```
+Welcome to ADVENT!
+Type LOOK to see your surroundings.
+Type HELP for commands.
+Type QUIT to exit.
+
+>
+```
+
+### Current Status (December 30, 2025)
+
+**Major Progress:**
+1. **Room descriptions display correctly** - Single-user ADVOUT.SUB created that prints to console
+2. **Exit list displays** - Shows available directions (North, South, etc.)
+3. **Full data file created** - 2000 rooms × 512 bytes with binary exit format
+
+**Current Blocker: Navigation**
+
+Navigation fails with "You cannot go in that direction" even when exits display. Root cause identified:
+
+The game code uses `CVT$%` to read room numbers as 2-byte binary integers:
+```basic
+NEW.ROOM%=CVT$%(MID(EX$,PO%+1%,2%))
+```
+
+The data file I created (`data/ADVENT_BINARY.DTA`) has the correct binary format, but I was writing it to the wrong disk location (block 5922 vs RSTS file system at block 467).
+
+**Solution:** Use `flx` tool to properly write files to RSTS file system:
+1. Clean shutdown of RSTS/E
+2. `./flx -id disk.dsk -pu "[1,2]ADVENT.DTA" < data/ADVENT_BINARY.DTA`
+3. Boot again
+
+See `CONTINUATION.md` for detailed instructions for continuing this work.
+
 ### What Still Needs Doing
 
-1. **Rebuild ADVENT.TSK** - Game executable was accidentally deleted, needs to be rebuilt with TKB
-2. **Add BP2RES to START.COM** - Automate BP2 library installation on boot
-3. **Fix file device assignment** - Files going to SY: instead of DM1:
-4. **Create and populate data files** - ADVENT.DTA needs room data from recovered files
-5. **Test game startup** - Verify the game runs
-6. **Automate boot sequence** - Currently requires manual intervention
-7. **Enable multi-user file sharing** - MODE 4096% for MESSAG.NPC
-8. **Web interface** - Create a nicer web interface with framed terminal
+1. **Write ADVENT.DTA correctly** - Use flx to put binary data file onto RSTS file system
+2. **Persist ADVOUT.SUB** - Also use flx to persist single-user output module
+3. **Test navigation** - Verify movement between rooms works
+4. **Enable multi-user mode** - Re-enable message passing for multi-user play
+5. **Web interface polish** - Create nicer web interface with framed terminal
 
 ## How to Use This
 

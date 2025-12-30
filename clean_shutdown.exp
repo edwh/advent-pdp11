@@ -1,0 +1,49 @@
+#!/usr/bin/expect -f
+# Cleanly shutdown RSTS/E to allow disk modifications
+
+log_user 1
+set timeout 60
+
+spawn telnet localhost 2323
+expect "Connected"
+sleep 3
+send "\r"
+sleep 2
+
+# Login as [1,2] (privileged account)
+expect {
+    "User:" { send "\[1,2\]\r" }
+    timeout { send "\r"; exp_continue }
+}
+expect "Password:" { send "Digital1977\r" }
+
+expect {
+    "Job number to attach to?" { send "\r" }
+    "$ " { }
+}
+
+expect "$ "
+puts "\n=== LOGGED IN ===\n"
+
+# Shutdown RSTS/E cleanly
+puts "\n=== SHUTTING DOWN RSTS/E ===\n"
+send "RUN \$SHUTUP\r"
+
+# Answer shutdown prompts
+expect "Print/Batch" { send "NO\r" }
+expect "Rundown Phase"
+expect {
+    "System rundown complete" {
+        puts "\n=== RUNDOWN COMPLETE ===\n"
+    }
+    "Rundown complete" {
+        puts "\n=== RUNDOWN COMPLETE ===\n"
+    }
+    timeout {
+        puts "\n=== WAITING FOR HALT ===\n"
+    }
+}
+
+# Wait for system to fully stop
+sleep 10
+puts "\n=== SHUTDOWN SEQUENCE FINISHED ===\n"

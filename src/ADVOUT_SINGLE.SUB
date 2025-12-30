@@ -1,0 +1,22 @@
+10	SUB ADVOUT(ADVOUT.KB%,MESS$) &
+\	ON ERROR GOTO 25000 &
+\	COMMON ACC$(8%)=7%,AR$=80%,C%,C$=10%,CRLF$=2%, &
+	FLAG%(8%),HP%(8%),LEVEL%(8%),KB%(8%),NAM$(8%)=30%,NO.OF.USERS%, &
+	XP.(8%),STUN(8%), &
+	NPCMESS$(8%)=40%,OB$(8%,9%)=30%,PASS$(8%)=10%, &
+	ROOM%(8%),SENT.KB%,SENT.MESS$=80%,SENT.PROG%,SENT.PROJ%, &
+	USER%,CI$=1%,WEAPON$(8%)=20%,WEAPON%(8%), &
+	ATT.LEVEL%(10%),DEF.LEVEL%(10%),MON.HP%(10%),MON.DAM%(10%), &
+	SPEC$(10%)=6%,MON.ROOM%(10%),MON.XP%(10%),RUN.ACC$=9%,MMM$=128%, &
+	BLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%)
+
+! Single-user mode: strip control code and print directly
+15	IF LEN(MESS$)>0% THEN &
+	IF ASC(MESS$)<32% THEN MESS$=RIGHT(MESS$,2%) &
+\	PRINT MESS$ &
+\	SUBEXIT
+
+25000	! Error handler - just continue
+\	RESUME 32767
+
+32767	SUBEND

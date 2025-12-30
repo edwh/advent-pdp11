@@ -1,0 +1,84 @@
+#!/usr/bin/expect -f
+# Create single-user ADVOUT.SUB - following same pattern as final_single_user.exp
+
+log_user 1
+set timeout 60
+
+spawn telnet localhost 2323
+expect "Connected"
+sleep 3
+send "\r"
+sleep 2
+
+expect {
+    "User:" { send "\[1,2\]\r" }
+    timeout { send "\r"; exp_continue }
+}
+expect "Password:" { send "Digital1977\r" }
+
+expect {
+    "Job number" { send "\r" }
+    "$ " { }
+}
+
+expect "$ "
+puts "\n=== LOGGED IN ===\n"
+
+send "ASSIGN DM1:\[1,2\] MSG:\r"
+expect "$ "
+
+# Delete old files
+puts "\n=== DELETING OLD FILES ===\n"
+send "DELETE/NOCONFIRM DM1:\[1,2\]ADVOUT.SUB\r"
+expect "$ "
+send "DELETE/NOCONFIRM DM1:\[1,2\]ADVOUT.OBJ\r"
+expect "$ "
+
+# Create ADVOUT.SUB - single user version that just prints to console
+puts "\n=== CREATING ADVOUT.SUB ===\n"
+send "CREATE DM1:\[1,2\]ADVOUT.SUB\r"
+expect "Enter text below"
+
+# Using exact same pattern as final_single_user.exp
+send "1\tSUB ADVOUT(ADVOUT.KB%,MESS\$) &\r"
+send "\\\tCOMMON ACC\$(8%)=7%,AR\$=80%,C%,C\$=10%,CRLF\$=2%, &\r"
+send "\tFLAG%(8%),HP%(8%),LEVEL%(8%),KB%(8%),NAM\$(8%)=30%,NO.OF.USERS%, &\r"
+send "\tXP.(8%),STUN(8%), &\r"
+send "\tNPCMESS\$(8%)=40%,OB\$(8%,9%)=30%,PASS\$(8%)=10%, &\r"
+send "\tROOM%(8%),SENT.KB%,SENT.MESS\$=80%,SENT.PROG%,SENT.PROJ%, &\r"
+send "\tUSER%,CI\$=1%,WEAPON\$(8%)=20%,WEAPON%(8%), &\r"
+send "\tATT.LEVEL%(10%),DEF.LEVEL%(10%),MON.HP%(10%),MON.DAM%(10%), &\r"
+send "\tSPEC\$(10%)=6%,MON.ROOM%(10%),MON.XP%(10%),RUN.ACC\$=9%,MMM\$=128%, &\r"
+send "\tBLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%) &\r"
+send "\\\tON ERROR GOTO 25000\r"
+send "\r"
+
+# Strip control code from message if present
+send "10\tIF LEN(MESS\$)>0% THEN &\r"
+send "\\\tIF ASC(MESS\$)<32% THEN MESS\$=RIGHT(MESS\$,2%)\r"
+send "\r"
+
+# Print the message directly to console
+send "20\tPRINT MESS\$ &\r"
+send "\\\tSUBEXIT\r"
+send "\r"
+
+# Error handler
+send "25000\tRESUME 32767\r"
+send "\r"
+
+send "32767\tSUBEND\r"
+send "\x1a"
+expect "$ "
+puts "\n=== FILE CREATED ===\n"
+
+# Compile
+puts "\n=== COMPILING ===\n"
+send "BASIC/BP2 DM1:\[1,2\]ADVOUT.SUB\r"
+set timeout 90
+expect "$ "
+
+# Check result
+send "DIR DM1:\[1,2\]ADVOUT.*\r"
+expect "$ "
+puts "\n=== DONE ===\n"
