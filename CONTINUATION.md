@@ -15,10 +15,28 @@ Resurrecting a 1987 multi-user dungeon game (ADVENT) that runs on PDP-11/RSTS/E,
 - Single-user ADVOUT.SUB created (prints to console instead of multi-user message passing)
 - Room descriptions display correctly
 - Exit list displays (shows available directions)
+- **BINARY FILE TRANSFER VIA TECO** - Verified working! (see TECHNICAL.md for details)
 
 ### What Doesn't Work Yet
 - **Navigation fails**: "You cannot go in that direction" even when exits display
 - Root cause identified: **Binary exit format mismatch**
+- Need to transfer correct data files using TECO method
+
+### Current Task: Transfer Data Files
+
+The data files need to be transferred to RSTS/E using the TECO binary transfer method:
+
+| File | Size | Purpose |
+|------|------|---------|
+| ADVENT.DTA | 1000 KB | Room data (exits, monsters, objects, descriptions) |
+| ADVENT.CHR | 51 KB | Character data |
+| ADVENT.MON | 196 KB | Monster definitions |
+| BOARD.NTC | 256 KB | Notice board |
+| MESSAG.NPC | 59 KB | NPC messages |
+
+**Transfer script**: `scripts/teco_transfer.py`
+
+**Status**: Transfer in progress (started with ADVENT.CHR as test)
 
 ## The Core Problem
 
@@ -114,9 +132,67 @@ The `flx` tool from simtools only writes to properly dismounted disks:
 
 The single-user ADVOUT.SUB also needs to be persisted to the disk image using the same flx approach.
 
+## Binary File Transfer via TECO (WORKING METHOD)
+
+**This is the reliable method for getting binary files onto RSTS/E.**
+
+The problem: FLX tool only works reliably for files at low block offsets. Files placed at high offsets disappear when RSTS/E restarts.
+
+The solution: Use DCL to create hex-encoded text, then TECO to convert to binary.
+
+### How It Works
+
+1. Connect via telnet to port 2323
+2. Login as [1,2] with password Digital1977
+3. Use TECO's `nI` command to insert characters by ASCII code
+4. TECO commands terminate with double-escape (`\x1b\x1b`)
+
+### TECO Binary File Creation
+
+```python
+import socket
+import time
+
+# Connect and login (code omitted for brevity)
+
+# Start TECO
+sock.send(b"TECO\r")
+time.sleep(1)
+# Wait for * prompt
+
+# Open output file
+sock.send(b"EWFILENAME.BIN\x1b\x1b")
+time.sleep(0.5)
+
+# Insert binary bytes using nI command (n = ASCII code)
+# Example: "Hello" = 72, 101, 108, 108, 111
+for byte_value in [72, 101, 108, 108, 111]:
+    sock.send(f"{byte_value}I\x1b\x1b".encode())
+    time.sleep(0.1)
+
+# Exit and save
+sock.send(b"EX\x1b\x1b")
+```
+
+### Key TECO Commands
+
+- `EWFILE.EXT$$` - Open file for writing (EW = Enter for Writing)
+- `nI$$` - Insert character with ASCII code n (e.g., `72I$$` inserts 'H')
+- `ITEXT$$` - Insert literal text
+- `EX$$` - Exit and save file
+- `$$ = \x1b\x1b` (two escape characters)
+
+### Files Created This Way SURVIVE RESTARTS
+
+Tested and confirmed: Files created via TECO persist across Docker container restarts because they go through the proper RSTS/E file system.
+
+### Transfer Script Location
+
+See `scripts/teco_transfer.py` for the complete binary transfer implementation.
+
 ## Useful Commands
 
-### flx Tool
+### flx Tool (USE WITH CAUTION)
 ```bash
 # List directory
 ./flx -di simh/Disks/rsts1.dsk
@@ -124,9 +200,11 @@ The single-user ADVOUT.SUB also needs to be persisted to the disk image using th
 # Extract file
 ./flx -id simh/Disks/rsts1.dsk -ge "[1,2]ADVENT.DTA" > extracted.dat
 
-# Put file (disk must be dismounted)
+# Put file (disk must be dismounted) - MAY NOT PERSIST!
 ./flx -id simh/Disks/rsts1.dsk -pu "[1,2]FILENAME.EXT" < local_file
 ```
+
+**WARNING**: FLX-injected files at high block offsets disappear on restart. Use TECO method instead.
 
 ### RSTS/E
 ```bash
