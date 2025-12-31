@@ -201,11 +201,14 @@ def create_room_record(room_num, room_data):
     record[100:100+len(objects_bytes)] = objects_bytes
 
     # Bytes 200-511: Description (312 bytes)
-    # Join description with special codes
+    # Description followed by $ terminator and special codes
+    # Game uses: DES$=LEFT(DES$,INSTR(1%,DES$,"$")-1%) to truncate at $
     desc = room_data.get('description', '')
     special = room_data.get('special', '')
     if special:
-        desc = desc + '\n' + special
+        desc = desc + '$' + special
+    else:
+        desc = desc + '$'  # Always add terminator
     desc = desc[:312]
     desc_bytes = desc.encode('ascii', errors='replace')
     record[200:200+len(desc_bytes)] = desc_bytes
