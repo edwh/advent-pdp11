@@ -1,0 +1,86 @@
+#!/usr/bin/expect -f
+#
+# Test MINTEST and XFER programs
+#
+
+log_user 1
+set timeout 30
+
+spawn nc localhost 2323
+sleep 3
+send "\r"
+sleep 2
+
+expect {
+    "User:" {}
+    timeout { puts ">>> Timeout waiting for login"; exit 1 }
+}
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Testing MINTEST first..."
+send "RUN MINTEST.SAV\r"
+sleep 2
+expect {
+    "MINTEST:" { puts ">>> MINTEST started OK!" }
+    "Can't find" { puts ">>> MINTEST not found"; exit 1 }
+    timeout { puts ">>> Timeout running MINTEST" }
+}
+
+# Send a key
+puts "\n>>> Sending a key to MINTEST..."
+send "X"
+sleep 1
+expect {
+    "X" { puts ">>> Got echo back!" }
+    timeout { puts ">>> No echo" }
+}
+
+# Send Ctrl+C to exit MINTEST
+send "\003"
+sleep 1
+
+expect -re {\$}
+
+puts "\n>>> Testing XFER..."
+send "RUN XFER.SAV\r"
+sleep 2
+expect {
+    "V1.1 Ready" { puts ">>> XFER started OK!" }
+    "V1.0 Ready" { puts ">>> XFER V1.0 (old version)" }
+    "Can't find" { puts ">>> XFER not found" }
+    timeout { puts ">>> Timeout running XFER" }
+}
+
+# Wait for LP debug output
+puts "\n>>> Waiting for LP debug output..."
+sleep 2
+expect {
+    "LP" { puts ">>> Got LP - in main loop!" }
+    timeout { puts ">>> No LP output" }
+}
+
+# Send filename
+puts "\n>>> Sending filename..."
+send ":TEST.DAT\r"
+sleep 2
+expect {
+    "DBG" { puts ">>> Got DBG - reached file open" }
+    "OK" { puts ">>> File opened!" }
+    "ERR" { puts ">>> Error opening file" }
+    -re {\$} { puts ">>> Returned to DCL prompt - XFER crashed" }
+    timeout { puts ">>> No response to filename" }
+}
+
+send "\003"
+sleep 1
+
+puts "\n>>> Test complete"
+close

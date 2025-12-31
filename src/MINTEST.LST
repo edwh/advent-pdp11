@@ -1,0 +1,41 @@
+       1                                	.TITLE	MINTEST - Minimal Terminal I/O Test
+       2                                	.IDENT	/V1.0/
+       3                                ;
+       4                                ;	Minimal test: print message, wait for key, repeat
+       5                                ;
+       6                                	.ASECT
+       7 001000                         	.=1000
+       8                                
+       9 001000 012701  001036          START:	MOV	#MSG1,R1	; Point to message
+      10 001004 112100                  10$:	MOVB	(R1)+,R0	; Get char
+      11 001006 001402                  	BEQ	20$		; Done with string
+      12 001010 104341                  	EMT	341		; .TTYOUT
+      13 001012 000774                  	BR	10$
+      14                                
+      15                                20$:	; Print CRLF
+      16 001014 012700  000015          	MOV	#15,R0		; CR
+      17 001020 104341                  	EMT	341
+      18 001022 012700  000012          	MOV	#12,R0		; LF
+      19 001026 104341                  	EMT	341
+      20                                
+      21                                	; Wait for a key
+      22 001030 104340                  	EMT	340		; .TTYIN
+      23                                
+      24                                	; Print the key back
+      25 001032 104341                  	EMT	341		; Echo it
+      26                                
+      27                                	; Loop back
+      28 001034 000761                  	BR	START
+      29                                
+      30 001036    115     111     116  MSG1:	.ASCII	/MINTEST: Press any key/
+         001041    124     105     123  
+         001044    124     072     040  
+         001047    120     162     145  
+         001052    163     163     040  
+         001055    141     156     171  
+         001060    040     153     145  
+         001063    171                  
+      31 001064    000                  	.BYTE	0
+      32                                
+      33                                	.END	START
+      33                                

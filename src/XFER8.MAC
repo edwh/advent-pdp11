@@ -1,0 +1,265 @@
+	.TITLE	XFER8 - RSTS/E Native File I/O Test
+	.IDENT	/V1.0/
+;
+;	Test RSTS/E native file I/O using EMT 376
+;	and FIRQB (File Information Request Queue Block)
+;
+;	RSTS/E uses different system calls than RT-11.
+;	The FIRQB is typically at location 402 octal.
+;
+;	This program attempts to:
+;	1. Test if EMT 376 works at all
+;	2. Try to create a file using RSTS/E native calls
+
+	.ASECT
+	.=1000
+
+; RSTS/E system locations
+FIRQB	= 402		; File Information Request Queue Block
+XRB	= 442		; Executive Request Block
+
+; FIRQB offsets (approximate - need to verify)
+F.PPNW	= 0		; PPN word
+F.NAME	= 2		; Filename start (RAD50)
+F.EXT	= 10		; Extension (RAD50)
+F.STAT	= 12		; Status
+F.CHAN	= 14		; Channel
+F.ERR	= 16		; Error code
+
+START:	MOV	#HELLO,R1
+	JSR	PC,PUTS
+
+	; Test 1: See if EMT 376 is accessible
+	MOV	#MSG1,R1
+	JSR	PC,PUTS
+
+	; Try a simple EMT 376 - just return system info
+	; Function 0 might be "get system info" or similar
+	CLR	R0
+	EMT	376
+	BCC	T1OK
+
+	; EMT 376 returned error
+	MOV	R0,-(SP)
+	MOV	#MSGERR,R1
+	JSR	PC,PUTS2
+	MOV	(SP)+,R0
+	JSR	PC,PRHEX4
+	JSR	PC,CRLF
+	BR	TEST2
+
+T1OK:	MOV	#MSGOK,R1
+	JSR	PC,PUTS
+	; Show what R0 contains
+	MOV	#MSGR0,R1
+	JSR	PC,PUTS2
+	MOV	R0,R0		; (R0 unchanged, just for clarity)
+	JSR	PC,PRHEX4
+	JSR	PC,CRLF
+
+TEST2:	; Test 2: Try to read FIRQB location
+	MOV	#MSG2,R1
+	JSR	PC,PUTS
+
+	MOV	#MSGFQ,R1
+	JSR	PC,PUTS2
+	MOV	FIRQB,R0
+	JSR	PC,PRHEX4
+	MOV	#' ,R0
+	EMT	341
+	MOV	FIRQB+2,R0
+	JSR	PC,PRHEX4
+	MOV	#' ,R0
+	EMT	341
+	MOV	FIRQB+4,R0
+	JSR	PC,PRHEX4
+	JSR	PC,CRLF
+
+TEST3:	; Test 3: Try setting up FIRQB for file create
+	MOV	#MSG3,R1
+	JSR	PC,PUTS
+
+	; Clear FIRQB area first
+	MOV	#FIRQB,R1
+	MOV	#20,R2		; 16 words
+CLR1:	CLR	(R1)+
+	SOB	R2,CLR1
+
+	; Set up for file open/create
+	; Function code in first byte, subfunc in second
+	; For RSTS/E OPEN:
+	MOV	#1,FIRQB	; Channel 1 (avoid 0)
+	; Filename: TEST.DAT
+	; TES = T(20)*1600 + E(5)*40 + S(19) = 32000+200+19 = 32219 = 76733 octal
+	; T = T(20)*1600 = 32000 = 76400 octal (with padding)
+	; DAT = D(4)*1600 + A(1)*40 + T(20) = 6460 = 14514 octal
+	MOV	#76733,FIRQB+2	; "TES"
+	MOV	#76400,FIRQB+4	; "T  "
+	MOV	#14514,FIRQB+6	; "DAT"
+
+	; Try EMT 376 to open/create
+	MOV	#6,R0		; Function 6 might be OPEN
+	EMT	376
+	BCC	T3OK
+
+	; Error
+	MOV	R0,-(SP)
+	MOV	#MSGERR,R1
+	JSR	PC,PUTS2
+	MOV	(SP)+,R0
+	JSR	PC,PRHEX4
+	JSR	PC,CRLF
+	BR	TEST4
+
+T3OK:	MOV	#MSGOK,R1
+	JSR	PC,PUTS
+
+TEST4:	; Test 4: Try different EMT 376 function codes
+	MOV	#MSG4,R1
+	JSR	PC,PUTS
+
+	MOV	#0,R5		; Function code counter
+T4LP:	MOV	R5,R0		; Try function R5
+	EMT	376
+	BCS	T4ERR
+	; Success - print function and result
+	MOV	#'F,R0
+	EMT	341
+	MOV	R5,R0
+	JSR	PC,PRHEX4
+	MOV	#'=,R0
+	EMT	341
+	MOV	#'O,R0
+	EMT	341
+	MOV	#'K,R0
+	EMT	341
+	JSR	PC,CRLF
+	BR	T4NXT
+T4ERR:	; Skip errors silently
+T4NXT:	INC	R5
+	CMP	R5,#20		; Test functions 0-15
+	BLT	T4LP
+
+TEST5:	; Test 5: Check what's at XRB location
+	MOV	#MSG5,R1
+	JSR	PC,PUTS
+
+	MOV	#MSGXR,R1
+	JSR	PC,PUTS2
+	MOV	XRB,R0
+	JSR	PC,PRHEX4
+	MOV	#' ,R0
+	EMT	341
+	MOV	XRB+2,R0
+	JSR	PC,PRHEX4
+	MOV	#' ,R0
+	EMT	341
+	MOV	XRB+4,R0
+	JSR	PC,PRHEX4
+	JSR	PC,CRLF
+
+	; Test 6: Try CALFIP approach
+	MOV	#MSG6,R1
+	JSR	PC,PUTS
+
+	; Set up XRB for file create
+	CLR	XRB		; Clear XRB
+	CLR	XRB+2
+	CLR	XRB+4
+	MOV	#1000,XRB+6	; Buffer size
+	MOV	#BUFFER,XRB+10	; Buffer address
+
+	; CALFIP is typically via JSR PC,@#xxx or similar
+	; Let's try EMT 377 which might be CALFIP
+	CLR	R0
+	EMT	377
+	BCC	T6OK
+	MOV	R0,-(SP)
+	MOV	#MSGERR,R1
+	JSR	PC,PUTS2
+	MOV	(SP)+,R0
+	JSR	PC,PRHEX4
+	JSR	PC,CRLF
+	BR	EXIT
+T6OK:	MOV	#MSGOK,R1
+	JSR	PC,PUTS
+
+EXIT:	MOV	#MSGBYE,R1
+	JSR	PC,PUTS
+	EMT	350
+
+; ============ Subroutines ============
+
+PUTS:	MOVB	(R1)+,R0
+	BEQ	PUTSE
+	EMT	341
+	BR	PUTS
+PUTSE:	JSR	PC,CRLF
+	RTS	PC
+
+PUTS2:	MOVB	(R1)+,R0
+	BEQ	PUTS2R
+	EMT	341
+	BR	PUTS2
+PUTS2R:	RTS	PC
+
+CRLF:	MOV	#15,R0
+	EMT	341
+	MOV	#12,R0
+	EMT	341
+	RTS	PC
+
+PRHEX4:	MOV	R0,-(SP)
+	SWAB	R0
+	JSR	PC,PRHEX2
+	MOV	(SP)+,R0
+PRHEX2:	MOV	R0,-(SP)
+	ASR	R0
+	ASR	R0
+	ASR	R0
+	ASR	R0
+	BIC	#177760,R0
+	JSR	PC,PRNIB
+	MOV	(SP)+,R0
+	BIC	#177760,R0
+PRNIB:	CMP	R0,#11
+	BGT	PN1
+	ADD	#'0,R0
+	BR	PN2
+PN1:	ADD	#67,R0
+PN2:	EMT	341
+	RTS	PC
+
+; ============ Data ============
+
+HELLO:	.ASCII	/XFER8 - RSTS/E Native I/O Test/
+	.BYTE	0
+MSG1:	.ASCII	/Test 1: EMT 376 basic test.../
+	.BYTE	0
+MSG2:	.ASCII	/Test 2: Read FIRQB location.../
+	.BYTE	0
+MSG3:	.ASCII	/Test 3: Try file create via FIRQB.../
+	.BYTE	0
+MSG4:	.ASCII	/Test 4: Scan EMT 376 functions.../
+	.BYTE	0
+MSG5:	.ASCII	/Test 5: Read XRB location.../
+	.BYTE	0
+MSG6:	.ASCII	/Test 6: Try CALFIP (EMT 377).../
+	.BYTE	0
+MSGOK:	.ASCII	/OK/
+	.BYTE	0
+MSGERR:	.ASCII	/ERR:/
+	.BYTE	0
+MSGR0:	.ASCII	/R0=/
+	.BYTE	0
+MSGFQ:	.ASCII	/FIRQB: /
+	.BYTE	0
+MSGXR:	.ASCII	/XRB: /
+	.BYTE	0
+MSGBYE:	.ASCII	/Done/
+	.BYTE	0
+	.EVEN
+
+BUFFER:	.BLKB	1000		; 512-byte buffer
+
+	.END	START

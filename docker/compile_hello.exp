@@ -1,0 +1,102 @@
+#!/usr/bin/expect -f
+#
+# Try to compile HELLO.MAC using MACRO and TKB
+#
+
+log_user 1
+set timeout 60
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+# Login
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Logged in, checking for HELLO.MAC..."
+
+# Show the file
+send "DIR HELLO.MAC\r"
+sleep 2
+expect -re {\$}
+
+send "TYPE HELLO.MAC\r"
+sleep 3
+expect -re {\$}
+
+# Try to run MACRO
+puts "\n>>> Trying MACRO assembler..."
+send "MACRO HELLO=HELLO\r"
+sleep 5
+
+expect {
+    "Errors detected" {
+        puts "\n>>> MACRO reported errors"
+    }
+    -re {\?} {
+        puts "\n>>> MACRO error"
+    }
+    -re {\$} {
+        puts "\n>>> MACRO completed"
+    }
+    timeout {
+        puts "\n>>> MACRO timed out"
+    }
+}
+
+send "DIR HELLO.*\r"
+sleep 2
+expect -re {\$}
+
+# Try TKB
+puts "\n>>> Trying Task Builder..."
+send "TKB HELLO=HELLO\r"
+sleep 5
+
+expect {
+    -re {\?} {
+        puts "\n>>> TKB error"
+    }
+    -re {\$} {
+        puts "\n>>> TKB completed"
+    }
+    timeout {
+        puts "\n>>> TKB timed out"
+    }
+}
+
+send "DIR HELLO.*\r"
+sleep 2
+expect -re {\$}
+
+# Try to run it
+puts "\n>>> Trying to run HELLO..."
+send "RUN HELLO\r"
+sleep 2
+expect {
+    "Hello" {
+        puts "\n>>> SUCCESS! Program ran!"
+    }
+    -re {\?} {
+        puts "\n>>> Error running program"
+    }
+    -re {\$} {
+        puts "\n>>> Completed"
+    }
+    timeout {}
+}
+
+expect -re {\$}
+
+puts "\n>>> Test complete"
+close

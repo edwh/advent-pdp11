@@ -1,16 +1,39 @@
 version: '3.8'
 
+# Advent MUD - Docker Compose Configuration
+#
+# Before building:
+#   1. Run: python3 scripts/build_disk.py
+#   2. This generates patched disk images in build/disks/
+#
+# Then:
+#   docker compose -f docker-compose.new.yml up -d
+#
+# Access:
+#   - Web terminal (game): http://localhost:7681
+#   - Web terminal (admin): http://localhost:7682
+#   - Telnet (console): telnet localhost 2322
+#   - Telnet (terminal): telnet localhost 2323
+
 services:
   advent:
     build:
       context: .
-      dockerfile: docker/Dockerfile
-    container_name: advent
+      dockerfile: docker/Dockerfile.new
+    container_name: advent-mud
     ports:
       - "7681:7681"   # Game web terminal
       - "7682:7682"   # Admin web terminal
-      - "2322:2322"   # Console telnet
-      - "2323:2323"   # Player terminals
+      - "2322:2322"   # SIMH console (telnet)
+      - "2323:2323"   # RSTS/E terminal lines (telnet)
     volumes:
-      - ./simh/Disks:/opt/advent/disks
+      # Mount disk images for persistence
+      # Changes made in RSTS/E are saved
+      - ./build/disks:/opt/advent/disks
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2323"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

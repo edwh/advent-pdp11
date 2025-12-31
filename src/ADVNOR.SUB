@@ -26,9 +26,8 @@
 \	RETURN &
 
 30	! MOVE &
-	&
-	&
 	OLD.ROOM%=ROOM%(USER%) &
+\	GET #3%, RECORD ROOM%(USER%) &
 \	FL%=0% &
 \	GOTO 35 IF MID(EX$,PO%,1%)=LEFT(C$,1%) FOR PO%=1% TO 16% STEP 4% &
 \	CALL ADVOUT(KB%(USER%),CRLF$+'You cannot go in that direction.') &

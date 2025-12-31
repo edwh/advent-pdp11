@@ -1,0 +1,64 @@
+#!/usr/bin/expect -f
+#
+# Test that Advent game runs
+#
+
+log_user 1
+set timeout 60
+
+spawn nc localhost 2323
+
+sleep 2
+send "\r"
+sleep 2
+
+# Login
+expect "User:"
+send "\[1,2\]\r"
+
+expect "Password:"
+send "Digital1977\r"
+
+# Handle job attach
+sleep 2
+expect {
+    "Job number to attach to" {
+        send "\r"
+        sleep 2
+        exp_continue
+    }
+    -re {\$} {}
+}
+
+puts "\n>>> Attempting to run game..."
+send "RUN DM1:\[1,2\]ADVENT\r"
+sleep 5
+
+expect {
+    "Welcome" {
+        puts "\n>>> GAME STARTED - Welcome message displayed!"
+    }
+    "Non-executable" {
+        puts "\n>>> ERROR: Non-executable file"
+    }
+    "Can't find" {
+        puts "\n>>> ERROR: File not found"
+    }
+    ">" {
+        puts "\n>>> GAME STARTED - At game prompt!"
+    }
+    timeout {
+        puts "\n>>> Timeout waiting for game start"
+    }
+}
+
+# Try sending a command
+send "LOOK\r"
+sleep 3
+
+# Quit
+send "QUIT\r"
+sleep 2
+
+puts "\n>>> Test complete"
+close

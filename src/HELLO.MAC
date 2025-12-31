@@ -1,0 +1,15 @@
+	.TITLE	HELLO
+	.IDENT	/V1.0/
+;
+;	Simple hello world test
+;
+	.MCALL	.PRINT,.EXIT
+
+START:	.PRINT	#MSG
+	.EXIT
+
+MSG:	.ASCII	/Hello from RSTS/E!/
+	.BYTE	15,12,0
+	.EVEN
+
+	.END	START

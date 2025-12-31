@@ -1,0 +1,48 @@
+# Advent MUD - Docker Compose Configuration
+#
+# Usage:
+#   docker compose -f docker-compose.new.yml up -d
+#
+# This will:
+# 1. Build the container from Dockerfile.new
+# 2. Start SIMH with RSTS/E
+# 3. Transfer data and source files
+# 4. Compile and link the game
+# 5. Provide web terminal access
+#
+# After startup (~30-60 minutes for full setup), access via:
+#   Web Terminal: http://localhost:7681
+#   Telnet:       telnet localhost 2323
+#
+# To skip setup and use pre-built disk (faster, but won't have latest code):
+#   SKIP_SETUP=1 docker compose -f docker-compose.new.yml up -d
+#
+
+services:
+  advent-mud:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.new
+    container_name: advent-mud
+    ports:
+      - "7681:7681"   # Game web terminal
+      - "7682:7682"   # Admin web terminal
+      - "2322:2322"   # SIMH console
+      - "2323:2323"   # RSTS/E terminals
+    environment:
+      # Uncomment to skip parts of setup:
+      # - SKIP_SETUP=1      # Skip all file transfer and compilation
+      # - SKIP_DATA=1       # Skip data file transfer only
+      # - SKIP_SOURCE=1     # Skip source file transfer only
+      # - SKIP_COMPILE=1    # Skip compilation only
+      - SETUP_TIMEOUT=7200  # 2 hours for full setup
+    restart: unless-stopped
+    # Allow enough time for the lengthy setup process
+    stop_grace_period: 30s
+    # Health check to see if RSTS/E is responding
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2323"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s

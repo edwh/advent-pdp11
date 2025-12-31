@@ -1,0 +1,204 @@
+	.TITLE	XFER5 - Hex File Transfer with EMT 375
+	.IDENT	/V1.0/
+;
+;	XFER5 - Test RT-11 EMT 375 file I/O format
+;
+;	RT-11 EMT 375 format:
+;	  R0 -> argument block
+;	  Word 0: Function code (high byte) + Channel (low byte)
+;	  Word 1+: Function-specific arguments
+;
+;	Function codes:
+;	  4 = .ENTER (create file)
+;	  6 = .CLOSE
+;	  24 (30 octal) = .WRITW
+;
+;	This is a minimal test to see if EMT 375 works
+
+	.ASECT
+	.=1000
+
+START:	MOV	#HELLO,R1
+	JSR	PC,PUTS
+
+	; Try to create a test file
+	MOV	#MSGOPN,R1
+	JSR	PC,PUTS
+
+	; Set up .ENTER arguments
+	; Format: Function*256 + Channel, Filename ptr, Size
+	; Function 4 (.ENTER) * 256 + Channel 0 = 0x0400 = 2000 octal
+	MOV	#2000,EMTBLK	; Function 4 (.ENTER), Channel 0
+	MOV	#FILBLK,EMTBLK+2 ; Filename block pointer
+	MOV	#12,EMTBLK+4	; 10 blocks (octal)
+
+	; Set up filename block (RAD50)
+	; OUTPUT.DAT = OUT PUT DAT
+	; OUT = O(15)*1600 + U(21)*40 + T(20) = 24000+840+20 = 24860 = 60334 octal
+	; PUT = P(16)*1600 + U(21)*40 + T(20) = 25600+840+20 = 26460 = 63434 octal
+	; DAT = D(4)*1600 + A(1)*40 + T(20) = 6400+40+20 = 6460 = 14514 octal
+	MOV	#60334,FILBLK	; "OUT"
+	MOV	#63434,FILBLK+2	; "PUT"
+	MOV	#14514,FILBLK+4	; "DAT"
+	CLR	FILBLK+6	; "   "
+
+	; Call EMT 375
+	MOV	#EMTBLK,R0
+	EMT	375
+	BCC	OPNOK
+
+	; Error - print R0 and channel status
+	MOV	R0,-(SP)	; Save R0
+	MOV	#MSGERR,R1
+	JSR	PC,PUTS2	; No CRLF
+	MOV	#'R,R0
+	EMT	341
+	MOV	#'0,R0
+	EMT	341
+	MOV	#'=,R0
+	EMT	341
+	MOV	(SP)+,R0
+	JSR	PC,PRHEX4	; Print R0
+	MOV	#' ,R0
+	EMT	341
+	; Print channel status (first word of EMTBLK)
+	MOV	#'C,R0
+	EMT	341
+	MOV	#'=,R0
+	EMT	341
+	MOV	EMTBLK,R0
+	JSR	PC,PRHEX4
+	MOV	#15,R0
+	EMT	341
+	MOV	#12,R0
+	EMT	341
+	BR	EXIT
+
+OPNOK:	MOV	#MSGOK,R1
+	JSR	PC,PUTS
+
+	; Write some data
+	MOV	#MSGWRT,R1
+	JSR	PC,PUTS
+
+	; Set up .WRITW arguments
+	; Format: Function*256 + Channel, Buffer, Word count, Block number
+	MOV	#14000,EMTBLK	; Function 30 (.WRITW) * 256 + Channel 0
+	MOV	#WRTBUF,EMTBLK+2 ; Buffer address
+	MOV	#4,EMTBLK+4	; 4 words = 8 bytes
+	CLR	EMTBLK+6	; Block 0
+
+	; Put some data in buffer
+	MOV	#110105,WRTBUF	; "HE"
+	MOV	#114114,WRTBUF+2 ; "LL"
+	MOV	#117040,WRTBUF+4 ; "O "
+	MOV	#000015,WRTBUF+6 ; CR + null
+
+	; Call EMT 375
+	MOV	#EMTBLK,R0
+	EMT	375
+	BCC	WRTOK
+
+	; Write error
+	MOV	#MSGERR,R1
+	JSR	PC,PUTS
+	BR	DCLOSE
+
+WRTOK:	MOV	#MSGOK,R1
+	JSR	PC,PUTS
+
+DCLOSE:	; Close file
+	MOV	#MSGCLS,R1
+	JSR	PC,PUTS
+
+	MOV	#3000,EMTBLK	; Function 6 (.CLOSE) * 256 + Channel 0
+	MOV	#EMTBLK,R0
+	EMT	375
+	BCC	CLSOK
+
+	MOV	#MSGERR,R1
+	JSR	PC,PUTS
+	BR	EXIT
+
+CLSOK:	MOV	#MSGOK,R1
+	JSR	PC,PUTS
+
+EXIT:	MOV	#MSGBYE,R1
+	JSR	PC,PUTS
+	EMT	350		; .EXIT
+
+; ============ Subroutines ============
+
+; PUTS - Print string at R1 with CRLF
+PUTS:	MOVB	(R1)+,R0
+	BEQ	PUTSE
+	EMT	341
+	BR	PUTS
+PUTSE:	MOV	#15,R0
+	EMT	341
+	MOV	#12,R0
+	EMT	341
+	RTS	PC
+
+; PUTS2 - Print string at R1, no CRLF
+PUTS2:	MOVB	(R1)+,R0
+	BEQ	PUTS2R
+	EMT	341
+	BR	PUTS2
+PUTS2R:	RTS	PC
+
+; PRHEX4 - Print R0 as 4 hex digits
+PRHEX4:	MOV	R0,-(SP)
+	MOV	R0,R1
+	SWAB	R1
+	MOV	R1,R0
+	JSR	PC,PRHEX2
+	MOV	(SP)+,R0
+
+; PRHEX2 - Print low byte of R0 as 2 hex digits
+PRHEX2:	MOV	R0,-(SP)
+	ASR	R0
+	ASR	R0
+	ASR	R0
+	ASR	R0
+	BIC	#177760,R0
+	JSR	PC,PRNIB
+	MOV	(SP)+,R0
+	BIC	#177760,R0
+
+; PRNIB - Print nibble in R0
+PRNIB:	CMP	R0,#11		; 9 decimal
+	BGT	PN1
+	ADD	#'0,R0
+	BR	PN2
+PN1:	ADD	#67,R0		; 'A' - 10
+PN2:	EMT	341
+	RTS	PC
+
+; ============ Data ============
+
+HELLO:	.ASCII	/XFER5 V1.0 - EMT 375 Test/
+	.BYTE	0
+MSGFCH:	.ASCII	/Fetching DK:.../
+	.BYTE	0
+MSGSKP:	.ASCII	/SKIP/
+	.BYTE	0
+MSGOPN:	.ASCII	/Opening file.../
+	.BYTE	0
+MSGWRT:	.ASCII	/Writing data.../
+	.BYTE	0
+MSGCLS:	.ASCII	/Closing file.../
+	.BYTE	0
+MSGOK:	.ASCII	/OK/
+	.BYTE	0
+MSGERR:	.ASCII	/ERROR/
+	.BYTE	0
+MSGBYE:	.ASCII	/Done/
+	.BYTE	0
+	.EVEN
+
+EMTBLK:	.BLKW	4		; EMT argument block
+FILBLK:	.BLKW	4		; Filename block (RAD50)
+WRTBUF:	.BLKW	4		; Write buffer
+
+	.END	START

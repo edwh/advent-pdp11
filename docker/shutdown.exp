@@ -1,0 +1,62 @@
+#!/usr/bin/expect -f
+# Properly shut down RSTS/E to create clean disk images
+
+log_user 1
+set timeout 120
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Starting RSTS/E shutdown procedure..."
+send "RUN \$SHUTUP\r"
+sleep 5
+
+# Handle SHUTUP prompts
+expect {
+    "Print/Batch" {
+        send "Y\r"
+        exp_continue
+    }
+    "spooling" {
+        send "\r"
+        exp_continue
+    }
+    "dismount" {
+        send "Y\r"
+        exp_continue
+    }
+    "message" {
+        send "\r"
+        exp_continue
+    }
+    "how long" {
+        send "0\r"
+        exp_continue
+    }
+    "proceed" {
+        send "Y\r"
+    }
+    "HALT" {
+        puts "\n>>> System halted"
+    }
+    timeout {
+        puts "\n>>> Timeout during shutdown"
+    }
+}
+
+sleep 10
+puts "\n>>> Shutdown complete"
+close

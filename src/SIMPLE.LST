@@ -1,0 +1,31 @@
+       1                                	.TITLE	SIMPLE
+       2                                	.IDENT	/V1.0/
+       3                                ;
+       4                                ;	Simplest possible RT-11 program: print message and exit
+       5                                ;
+       6                                
+       7                                	.ASECT
+       8 001000                         	.=1000
+       9                                
+      10 001000 012701  001032          START:	MOV	#MSG,R1		; Point to message
+      11 001004 112100                  10$:	MOVB	(R1)+,R0	; Get char
+      12 001006 001402                  	BEQ	20$		; Done?
+      13 001010 104341                  	EMT	341		; Output char
+      14 001012 000774                  	BR	10$		; Next char
+      15                                
+      16                                20$:	; Print CRLF and exit
+      17 001014 012700  000015          	MOV	#15,R0		; CR
+      18 001020 104341                  	EMT	341
+      19 001022 012700  000012          	MOV	#12,R0		; LF
+      20 001026 104341                  	EMT	341
+      21                                
+      22                                	; Exit to monitor
+      23 001030 104350                  	EMT	350		; .EXIT
+      24                                
+      25 001032    123     111     115  MSG:	.ASCII	/SIMPLE OK/
+         001035    120     114     105  
+         001040    040     117     113  
+      26 001043    000                  	.BYTE	0
+      27                                
+      28                                	.END	START
+      28                                

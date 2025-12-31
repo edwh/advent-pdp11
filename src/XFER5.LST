@@ -1,0 +1,206 @@
+       1                                	.TITLE	XFER5 - Hex File Transfer with EMT 375
+       2                                	.IDENT	/V1.0/
+       3                                ;
+       4                                ;	XFER5 - Test RT-11 EMT 375 file I/O format
+       5                                ;
+       6                                ;	RT-11 EMT 375 format:
+       7                                ;	  R0 -> argument block
+       8                                ;	  Word 0: Function code (high byte) + Channel (low byte)
+       9                                ;	  Word 1+: Function-specific arguments
+      10                                ;
+      11                                ;	Function codes:
+      12                                ;	  4 = .ENTER (create file)
+      13                                ;	  6 = .CLOSE
+      14                                ;	  24 (30 octal) = .WRITW
+      15                                ;
+      16                                ;	This is a minimal test to see if EMT 375 works
+      17                                
+      18                                	.ASECT
+      19 001000                         	.=1000
+      20                                
+      21 001000 012701  001502          START:	MOV	#HELLO,R1
+      22 001004 004767  001350'         	JSR	PC,PUTS
+      23                                
+      24                                	; Try to create a test file
+      25 001010 012701  001534          	MOV	#MSGOPN,R1
+      26 001014 004767  001350'         	JSR	PC,PUTS
+      27                                
+      28                                	; Set up .ENTER arguments
+      29                                	; Format: Function*256 + Channel, Filename ptr, Size
+      30 001020 012767  002000  001632' 	MOV	#2000,EMTBLK	; Function 4 (.ENTER) * 256 + Channel 0
+      31 001026 012767  001642  001634' 	MOV	#FILBLK,EMTBLK+2 ; Filename block pointer
+      32 001034 012767  000012  001636' 	MOV	#12,EMTBLK+4	; 10 blocks
+      33                                
+      34                                	; Set up filename block (RAD50)
+      35                                	; TEST = T(20)*1600 + E(5)*40 + S(19) = 32000+200+19 = 32219 = 76733 octal
+      36                                	; T<sp><sp> = 20*1600 = 32000 = 76400 octal
+      37                                	; DAT = D(4)*1600 + A(1)*40 + T(20) = 6400+40+20 = 6460 = 14514 octal
+      38 001042 012767  076733  001642' 	MOV	#76733,FILBLK	; "TES"
+      39 001050 012767  076400  001644' 	MOV	#76400,FILBLK+2	; "T  "
+      40 001056 012767  014514  001646' 	MOV	#14514,FILBLK+4	; "DAT"
+      41 001064 005067  001650'         	CLR	FILBLK+6	; "   "
+      42                                
+      43                                	; Call EMT 375
+      44 001070 012700  001632          	MOV	#EMTBLK,R0
+      45 001074 104375                  	EMT	375
+      46 001076 103017                  	BCC	OPNOK
+      47                                
+      48                                	; Error - print error code from R0
+      49 001100 010046                  	MOV	R0,-(SP)	; Save error code
+      50 001102 012701  001617          	MOV	#MSGERR,R1
+      51 001106 004767  001376'         	JSR	PC,PUTS2	; No CRLF
+      52 001112 012600                  	MOV	(SP)+,R0
+      53 001114 004767  001410'         	JSR	PC,PRHEX4	; Print error code
+      54 001120 012700  000015          	MOV	#15,R0
+      55 001124 104341                  	EMT	341
+      56 001126 012700  000012          	MOV	#12,R0
+      57 001132 104341                  	EMT	341
+      58 001134 000500                  	BR	EXIT
+      59                                
+      60 001136 012701  001614          OPNOK:	MOV	#MSGOK,R1
+      61 001142 004767  001350'         	JSR	PC,PUTS
+      62                                
+      63                                	; Write some data
+      64 001146 012701  001554          	MOV	#MSGWRT,R1
+      65 001152 004767  001350'         	JSR	PC,PUTS
+      66                                
+      67                                	; Set up .WRITW arguments
+      68                                	; Format: Function*256 + Channel, Buffer, Word count, Block number
+      69 001156 012767  014000  001632' 	MOV	#14000,EMTBLK	; Function 30 (.WRITW) * 256 + Channel 0
+      70 001164 012767  001652  001634' 	MOV	#WRTBUF,EMTBLK+2 ; Buffer address
+      71 001172 012767  000004  001636' 	MOV	#4,EMTBLK+4	; 4 words = 8 bytes
+      72 001200 005067  001640'         	CLR	EMTBLK+6	; Block 0
+      73                                
+      74                                	; Put some data in buffer
+      75 001204 012767  110105  001652' 	MOV	#110105,WRTBUF	; "HE"
+      76 001212 012767  114114  001654' 	MOV	#114114,WRTBUF+2 ; "LL"
+      77 001220 012767  117040  001656' 	MOV	#117040,WRTBUF+4 ; "O "
+      78 001226 012767  000015  001660' 	MOV	#000015,WRTBUF+6 ; CR + null
+      79                                
+      80                                	; Call EMT 375
+      81 001234 012700  001632          	MOV	#EMTBLK,R0
+      82 001240 104375                  	EMT	375
+      83 001242 103005                  	BCC	WRTOK
+      84                                
+      85                                	; Write error
+      86 001244 012701  001617          	MOV	#MSGERR,R1
+      87 001250 004767  001350'         	JSR	PC,PUTS
+      88 001254 000404                  	BR	DCLOSE
+      89                                
+      90 001256 012701  001614          WRTOK:	MOV	#MSGOK,R1
+      91 001262 004767  001350'         	JSR	PC,PUTS
+      92                                
+      93                                DCLOSE:	; Close file
+      94 001266 012701  001574          	MOV	#MSGCLS,R1
+      95 001272 004767  001350'         	JSR	PC,PUTS
+      96                                
+      97 001276 012767  003000  001632' 	MOV	#3000,EMTBLK	; Function 6 (.CLOSE) * 256 + Channel 0
+      98 001304 012700  001632          	MOV	#EMTBLK,R0
+      99 001310 104375                  	EMT	375
+     100 001312 103005                  	BCC	CLSOK
+     101                                
+     102 001314 012701  001617          	MOV	#MSGERR,R1
+     103 001320 004767  001350'         	JSR	PC,PUTS
+     104 001324 000404                  	BR	EXIT
+     105                                
+     106 001326 012701  001614          CLSOK:	MOV	#MSGOK,R1
+     107 001332 004767  001350'         	JSR	PC,PUTS
+     108                                
+     109 001336 012701  001625          EXIT:	MOV	#MSGBYE,R1
+     110 001342 004767  001350'         	JSR	PC,PUTS
+     111 001346 104350                  	EMT	350		; .EXIT
+     112                                
+     113                                ; ============ Subroutines ============
+     114                                
+     115                                ; PUTS - Print string at R1 with CRLF
+     116 001350 112100                  PUTS:	MOVB	(R1)+,R0
+     117 001352 001402                  	BEQ	PUTSE
+     118 001354 104341                  	EMT	341
+     119 001356 000774                  	BR	PUTS
+     120 001360 012700  000015          PUTSE:	MOV	#15,R0
+     121 001364 104341                  	EMT	341
+     122 001366 012700  000012          	MOV	#12,R0
+     123 001372 104341                  	EMT	341
+     124 001374 000207                  	RTS	PC
+     125                                
+     126                                ; PUTS2 - Print string at R1, no CRLF
+     127 001376 112100                  PUTS2:	MOVB	(R1)+,R0
+     128 001400 001402                  	BEQ	PUTS2R
+     129 001402 104341                  	EMT	341
+     130 001404 000774                  	BR	PUTS2
+     131 001406 000207                  PUTS2R:	RTS	PC
+     132                                
+     133                                ; PRHEX4 - Print R0 as 4 hex digits
+     134 001410 010046                  PRHEX4:	MOV	R0,-(SP)
+     135 001412 010001                  	MOV	R0,R1
+     136 001414 000301                  	SWAB	R1
+     137 001416 010100                  	MOV	R1,R0
+     138 001420 004767  001426'         	JSR	PC,PRHEX2
+     139 001424 012600                  	MOV	(SP)+,R0
+     140                                
+     141                                ; PRHEX2 - Print low byte of R0 as 2 hex digits
+     142 001426 010046                  PRHEX2:	MOV	R0,-(SP)
+     143 001430 006200                  	ASR	R0
+     144 001432 006200                  	ASR	R0
+     145 001434 006200                  	ASR	R0
+     146 001436 006200                  	ASR	R0
+     147 001440 042700  177760          	BIC	#177760,R0
+     148 001444 004767  001456'         	JSR	PC,PRNIB
+     149 001450 012600                  	MOV	(SP)+,R0
+     150 001452 042700  177760          	BIC	#177760,R0
+     151                                
+     152                                ; PRNIB - Print nibble in R0
+     153 001456 020027  000011          PRNIB:	CMP	R0,#11		; 9 decimal
+     154 001462 003003                  	BGT	PN1
+     155 001464 062700  000060          	ADD	#'0,R0
+     156 001470 000402                  	BR	PN2
+     157 001472 062700  000067          PN1:	ADD	#67,R0		; 'A' - 10
+     158 001476 104341                  PN2:	EMT	341
+     159 001500 000207                  	RTS	PC
+     160                                
+     161                                ; ============ Data ============
+     162                                
+     163 001502    130     106     105  HELLO:	.ASCII	/XFER5 V1.0 - EMT 375 Test/
+         001505    122     065     040  
+         001510    126     061     056  
+         001513    060     040     055  
+         001516    040     105     115  
+         001521    124     040     063  
+         001524    067     065     040  
+         001527    124     145     163  
+         001532    164                  
+     164 001533    000                  	.BYTE	0
+     165 001534    117     160     145  MSGOPN:	.ASCII	/Opening file.../
+         001537    156     151     156  
+         001542    147     040     146  
+         001545    151     154     145  
+         001550    056     056     056  
+     166 001553    000                  	.BYTE	0
+     167 001554    127     162     151  MSGWRT:	.ASCII	/Writing data.../
+         001557    164     151     156  
+         001562    147     040     144  
+         001565    141     164     141  
+         001570    056     056     056  
+     168 001573    000                  	.BYTE	0
+     169 001574    103     154     157  MSGCLS:	.ASCII	/Closing file.../
+         001577    163     151     156  
+         001602    147     040     146  
+         001605    151     154     145  
+         001610    056     056     056  
+     170 001613    000                  	.BYTE	0
+     171 001614    117     113          MSGOK:	.ASCII	/OK/
+     172 001616    000                  	.BYTE	0
+     173 001617    105     122     122  MSGERR:	.ASCII	/ERROR/
+         001622    117     122          
+     174 001624    000                  	.BYTE	0
+     175 001625    104     157     156  MSGBYE:	.ASCII	/Done/
+         001630    145                  
+     176 001631    000                  	.BYTE	0
+     177                                	.EVEN
+     178                                
+     179 001632                         EMTBLK:	.BLKW	4		; EMT argument block
+     180 001642                         FILBLK:	.BLKW	4		; Filename block (RAD50)
+     181 001652                         WRTBUF:	.BLKW	4		; Write buffer
+     182                                
+     183                                	.END	START
+     183                                

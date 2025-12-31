@@ -1,0 +1,117 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 60
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Step 1: Delete any existing ODL file..."
+send "DELETE DM1:\[1,2\]LINK.ODL\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Step 2: Start BASIC-PLUS-2..."
+send "BASIC\r"
+sleep 3
+
+# Wait for BASIC2 prompt
+expect {
+    "BASIC2" { puts "\n>>> Got BASIC2 prompt" }
+    timeout { puts "\n>>> Timeout waiting for BASIC2" }
+}
+
+puts "\n>>> Step 3: Create file using immediate mode commands..."
+
+# Open file for output
+send "OPEN \"DM1:\[1,2\]LINK.ODL\" FOR OUTPUT AS FILE #1\r"
+sleep 1
+expect "BASIC2"
+
+# Write ODL content - no tabs, just spaces for alignment
+send "PRINT #1, \".ROOT ADVENT-LIBR-*(SUBS)\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"SUBS:   .FCTR *(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"INI:    .FCTR DM1:\[1,2\]ADVINI\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"OUT:    .FCTR DM1:\[1,2\]ADVOUT\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"NOR:    .FCTR DM1:\[1,2\]ADVNOR\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"CMD:    .FCTR DM1:\[1,2\]ADVCMD\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"ODD:    .FCTR DM1:\[1,2\]ADVODD\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"MSG:    .FCTR DM1:\[1,2\]ADVMSG\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"BYE:    .FCTR DM1:\[1,2\]ADVBYE\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"SHT:    .FCTR DM1:\[1,2\]ADVSHT\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"NPC:    .FCTR DM1:\[1,2\]ADVNPC\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"PUZ:    .FCTR DM1:\[1,2\]ADVPUZ\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"DSP:    .FCTR DM1:\[1,2\]ADVDSP\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"FND:    .FCTR DM1:\[1,2\]ADVFND\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"TDY:    .FCTR DM1:\[1,2\]ADVTDY\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \"LIBR:   .FCTR SY:\[1,1\]BP2OTS/LB\"\r"
+sleep 0.5
+expect "BASIC2"
+send "PRINT #1, \".END\"\r"
+sleep 0.5
+expect "BASIC2"
+
+# Close the file
+send "CLOSE #1\r"
+sleep 1
+expect "BASIC2"
+
+puts "\n>>> Step 4: Exit BASIC with SYSTEM command..."
+send "SYSTEM\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Step 5: Verify ODL file exists..."
+send "DIR DM1:\[1,2\]LINK.ODL\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Step 6: Display ODL file..."
+send "TYPE DM1:\[1,2\]LINK.ODL\r"
+sleep 3
+expect -re {\$}
+
+puts "\n>>> Done"
+close

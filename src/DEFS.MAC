@@ -1,0 +1,121 @@
+	.TITLE	DEFS - RSTS/E System Definitions
+	.IDENT	/V1.0/
+;
+;	Minimal definitions for HEXBIN/BINHEX compilation
+;	Created based on RSTS/E V10.1 documentation
+;
+;	Edward Hibbert - December 2025
+;
+
+; FIRQB (File Information Request Queue Block) - at location 402 octal
+FIRQB	= 402
+
+; FIRQB offsets (all relative to FIRQB base)
+FQFUN	= 0		; Function code (byte)
+FQFIL	= 1		; Channel number (byte)
+FQNAM1	= 2		; First 2 RAD50 words of filename
+FQEXT	= 6		; Extension (RAD50)
+FQPROT	= 10		; Protection code
+FQSIZ	= 12		; File size
+FQCLUS	= 14		; Cluster size
+
+; XRB (Extended Request Block) - at location 442 octal
+XRB	= 442
+
+; XRB offsets (relative to XRB base)
+XRLEN	= 0		; Buffer length
+XRBC	= 2		; Byte count
+XRLOC	= 4		; Buffer location
+XRCI	= 6		; Channel index
+XRBLK	= 10		; Block number
+XRTIME	= 12		; Time-related
+XRMOD	= 14		; Mode
+
+; System variable for byte count (input length)
+BY$CNT	= 442		; Same as XRB, holds input length
+
+; FIRQB function codes (for CALFIP)
+OPNFQ	= 0		; Open file
+CREFQ	= 2		; Create file
+CLSFQ	= 4		; Close file
+DELFQ	= 6		; Delete file
+RENFQ	= 10		; Rename file
+PRSFQ	= 12		; Parse filespec
+
+; Macro to initialize RSX mode
+.MACRO	$RSX
+	.PSECT
+	.NLIST	BEX
+	.LIST	TTM
+	.ENABL	LC
+.ENDM	$RSX
+
+; Macro for RSX read/write definitions
+.MACRO	$RWDEF
+; Nothing extra needed for now
+.ENDM	$RWDEF
+
+; CALFIP macro - Call File Processor
+.MACRO	CALFIP
+	EMT	376
+.ENDM	CALFIP
+
+; CALLS macro - call subroutine with R5 pointing to args
+.MACRO	CALLS	SUBR
+	JSR	PC,SUBR
+.ENDM	CALLS
+
+; RETURN macro
+.MACRO	RETURN
+	RTS	PC
+.ENDM	RETURN
+
+; CALL macro
+.MACRO	CALL	SUBR
+	JSR	PC,SUBR
+.ENDM	CALL
+
+; .PRINT macro - print string with CRLF
+.MACRO	.PRINT	ADDR
+	MOV	ADDR,R0
+	EMT	351
+.ENDM	.PRINT
+
+; .INPUT macro - get input line
+.MACRO	.INPUT	ADDR
+	MOV	ADDR,R0
+	EMT	352
+.ENDM	.INPUT
+
+; .WRDEC macro - write decimal number
+.MACRO	.WRDEC	REG
+	MOV	REG,R0
+	EMT	360
+.ENDM	.WRDEC
+
+; .EXIT macro - return to monitor
+.MACRO	.EXIT
+	EMT	350
+.ENDM	.EXIT
+
+; .FSS macro - file string scan
+.MACRO	.FSS
+	EMT	354
+.ENDM	.FSS
+
+; .READ macro - read from file
+.MACRO	.READ
+	EMT	355
+.ENDM	.READ
+
+; .WRITE macro - write to file
+.MACRO	.WRITE
+	EMT	356
+.ENDM	.WRITE
+
+; .POSTN macro - position to location
+.MACRO	.POSTN
+	EMT	357
+.ENDM	.POSTN
+
+	.END

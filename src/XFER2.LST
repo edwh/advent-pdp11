@@ -1,0 +1,101 @@
+       1                                	.TITLE	XFER2 - Minimal Terminal Test
+       2                                	.IDENT	/V1.0/
+       3                                ;
+       4                                ;	Simplified version to debug line reading
+       5                                ;
+       6                                
+       7                                	.ASECT
+       8 001000                         	.=1000
+       9                                
+      10 001000 012701  001222          START:	MOV	#HELLO,R1
+      11 001004 004767  001136'         	JSR	PC,PUTS
+      12                                
+      13                                ; Main loop
+      14 001010 012701  001243          WAIT:	MOV	#MSGLP,R1
+      15 001014 004767  001136'         	JSR	PC,PUTS		; Print "LP"
+      16 001020 004767  001164'         	JSR	PC,GETLIN	; Get a line
+      17                                
+      18                                	; Echo back "GOT:" + first char
+      19 001024 012701  001246          	MOV	#MSGGOT,R1
+      20 001030 004767  001136'         	JSR	PC,PUTS
+      21                                
+      22                                	; Print first char of buffer
+      23 001034 116700  001264'         	MOVB	LINBUF,R0
+      24 001040 001401                  	BEQ	10$		; Empty?
+      25 001042 104341                  	EMT	341		; Print it
+      26                                10$:	; CRLF
+      27 001044 012700  000015          	MOV	#15,R0
+      28 001050 104341                  	EMT	341
+      29 001052 012700  000012          	MOV	#12,R0
+      30 001056 104341                  	EMT	341
+      31                                
+      32                                	; Check for Q to quit
+      33 001060 126727  001264' 000121  	CMPB	LINBUF,#'Q
+      34 001066 001416                  	BEQ	QUIT
+      35 001070 126727  001264' 000161  	CMPB	LINBUF,#'q
+      36 001076 001412                  	BEQ	QUIT
+      37                                
+      38                                	; Test LINBUF+1 access (like XFER does)
+      39 001100 126727  001265' 000130  	CMPB	LINBUF+1,#'X
+      40 001106 001401                  	BEQ	GOTX
+      41 001110 000737                  	BR	WAIT
+      42                                
+      43 001112 012701  001257          GOTX:	MOV	#MSGX,R1
+      44 001116 004767  001136'         	JSR	PC,PUTS
+      45 001122 000732                  	BR	WAIT
+      46                                
+      47 001124 012701  001253          QUIT:	MOV	#MSGBYE,R1
+      48 001130 004767  001136'         	JSR	PC,PUTS
+      49 001134 104350                  	EMT	350		; .EXIT
+      50                                
+      51                                ; ============ Subroutines ============
+      52                                
+      53                                ; PUTS - Print null-terminated string at R1, add CRLF
+      54 001136 112100                  PUTS:	MOVB	(R1)+,R0
+      55 001140 001402                  	BEQ	PUTS2
+      56 001142 104341                  	EMT	341
+      57 001144 000774                  	BR	PUTS
+      58 001146 012700  000015          PUTS2:	MOV	#15,R0
+      59 001152 104341                  	EMT	341
+      60 001154 012700  000012          	MOV	#12,R0
+      61 001160 104341                  	EMT	341
+      62 001162 000207                  	RTS	PC
+      63                                
+      64                                ; GETLIN - Read line into LINBUF
+      65 001164 012701  001264          GETLIN:	MOV	#LINBUF,R1
+      66 001170 012702  000050          	MOV	#40.,R2		; Max chars (reduced)
+      67 001174 104340                  GL1:	EMT	340		; .TTYIN
+      68 001176 110021                  	MOVB	R0,(R1)+
+      69 001200 120027  000015          	CMPB	R0,#15		; CR?
+      70 001204 001404                  	BEQ	GL2
+      71 001206 120027  000012          	CMPB	R0,#12		; LF?
+      72 001212 001401                  	BEQ	GL2
+      73 001214 077211                  	SOB	R2,GL1
+      74 001216 105011                  GL2:	CLRB	(R1)		; Null terminate
+      75 001220 000207                  	RTS	PC
+      76                                
+      77                                ; ============ Data ============
+      78                                
+      79 001222    130     106     105  HELLO:	.ASCII	/XFER2 V1.0 Ready/
+         001225    122     062     040  
+         001230    126     061     056  
+         001233    060     040     122  
+         001236    145     141     144  
+         001241    171                  
+      80 001242    000                  	.BYTE	0
+      81 001243    114     120          MSGLP:	.ASCII	/LP/
+      82 001245    000                  	.BYTE	0
+      83 001246    107     117     124  MSGGOT:	.ASCII	/GOT:/
+         001251    072                  
+      84 001252    000                  	.BYTE	0
+      85 001253    102     131     105  MSGBYE:	.ASCII	/BYE/
+      86 001256    000                  	.BYTE	0
+      87 001257    107     117     124  MSGX:	.ASCII	/GOTX/
+         001262    130                  
+      88 001263    000                  	.BYTE	0
+      89                                	.EVEN
+      90                                
+      91 001264                         LINBUF:	.BLKB	50.		; Line buffer
+      92                                
+      93                                	.END	START
+      93                                

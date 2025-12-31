@@ -1,0 +1,42 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 30
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Checking SY:\[1,1\] for BP2OTS..."
+send "DIR SY:\[1,1\]BP2*.LB\r"
+sleep 3
+expect -re {\$}
+
+puts "\n>>> Checking DM0:\[1,1\]..."
+send "DIR DM0:\[1,1\]BP2*.LB\r"
+sleep 3
+expect -re {\$}
+
+puts "\n>>> Checking what BP2 uses..."
+send "RUN \$BP2OPT\r"
+sleep 5
+expect {
+    "BP2OPT" { puts "\n>>> BP2OPT running" }
+    timeout { puts "\n>>> Timeout" }
+}
+send "\x1a"
+sleep 1
+
+puts "\n>>> Done"
+close

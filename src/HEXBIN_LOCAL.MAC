@@ -1,0 +1,203 @@
+	.TITLE	HEXBIN - Hex to Binary Converter
+	.IDENT	/V1.0/
+;
+;	Converts BINHEX.TMP from hex into binary (output file specified).
+;	Standalone version with inline definitions.
+;
+;	Based on original by Edward D.W. Hibbert August 1987
+;
+
+	.ASECT
+	.=1000
+
+; RSTS/E system locations
+FIRQB	= 402		; File Information Request Queue Block
+XRB	= 442		; Executive Request Block
+
+; FIRQB offsets
+FQFUN	= 0		; Function code (byte)
+FQFIL	= 1		; Channel number (byte)
+FQNAM1	= 2		; First RAD50 word of filename
+FQEXT	= 6		; Extension (RAD50)
+
+; XRB offsets
+XRLEN	= 0		; Buffer length
+XRBC	= 2		; Byte count
+XRLOC	= 4		; Buffer location
+XRCI	= 6		; Channel index
+XRBLK	= 10		; Block number
+XRTIME	= 12		; Time
+XRMOD	= 14		; Mode
+
+; FIRQB function codes
+OPNFQ	= 0		; Open file
+CREFQ	= 2		; Create file
+CLSFQ	= 4		; Close file
+
+START:
+	; Print prompt
+	MOV	#PROMPT,R1
+	JSR	PC,PUTS
+
+	; Get output filename
+	MOV	#FIL,R0
+	EMT	352		; .INPUT - get line
+
+	; Parse filename using FSS
+	MOV	XRB,XRB		; byte count already set
+	MOV	XRB,XRB+2
+	MOV	#FIL,XRB+4
+	CLR	XRB+10
+	CLR	XRB+12
+	JSR	PC,ZAPFQB
+	EMT	354		; .FSS - file string scan
+	TSTB	FIRQB
+	BNE	START		; retry if error
+
+	; Create output file on channel 4
+	MOVB	#CREFQ,FIRQB+FQFUN
+	MOVB	#4,FIRQB+FQFIL
+	EMT	376		; CALFIP
+
+	; Open input file BINHEX.TMP on channel 2
+	JSR	PC,ZAPFQB
+	MOV	#^RBIN,FIRQB+FQNAM1
+	MOV	#^RHEX,FIRQB+FQNAM1+2
+	MOV	#^RTMP,FIRQB+FQEXT
+	MOVB	#OPNFQ,FIRQB+FQFUN
+	MOVB	#2,FIRQB+FQFIL
+	EMT	376		; CALFIP
+	TSTB	FIRQB
+	BEQ	RDLOOP
+	; Error opening input
+	MOVB	FIRQB,R0
+	JSR	PC,PRDEC
+	JSR	PC,CRLF
+	BR	EXIT
+
+RDLOOP:	; Read 1024 bytes of hex
+	MOV	#1024.,XRB
+	CLR	XRB+2
+	MOV	#BUF1,XRB+4
+	MOV	#2,XRB+6	; Channel 2
+	CLR	XRB+XRBLK
+	CLR	XRB+XRTIME
+	CLR	XRB+XRMOD
+	EMT	355		; .READ
+	TSTB	FIRQB
+	BEQ	CONVERT
+	INC	ERR		; Mark EOF
+
+CONVERT:
+	; Convert hex to binary
+	MOV	#BUF1,R0
+	MOV	#BUF2,R2
+
+CVTLP:	MOVB	(R0)+,R4
+	CMP	R4,#'9
+	BGT	HEXDIG
+	SUB	#'0,R4
+	BR	NXTDIG
+HEXDIG:	SUB	#'A,R4
+	ADD	#10.,R4
+
+NXTDIG:	MOV	R4,R5
+	ASL	R5
+	ASL	R5
+	ASL	R5
+	ASL	R5
+	MOVB	(R0)+,R4
+	CMP	R4,#'9
+	BGT	HEXDG2
+	SUB	#'0,R4
+	BR	STORE
+HEXDG2:	SUB	#'A,R4
+	ADD	#10.,R4
+
+STORE:	ADD	R4,R5
+	MOVB	R5,(R2)+
+	CMP	R0,#BUF1+1024.
+	BLT	CVTLP
+
+	; Write 512 bytes binary
+	MOV	#512.,XRB
+	MOV	#512.,XRB+2
+	MOV	#BUF2,XRB+4
+	MOV	#4,XRB+XRCI	; Channel 4
+	CLR	XRB+XRBLK
+	CLR	XRB+XRMOD
+	EMT	356		; .WRITE
+	TST	ERR
+	BNE	CLOSE
+	BR	RDLOOP
+
+CLOSE:	; Close both files
+	MOVB	#2,FIRQB+FQFIL
+	MOVB	#CLSFQ,FIRQB+FQFUN
+	EMT	376
+	MOVB	#4,FIRQB+FQFIL
+	MOVB	#CLSFQ,FIRQB+FQFUN
+	EMT	376
+
+EXIT:	MOV	#DONE,R1
+	JSR	PC,PUTS
+	EMT	350		; .EXIT
+
+; ============ Subroutines ============
+
+; Zero FIRQB
+ZAPFQB:	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	MOV	#FIRQB,R0
+	MOV	#20,R1
+1$:	CLR	(R0)+
+	SOB	R1,1$
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	RTS	PC
+
+; Print string with CRLF
+PUTS:	MOVB	(R1)+,R0
+	BEQ	PUTSE
+	EMT	341
+	BR	PUTS
+PUTSE:	JSR	PC,CRLF
+	RTS	PC
+
+; Print CRLF
+CRLF:	MOV	#15,R0
+	EMT	341
+	MOV	#12,R0
+	EMT	341
+	RTS	PC
+
+; Print decimal number in R0
+PRDEC:	MOV	R0,-(SP)
+	MOV	R1,-(SP)
+	MOV	R0,R1
+	CLR	R0
+	DIV	#10.,R0
+	TST	R0
+	BEQ	1$
+	JSR	PC,PRDEC
+1$:	ADD	#'0,R1
+	MOV	R1,R0
+	EMT	341
+	MOV	(SP)+,R1
+	MOV	(SP)+,R0
+	RTS	PC
+
+; ============ Data ============
+
+PROMPT:	.ASCII	/Output file: /
+	.BYTE	0
+DONE:	.ASCII	/Done/
+	.BYTE	0
+	.EVEN
+
+BUF1:	.BLKB	1024.		; Hex input buffer
+BUF2:	.BLKB	512.		; Binary output buffer
+ERR:	.WORD	0
+FIL:	.BLKB	30.
+
+	.END	START

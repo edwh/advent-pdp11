@@ -1,0 +1,174 @@
+#!/usr/bin/expect -f
+#
+# Link Advent game within RSTS/E
+# Uses DCL CREATE command to make ODL file, then links with TKB
+#
+
+log_user 1
+set timeout 120
+
+# Connect to RSTS/E terminal using netcat
+spawn nc localhost 2323
+
+sleep 3
+send "\r"
+sleep 2
+
+# Wait for login prompt
+expect {
+    "User:" {}
+    "Connected" { exp_continue }
+    timeout { puts ">>> No login prompt" }
+}
+sleep 1
+send "\[1,2\]\r"
+
+expect "Password:"
+sleep 1
+send "Digital1977\r"
+
+# Handle job attach prompt and wait for DCL
+sleep 3
+expect {
+    "Job number to attach to" {
+        send "\r"
+        sleep 2
+        exp_continue
+    }
+    "change it" {
+        # Wait a bit more after password warning
+        sleep 1
+        exp_continue
+    }
+    -re {\$} {}
+    timeout { puts ">>> Timeout waiting for prompt" }
+}
+
+puts "\n>>> Creating ODL file using CREATE..."
+
+# Delete any existing ODL file
+send "DELETE DM1:\[1,2\]LINK.ODL\r"
+sleep 2
+expect -re {\$}
+
+# Use CREATE command to create the ODL file
+send "CREATE DM1:\[1,2\]LINK.ODL\r"
+sleep 2
+expect "type CTRL"
+
+# Type the ODL content line by line with longer delays
+send ".ROOT ADVENT-LIBR-*(SUBS)\r"
+sleep 0.5
+send "SUBS:\t.FCTR *(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\r"
+sleep 0.5
+send "INI:\t.FCTR DM1:\[1,2\]ADVINI\r"
+sleep 0.5
+send "OUT:\t.FCTR DM1:\[1,2\]ADVOUT\r"
+sleep 0.5
+send "NOR:\t.FCTR DM1:\[1,2\]ADVNOR\r"
+sleep 0.5
+send "CMD:\t.FCTR DM1:\[1,2\]ADVCMD\r"
+sleep 0.5
+send "ODD:\t.FCTR DM1:\[1,2\]ADVODD\r"
+sleep 0.5
+send "MSG:\t.FCTR DM1:\[1,2\]ADVMSG\r"
+sleep 0.5
+send "BYE:\t.FCTR DM1:\[1,2\]ADVBYE\r"
+sleep 0.5
+send "SHT:\t.FCTR DM1:\[1,2\]ADVSHT\r"
+sleep 0.5
+send "NPC:\t.FCTR DM1:\[1,2\]ADVNPC\r"
+sleep 0.5
+send "PUZ:\t.FCTR DM1:\[1,2\]ADVPUZ\r"
+sleep 0.5
+send "DSP:\t.FCTR DM1:\[1,2\]ADVDSP\r"
+sleep 0.5
+send "FND:\t.FCTR DM1:\[1,2\]ADVFND\r"
+sleep 0.5
+send "TDY:\t.FCTR DM1:\[1,2\]ADVTDY\r"
+sleep 0.5
+send "LIBR:\t.FCTR SY:\[1,1\]BP2OTS/LB\r"
+sleep 0.5
+send ".END\r"
+sleep 1
+
+# End file with Ctrl+Z
+send "\x1a"
+sleep 3
+
+# Wait for the $ prompt - CREATE may take a moment to close file
+expect {
+    -re {\$} { puts "\n>>> File saved, got DCL prompt" }
+    timeout { puts "\n>>> Timeout waiting for prompt after CREATE" }
+}
+
+puts "\n>>> ODL file created. Verifying..."
+send "TYPE DM1:\[1,2\]LINK.ODL\r"
+sleep 5
+expect {
+    ".END" { puts "\n>>> ODL file looks good" }
+    "Can't find" { puts "\n>>> ERROR: ODL file not found!" }
+    timeout { puts "\n>>> TYPE timeout" }
+}
+expect -re {\$}
+
+puts "\n>>> Linking game with TKB..."
+
+# Run Task Builder
+send "RUN \$TKB\r"
+sleep 3
+expect {
+    "TKB>" { puts "\n>>> TKB started" }
+    timeout { puts "\n>>> Timeout waiting for TKB" }
+}
+
+# Link command: output,map=odl
+send "DM1:\[1,2\]ADVENT,DM1:\[1,2\]ADVENT=DM1:\[1,2\]LINK.ODL\r"
+sleep 5
+expect {
+    "TKB>" { puts "\n>>> Link spec accepted" }
+    "illegal format" { puts "\n>>> ODL format error!" }
+    "undefined" { puts "\n>>> Undefined symbol error" }
+    timeout { puts "\n>>> Timeout during link spec" }
+}
+
+# Options - enter / to see options
+send "/\r"
+sleep 2
+expect {
+    "Enter Options:" { puts "\n>>> At options prompt" }
+    timeout { puts "\n>>> Timeout waiting for options" }
+}
+
+# Accept defaults - this takes a while
+send "\r"
+puts "\n>>> Linking in progress (this takes ~60 seconds)..."
+sleep 90
+expect {
+    "TKB>" { puts "\n>>> Link complete!" }
+    timeout { puts "\n>>> Link timeout (may still be running)" }
+}
+
+# Exit TKB with Ctrl+Z
+send "\x1a"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Checking if ADVENT.TSK was created..."
+send "DIR DM1:\[1,2\]ADVENT.TSK\r"
+sleep 3
+expect {
+    "Can't find" {
+        puts "\n>>> ADVENT.TSK NOT CREATED - Link may have failed"
+    }
+    "ADVENT.TSK" {
+        puts "\n>>> SUCCESS - ADVENT.TSK created!"
+    }
+    timeout {}
+}
+expect -re {\$}
+
+puts "\n>>> Link script complete"
+send "BYE\r"
+sleep 1
+close

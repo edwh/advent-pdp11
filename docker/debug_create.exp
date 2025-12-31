@@ -1,0 +1,80 @@
+#!/usr/bin/expect -f
+#
+# Debug CREATE command behavior
+#
+
+log_user 1
+set timeout 30
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Testing CREATE with explicit escape..."
+
+# Delete old file
+send "DELETE DEBUG.TXT\r"
+sleep 1
+expect -re {\$}
+
+# Create file
+send "CREATE DEBUG.TXT\r"
+sleep 1
+expect "CTRL/Z"
+
+# Send one line
+send "Test line one\r"
+sleep 1
+
+send "Test line two\r"
+sleep 1
+
+# Try different Ctrl+Z approaches
+puts "\n>>> Trying Ctrl+Z (0x1a)..."
+send "\032"
+sleep 3
+
+# Check what we got
+puts "\n>>> Checking buffer..."
+
+# Wait for prompt or any response
+expect {
+    -re {\$} {
+        puts "\n>>> Got prompt after Ctrl+Z"
+    }
+    "EOR" {
+        puts "\n>>> Got EOR response"
+        exp_continue
+    }
+    timeout {
+        puts "\n>>> Timeout - sending CR then checking..."
+        send "\r"
+        sleep 1
+    }
+}
+
+expect -re {\$}
+
+# Check if file exists
+send "DIR DEBUG.*\r"
+sleep 2
+expect -re {\$}
+
+send "TYPE DEBUG.TXT\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Debug complete"
+close

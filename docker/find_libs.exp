@@ -1,0 +1,42 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 30
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Checking DM1:\[1,1\] for .LB files..."
+send "DIR DM1:\[1,1\]*.LB\r"
+sleep 3
+expect -re {\$}
+
+puts "\n>>> Checking SY: device..."
+send "SHOW DEVICE SY:\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Checking all mounted devices..."
+send "SHOW DEVICE/MOUNTED\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Checking DM0: for .LB files..."
+send "DIR DM0:\[1,1\]*.LB\r"
+sleep 3
+expect -re {\$}
+
+puts "\n>>> Done"
+close

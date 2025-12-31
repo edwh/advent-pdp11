@@ -1,0 +1,226 @@
+       1                                	.TITLE	XFER3 - Hex File Transfer (Working Version)
+       2                                	.IDENT	/V1.0/
+       3                                ;
+       4                                ;	XFER - Receive hex-encoded files via terminal
+       5                                ;	Based on working XFER2 structure
+       6                                ;
+       7                                ;	Protocol:
+       8                                ;	  :filename     - Start receiving file
+       9                                ;	  :0000:HH...   - Hex data line
+      10                                ;	  :END          - End of file
+      11                                ;
+      12                                ;	EMT 340 = .TTYIN, EMT 341 = .TTYOUT, EMT 350 = .EXIT
+      13                                
+      14                                	.ASECT
+      15 001000                         	.=1000
+      16                                
+      17 001000 012701  001652          START:	MOV	#HELLO,R1
+      18 001004 004767  001462'         	JSR	PC,PUTS
+      19 001010 005067  002124'         	CLR	TOTBYT
+      20 001014 005067  002126'         	CLR	FILCHN
+      21                                
+      22                                ; Main loop
+      23 001020 004767  001614'         WAIT:	JSR	PC,GETLIN	; Get a line
+      24 001024 105767  001702'         	TSTB	LINBUF		; Empty?
+      25 001030 001773                  	BEQ	WAIT
+      26 001032 126727  001702' 000072  	CMPB	LINBUF,#':	; Starts with ':'?
+      27 001040 001367                  	BNE	WAIT
+      28                                
+      29                                	; Check for :END
+      30 001042 126727  001703' 000105  	CMPB	LINBUF+1,#'E
+      31 001050 001043                  	BNE	NOTEND
+      32 001052 126727  001704' 000116  	CMPB	LINBUF+2,#'N
+      33 001060 001037                  	BNE	NOTEND
+      34 001062 126727  001705' 000104  	CMPB	LINBUF+3,#'D
+      35 001070 001033                  	BNE	NOTEND
+      36                                
+      37                                	; It's :END - close and report
+      38 001072 005767  002126'         	TST	FILCHN
+      39 001076 001423                  	BEQ	NOFIL
+      40 001100 005067  002126'         	CLR	FILCHN
+      41                                	; Print DONE:count
+      42 001104 012701  001674          	MOV	#MSGDON,R1
+      43 001110 004767  001510'         	JSR	PC,PUTS2	; No CRLF
+      44 001114 016700  002124'         	MOV	TOTBYT,R0
+      45 001120 004767  001522'         	JSR	PC,PRHEX4
+      46 001124 012700  000015          	MOV	#15,R0
+      47 001130 104341                  	EMT	341
+      48 001132 012700  000012          	MOV	#12,R0
+      49 001136 104341                  	EMT	341
+      50 001140 005067  002124'         	CLR	TOTBYT
+      51 001144 000725                  	BR	WAIT
+      52                                
+      53 001146 012701  001670          NOFIL:	MOV	#MSGERR,R1
+      54 001152 004767  001462'         	JSR	PC,PUTS
+      55 001156 000720                  	BR	WAIT
+      56                                
+      57                                NOTEND:	; Check for second colon (data line)
+      58 001160 012700  001703          	MOV	#LINBUF+1,R0
+      59 001164 004767  001422'         	JSR	PC,FNDCOL
+      60 001170 005700                  	TST	R0
+      61 001172 001012                  	BNE	ISDATA
+      62                                
+      63                                	; No second colon = filename
+      64 001174 012767  000001  002126' 	MOV	#1,FILCHN	; Mark file open
+      65 001202 005067  002124'         	CLR	TOTBYT
+      66 001206 012701  001665          	MOV	#MSGOK,R1
+      67 001212 004767  001462'         	JSR	PC,PUTS
+      68 001216 000700                  	BR	WAIT
+      69                                
+      70                                ISDATA:	; Hex data line
+      71 001220 005767  002126'         	TST	FILCHN
+      72 001224 001446                  	BEQ	NODAT
+      73                                	; R0 points after second colon
+      74                                	; Skip 4 hex digits + colon (line number)
+      75 001226 062700  000005          	ADD	#5,R0
+      76 001232 010001                  	MOV	R0,R1		; R1 = pointer to hex data
+      77 001234 005004                  	CLR	R4		; Byte count
+      78                                
+      79 001236 112102                  NXTBYT:	MOVB	(R1)+,R2	; Get high nibble char
+      80 001240 001431                  	BEQ	DONDAT
+      81 001242 120227  000015          	CMPB	R2,#15		; CR?
+      82 001246 001426                  	BEQ	DONDAT
+      83 001250 120227  000012          	CMPB	R2,#12		; LF?
+      84 001254 001423                  	BEQ	DONDAT
+      85 001256 120227  000072          	CMPB	R2,#':		; Checksum separator?
+      86 001262 001420                  	BEQ	DONDAT
+      87 001264 004767  001354'         	JSR	PC,HEXDIG	; Convert to nibble in R0
+      88 001270 006300                  	ASL	R0
+      89 001272 006300                  	ASL	R0
+      90 001274 006300                  	ASL	R0
+      91 001276 006300                  	ASL	R0
+      92 001300 010003                  	MOV	R0,R3		; Save high nibble
+      93 001302 112102                  	MOVB	(R1)+,R2	; Get low nibble char
+      94 001304 001407                  	BEQ	DONDAT
+      95 001306 004767  001354'         	JSR	PC,HEXDIG
+      96 001312 050300                  	BIS	R3,R0		; Combine
+      97 001314 110064  002024          	MOVB	R0,BINBUF(R4)	; Store byte
+      98 001320 005204                  	INC	R4
+      99 001322 000745                  	BR	NXTBYT
+     100                                
+     101 001324 060467  002124'         DONDAT:	ADD	R4,TOTBYT
+     102 001330 012701  001665          	MOV	#MSGOK,R1
+     103 001334 004767  001462'         	JSR	PC,PUTS
+     104 001340 000627                  	BR	WAIT
+     105                                
+     106 001342 012701  001670          NODAT:	MOV	#MSGERR,R1
+     107 001346 004767  001462'         	JSR	PC,PUTS
+     108 001352 000622                  	BR	WAIT
+     109                                
+     110                                ; ============ Subroutines ============
+     111                                
+     112                                ; HEXDIG - Convert hex char in R2 to nibble in R0
+     113 001354 005000                  HEXDIG:	CLR	R0
+     114 001356 120227  000071          	CMPB	R2,#'9
+     115 001362 003004                  	BGT	HX1
+     116 001364 110200                  	MOVB	R2,R0
+     117 001366 162700  000060          	SUB	#'0,R0
+     118 001372 000207                  	RTS	PC
+     119 001374 120227  000106          HX1:	CMPB	R2,#'F
+     120 001400 003004                  	BGT	HX2
+     121 001402 110200                  	MOVB	R2,R0
+     122 001404 162700  000067          	SUB	#67,R0		; 'A'-10 = 55
+     123 001410 000207                  	RTS	PC
+     124 001412 110200                  HX2:	MOVB	R2,R0
+     125 001414 162700  000127          	SUB	#127,R0		; 'a'-10 = 87
+     126 001420 000207                  	RTS	PC
+     127                                
+     128                                ; FNDCOL - Find ':' in string at R0, return ptr after or 0
+     129 001422 010001                  FNDCOL:	MOV	R0,R1
+     130 001424 112100                  FC1:	MOVB	(R1)+,R0
+     131 001426 001411                  	BEQ	FC2
+     132 001430 120027  000072          	CMPB	R0,#':
+     133 001434 001410                  	BEQ	FC3
+     134 001436 120027  000015          	CMPB	R0,#15		; CR
+     135 001442 001403                  	BEQ	FC2
+     136 001444 120027  000012          	CMPB	R0,#12		; LF
+     137 001450 001365                  	BNE	FC1
+     138 001452 005000                  FC2:	CLR	R0
+     139 001454 000207                  	RTS	PC
+     140 001456 010100                  FC3:	MOV	R1,R0
+     141 001460 000207                  	RTS	PC
+     142                                
+     143                                ; PUTS - Print string at R1 with CRLF
+     144 001462 112100                  PUTS:	MOVB	(R1)+,R0
+     145 001464 001402                  	BEQ	PUTS2E
+     146 001466 104341                  	EMT	341
+     147 001470 000774                  	BR	PUTS
+     148 001472 012700  000015          PUTS2E:	MOV	#15,R0
+     149 001476 104341                  	EMT	341
+     150 001500 012700  000012          	MOV	#12,R0
+     151 001504 104341                  	EMT	341
+     152 001506 000207                  	RTS	PC
+     153                                
+     154                                ; PUTS2 - Print string at R1, no CRLF
+     155 001510 112100                  PUTS2:	MOVB	(R1)+,R0
+     156 001512 001402                  	BEQ	PUTS2R
+     157 001514 104341                  	EMT	341
+     158 001516 000774                  	BR	PUTS2
+     159 001520 000207                  PUTS2R:	RTS	PC
+     160                                
+     161                                ; PRHEX4 - Print R0 as 4 hex digits
+     162 001522 010046                  PRHEX4:	MOV	R0,-(SP)
+     163 001524 010001                  	MOV	R0,R1
+     164 001526 000301                  	SWAB	R1
+     165 001530 010100                  	MOV	R1,R0
+     166 001532 004767  001540'         	JSR	PC,PRHEX2
+     167 001536 012600                  	MOV	(SP)+,R0
+     168                                	; Fall through
+     169                                
+     170                                ; PRHEX2 - Print low byte of R0 as 2 hex digits
+     171 001540 010046                  PRHEX2:	MOV	R0,-(SP)
+     172 001542 006200                  	ASR	R0
+     173 001544 006200                  	ASR	R0
+     174 001546 006200                  	ASR	R0
+     175 001550 006200                  	ASR	R0
+     176 001552 042700  177760          	BIC	#177760,R0
+     177 001556 004767  001570'         	JSR	PC,PRNIB
+     178 001562 012600                  	MOV	(SP)+,R0
+     179 001564 042700  177760          	BIC	#177760,R0
+     180                                	; Fall through
+     181                                
+     182                                ; PRNIB - Print nibble in R0
+     183 001570 020027  000011          PRNIB:	CMP	R0,#11		; 9 decimal = 11 octal
+     184 001574 003003                  	BGT	PN1
+     185 001576 062700  000060          	ADD	#'0,R0
+     186 001602 000402                  	BR	PN2
+     187 001604 062700  000067          PN1:	ADD	#67,R0		; 'A' - 10 = 55 = 67 octal
+     188 001610 104341                  PN2:	EMT	341
+     189 001612 000207                  	RTS	PC
+     190                                
+     191                                ; GETLIN - Read line into LINBUF
+     192 001614 012701  001702          GETLIN:	MOV	#LINBUF,R1
+     193 001620 012702  000120          	MOV	#80.,R2
+     194 001624 104340                  GL1:	EMT	340
+     195 001626 110021                  	MOVB	R0,(R1)+
+     196 001630 120027  000015          	CMPB	R0,#15
+     197 001634 001404                  	BEQ	GL2
+     198 001636 120027  000012          	CMPB	R0,#12
+     199 001642 001401                  	BEQ	GL2
+     200 001644 077211                  	SOB	R2,GL1
+     201 001646 105011                  GL2:	CLRB	(R1)
+     202 001650 000207                  	RTS	PC
+     203                                
+     204                                ; ============ Data ============
+     205                                
+     206 001652    130     106     105  HELLO:	.ASCII	/XFER3 V1.0/
+         001655    122     063     040  
+         001660    126     061     056  
+         001663    060                  
+     207 001664    000                  	.BYTE	0
+     208 001665    117     113          MSGOK:	.ASCII	/OK/
+     209 001667    000                  	.BYTE	0
+     210 001670    105     122     122  MSGERR:	.ASCII	/ERR/
+     211 001673    000                  	.BYTE	0
+     212 001674    104     117     116  MSGDON:	.ASCII	/DONE:/
+         001677    105     072          
+     213 001701    000                  	.BYTE	0
+     214                                	.EVEN
+     215                                
+     216 001702                         LINBUF:	.BLKB	82.
+     217 002024                         BINBUF:	.BLKB	64.
+     218 002124 000000                  TOTBYT:	.WORD	0
+     219 002126 000000                  FILCHN:	.WORD	0
+     220                                
+     221                                	.END	START
+     221                                

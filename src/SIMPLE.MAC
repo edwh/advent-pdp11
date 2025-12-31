@@ -1,0 +1,28 @@
+	.TITLE	SIMPLE
+	.IDENT	/V1.0/
+;
+;	Simplest possible RT-11 program: print message and exit
+;
+
+	.ASECT
+	.=1000
+
+START:	MOV	#MSG,R1		; Point to message
+10$:	MOVB	(R1)+,R0	; Get char
+	BEQ	20$		; Done?
+	EMT	341		; Output char
+	BR	10$		; Next char
+
+20$:	; Print CRLF and exit
+	MOV	#15,R0		; CR
+	EMT	341
+	MOV	#12,R0		; LF
+	EMT	341
+
+	; Exit to monitor
+	EMT	350		; .EXIT
+
+MSG:	.ASCII	/SIMPLE OK/
+	.BYTE	0
+
+	.END	START

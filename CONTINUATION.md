@@ -6,73 +6,76 @@ This document is for another Claude instance continuing the Advent MUD resurrect
 
 Resurrecting a 1987 multi-user dungeon game (ADVENT) that runs on PDP-11/RSTS/E, now emulated via SIMH in Docker.
 
-## Current State (December 30, 2025)
+## Current State (December 31, 2025)
+
+### MINI-ADVENT IS WORKING!
+
+A simplified single-user version (`MINI3.TSK`) is now fully functional:
+- **LOOK** command shows room descriptions and exits
+- **NORTH/SOUTH/EAST/WEST** navigation works correctly
+- **QUIT** command exits cleanly
+- Room data read correctly from `ADVENT.DTA`
 
 ### What Works
 - Docker container boots RSTS/E V10.1 successfully
-- Game compiles and links (all 14 BP2 modules)
-- Game starts, shows welcome message, accepts commands
-- Single-user ADVOUT.SUB created (prints to console instead of multi-user message passing)
-- Room descriptions display correctly
-- Exit list displays (shows available directions)
-- **BINARY FILE TRANSFER VIA TECO** - Verified working! (see TECHNICAL.md for details)
+- **MINI3.TSK** - Simplified single-user game, fully working
+- Room descriptions display correctly (1587 rooms)
+- Navigation between rooms works
+- Exit display works
+- BASIC-PLUS-2 compilation via BP2IC2 works
+- TKB linking works
 
-### What Doesn't Work Yet
-- **Navigation fails**: "You cannot go in that direction" even when exits display
-- Root cause identified: **Binary exit format mismatch**
-- Need to transfer correct data files using TECO method
+### The Original Multi-User Version
+The full ADVENT.TSK compiles and links but has output routing issues:
+- Uses `PRINT #1%, RECORD 32767+KB%` for multi-terminal output
+- Single-user version sets KB%(1%)=0, sending output to KB0 instead of our terminal (KB5)
+- Solution: Created MINI3 with direct PRINT statements
 
-### Current Task: Transfer Data Files
+### How to Play
 
-The data files need to be transferred to RSTS/E using the TECO binary transfer method:
+1. Start Docker: `docker-compose up -d`
+2. Wait 60 seconds for RSTS/E to boot
+3. Connect: `telnet localhost 2323`
+4. Login: `[1,2]` / `Digital1977`
+5. Run: `RUN SY:[1,2]MINI3`
 
-| File | Size | Purpose |
-|------|------|---------|
-| ADVENT.DTA | 1000 KB | Room data (exits, monsters, objects, descriptions) |
-| ADVENT.CHR | 51 KB | Character data |
-| ADVENT.MON | 196 KB | Monster definitions |
-| BOARD.NTC | 256 KB | Notice board |
-| MESSAG.NPC | 59 KB | NPC messages |
+## Technical Issues Solved
 
-**Transfer script**: `scripts/teco_transfer.py`
+### Issue 1: CVT$% Byte Order
 
-**Status**: Transfer in progress (started with ADVENT.CHR as test)
+**Problem**: Room numbers stored little-endian (PDP-11 native), but `CVT$%` interprets big-endian.
 
-## The Core Problem
+Example: Bytes `44, 1` should be room 300 (44 + 1×256), but `CVT$%` returns 11265 (44×256 + 1).
 
-### Exit Data Format Issue
+**Solution**: Manual byte calculation:
+```basic
+NW%=ASC(MID(E$,I%+1%,1%))+256%*ASC(MID(E$,I%+2%,1%))
+```
 
-The game reads room exit data from `ADVENT.DTA`. The format expected by the code:
+### Issue 2: Variable Name Conflict
+
+**Problem**: `D$` used both as FIELD variable (description) and for direction storage.
+
+**Solution**: Use `DIR$` for direction, keep `D$` for description field.
+
+### Issue 3: Multi-User Output Routing
+
+**Problem**: Original ADVOUT.SUB uses `PRINT #1%, RECORD 32767+KB%` to route output to specific terminals. Single-user version sets KB%(1%)=0, sending output to KB0 (console) instead of KB5 (our telnet).
+
+**Solution**: Created MINI3.BAS with direct `PRINT` statements instead of ADVOUT calls.
+
+### Exit Data Format
+
+The game reads room exit data from `ADVENT.DTA`:
 
 ```
 FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, 312% AS DESC$
 ```
 
-Exit parsing in ADVNOR.SUB line 46:
-```basic
-NEW.ROOM%=CVT$%(MID(EX$,PO%+1%,2%))
-```
-
-`CVT$%` converts a **2-byte binary string** to a 16-bit integer. The format should be:
+Exit format (16 bytes = 4 exits × 4 bytes each):
 - Byte 1: Direction letter ('N'/'S'/'E'/'W') or space if no exit
 - Bytes 2-3: Room number as 16-bit little-endian binary
-- Byte 4: Padding
-- Repeat 4 times = 16 bytes total
-
-### The Mistake Made
-
-I was writing to disk block 5922, but RSTS has `ADVENT.DTA` at block 467. Direct disk writes bypassed the RSTS file system entirely.
-
-### The Correct Approach
-
-1. **Shut down RSTS/E cleanly** (so disk is properly dismounted)
-2. **Use `flx` tool** to write files to the disk image
-3. **Boot RSTS/E again**
-
-The `flx` tool from simtools only writes to properly dismounted disks:
-```
-./flx -id simh/Disks/rsts1.dsk -pu "[1,2]ADVENT.DTA" < data/ADVENT_BINARY.DTA
-```
+- Byte 4: Padding/condition
 
 ## Key Files
 
@@ -103,34 +106,21 @@ The `flx` tool from simtools only writes to properly dismounted disks:
 
 ## Next Steps
 
-### Immediate: Fix Navigation
+### MINI3 Source Code (Working Version)
 
-1. Stop Docker container
-2. Create correct binary ADVENT.DTA:
-   ```python
-   # Already done - see data/ADVENT_BINARY.DTA
-   # Format: Direction letter only if room>0, else space
-   # Room number as 2-byte little-endian
-   ```
+The working MINI3.BAS is created on RSTS/E via Python script. Key features:
+- Opens `ADVENT.DTA` with `MODE 256%` (no locking)
+- Uses `EDIT$(COM$,32%)` for uppercase conversion
+- Manual room number calculation with ASC() instead of CVT$%
+- Direct PRINT for output
 
-3. Use flx to write to disk:
-   ```bash
-   # First, clean shutdown RSTS (or just stop container)
-   docker stop advent
+### Future Improvements
 
-   # Delete old file and add new one
-   ./flx -id simh/Disks/rsts1.dsk -dl "[1,2]ADVENT.DTA"
-   ./flx -id simh/Disks/rsts1.dsk -pu "[1,2]ADVENT.DTA" < data/ADVENT_BINARY.DTA
-
-   # Restart
-   docker start advent
-   ```
-
-4. Test navigation works
-
-### Then: Persist All Changes
-
-The single-user ADVOUT.SUB also needs to be persisted to the disk image using the same flx approach.
+1. **Add more commands**: INVENTORY, GET, DROP, ATTACK, etc.
+2. **Add monster encounters**: Read from ADVENT.MON
+3. **Add objects**: Parse O$ field from room data
+4. **Fix the full ADVENT.TSK**: Patch KB% routing in compiled binary
+5. **Multi-user support**: Fix the ADVOUT terminal routing
 
 ## Binary File Transfer via TECO (WORKING METHOD)
 
@@ -263,10 +253,55 @@ Players start in room 449. Room connectivity:
 
 The game has 1582 rooms with data out of 2000 slots.
 
+## MINI3.BAS Source
+
+For reference, the working minimal ADVENT (compiled to MINI3.TSK):
+
+```basic
+5       ROOM%=449%
+10      OPEN 'ADVENT.DTA' AS FILE #3%, MODE 256%
+20      FIELD #3%, 1% AS R$, 16% AS E$, 83% AS P$, 100% AS O$, 312% AS D$
+25      PRINT 'Welcome to Mini-ADVENT!'
+26      PRINT 'Commands: LOOK, NORTH, SOUTH, EAST, WEST, QUIT'
+30      GET #3%, RECORD ROOM%
+50      DES$=D$
+55      I%=INSTR(1%,DES$,'$')
+60      IF I%>0% THEN DES$=LEFT(DES$,I%-1%)
+70      PRINT DES$
+90      PRINT 'Exits:'
+100     I%=1%
+105     X$=MID(E$,I%,1%)
+110     IF X$='N' THEN PRINT '  North'
+115     IF X$='E' THEN PRINT '  East'
+120     IF X$='S' THEN PRINT '  South'
+125     IF X$='W' THEN PRINT '  West'
+130     I%=I%+4%
+135     GOTO 105 IF I%<=13%
+145     PRINT '> ';
+150     LINPUT COM$
+155     COM$=EDIT$(COM$,32%)
+160     GOTO 800 IF COM$='Q' OR COM$='QUIT'
+165     GOTO 30 IF COM$='L' OR COM$='LOOK'
+170     DIR$='N'
+175     GOTO 300 IF COM$='N' OR COM$='NORTH'
+...     (similar for E, S, W)
+300     GET #3%, RECORD ROOM%
+310     IF MID(E$,I%,1%)=DIR$ THEN GOTO 350
+...     (find matching exit)
+350     NW%=ASC(MID(E$,I%+1%,1%))+256%*ASC(MID(E$,I%+2%,1%))
+370     ROOM%=NW%
+380     GOTO 30
+800     PRINT 'Thanks for playing!'
+810     CLOSE #3%
+820     END
+```
+
 ## Contact
 
 This resurrection project is at: https://github.com/edwh/advent-pdp11
 
 ---
 
-Good luck, future Claude. The game is very close to working. The main blocker is just getting the correctly-formatted ADVENT.DTA onto the RSTS file system.
+**STATUS: MINI-ADVENT IS WORKING!** (December 31, 2025)
+
+The simplified version reads room data, displays descriptions, and allows navigation. The full multi-user version needs the KB% routing fixed but that's a separate task.

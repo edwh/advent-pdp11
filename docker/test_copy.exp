@@ -1,0 +1,75 @@
+#!/usr/bin/expect -f
+#
+# Test COPY KB: for file creation
+#
+
+log_user 1
+set timeout 30
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Test: COPY KB: to file..."
+send "DELETE COPYTEST.TXT\r"
+expect -re {\$}
+
+# Try COPY from keyboard
+send "COPY KB: COPYTEST.TXT\r"
+sleep 1
+
+# Wait for any prompt
+expect {
+    "*" { puts ">>> Got asterisk prompt" }
+    "?" { puts ">>> Got question prompt" }
+    ":" { puts ">>> Got colon prompt" }
+    -re {\$} { 
+        puts ">>> Got $ - COPY may not support KB:" 
+        send "DIR COPYTEST.*\r"
+        expect -re {\$}
+        close
+        exit
+    }
+    timeout { puts ">>> Timeout waiting for prompt" }
+}
+
+# Send content
+send "Test content via COPY\r"
+sleep 1
+send "Line two\r"
+sleep 1
+
+# Try different end sequences
+send "\x1a\r"
+sleep 3
+
+expect {
+    -re {\$} { puts ">>> Got prompt after Ctrl+Z" }
+    timeout { 
+        puts ">>> Timeout, trying Ctrl+C"
+        send "\x03"
+        sleep 2
+    }
+}
+
+expect -re {\$}
+send "DIR COPYTEST.*\r"
+sleep 1
+expect -re {\$}
+send "TYPE COPYTEST.TXT\r"
+sleep 2
+expect -re {\$}
+
+close

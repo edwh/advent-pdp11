@@ -1,0 +1,9 @@
+PCLINK11 V0.174  	Load Map 	Tuesday 30-Dec-2025 14:18
+MINTEST2.SAV   	Title:	MINTES	Ident:	V1.0  	
+
+Section  Addr	Size	Global	Value	Global	Value	Global	Value
+
+ . ABS.	 000000	001066 = 283.    words  (RW,I,GBL,ABS,OVR)
+       	 001066	000000 = 0.      words  (RW,I,LCL,REL,CON)
+
+Transfer address = 001000, High limit = 001064 = 282.    words

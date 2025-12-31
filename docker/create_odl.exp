@@ -1,0 +1,100 @@
+#!/usr/bin/expect -f
+log_user 1
+set timeout 60
+
+spawn nc localhost 2323
+sleep 2
+send "\r"
+sleep 2
+
+expect "User:"
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+sleep 2
+expect {
+    "Job number" { send "\r"; sleep 2; exp_continue }
+    -re {\$} {}
+}
+
+puts "\n>>> Step 1: Delete any existing LINK.ODL..."
+send "DELETE DM1:\[1,2\]LINK.ODL\r"
+sleep 2
+expect -re {\$}
+
+puts "\n>>> Step 2: Create LINK.ODL with simpler content first..."
+send "CREATE DM1:\[1,2\]LINK.ODL\r"
+sleep 2
+
+# Wait for the "type CTRL/Z" prompt
+expect {
+    "CTRL/Z" { puts "\n>>> Got CREATE prompt" }
+    timeout { puts "\n>>> Timeout waiting for CREATE" }
+}
+
+# Send ODL content
+send ".ROOT ADVENT-LIBR-*(SUBS)\r"
+sleep 1
+send "SUBS:   .FCTR *(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\r"
+sleep 1
+send "INI:    .FCTR DM1:\[1,2\]ADVINI\r"
+sleep 1
+send "OUT:    .FCTR DM1:\[1,2\]ADVOUT\r"
+sleep 1
+send "NOR:    .FCTR DM1:\[1,2\]ADVNOR\r"
+sleep 1
+send "CMD:    .FCTR DM1:\[1,2\]ADVCMD\r"
+sleep 1
+send "ODD:    .FCTR DM1:\[1,2\]ADVODD\r"
+sleep 1
+send "MSG:    .FCTR DM1:\[1,2\]ADVMSG\r"
+sleep 1
+send "BYE:    .FCTR DM1:\[1,2\]ADVBYE\r"
+sleep 1
+send "SHT:    .FCTR DM1:\[1,2\]ADVSHT\r"
+sleep 1
+send "NPC:    .FCTR DM1:\[1,2\]ADVNPC\r"
+sleep 1
+send "PUZ:    .FCTR DM1:\[1,2\]ADVPUZ\r"
+sleep 1
+send "DSP:    .FCTR DM1:\[1,2\]ADVDSP\r"
+sleep 1
+send "FND:    .FCTR DM1:\[1,2\]ADVFND\r"
+sleep 1
+send "TDY:    .FCTR DM1:\[1,2\]ADVTDY\r"
+sleep 1
+send "LIBR:   .FCTR SY:\[1,1\]BP2OTS/LB\r"
+sleep 1
+send ".END\r"
+sleep 2
+
+# End with Ctrl+Z on its own line
+puts "\n>>> Sending Ctrl+Z to end file..."
+send "\x1a\r"
+sleep 5
+
+# Wait for $ prompt
+expect {
+    -re {\$} { puts "\n>>> Got DCL prompt after CREATE" }
+    timeout { puts "\n>>> Timeout after Ctrl+Z" }
+}
+
+puts "\n>>> Step 3: Verify file exists..."
+send "DIR DM1:\[1,2\]LINK.ODL\r"
+sleep 3
+expect {
+    "LINK  .ODL" { puts "\n>>> FILE EXISTS!" }
+    "does not exist" { puts "\n>>> FILE NOT FOUND" }
+    "Can't find" { puts "\n>>> FILE NOT FOUND" }
+    timeout {}
+}
+expect -re {\$}
+
+puts "\n>>> Step 4: Show file contents..."
+send "TYPE DM1:\[1,2\]LINK.ODL\r"
+sleep 5
+expect -re {\$}
+
+puts "\n>>> Done"
+close
