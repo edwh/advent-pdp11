@@ -10,8 +10,8 @@ version: '3.8'
 #   docker compose -f docker-compose.new.yml up -d
 #
 # Access:
-#   - Web terminal (game): http://localhost:7681
-#   - Web terminal (admin): http://localhost:7682
+#   - Web interface: http://localhost:8080
+#   - Admin terminal: http://localhost:7682
 #   - Telnet (console): telnet localhost 2322
 #   - Telnet (terminal): telnet localhost 2323
 
@@ -22,7 +22,8 @@ services:
       dockerfile: docker/Dockerfile.new
     container_name: advent-mud
     ports:
-      - "7681:7681"   # Game web terminal
+      - "8080:8080"   # Web interface (nginx)
+      - "7681:7681"   # Game web terminal (ttyd)
       - "7682:7682"   # Admin web terminal
       - "2322:2322"   # SIMH console (telnet)
       - "2323:2323"   # RSTS/E terminal lines (telnet)

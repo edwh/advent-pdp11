@@ -34,6 +34,13 @@ DATA_DIR="$ADVENT_DIR/data"
 SRC_DIR="$ADVENT_DIR/src"
 SCRIPTS_DIR="$ADVENT_DIR/scripts"
 
+# Auto-detect working disks - if *-working.dsk files exist, use them and skip setup
+SKIP_SETUP="${SKIP_SETUP:-0}"
+if [ -f "$DISKS_DIR/rsts0-working.dsk" ] && [ -f "$DISKS_DIR/rsts1-working.dsk" ]; then
+    echo "Found pre-built working disks - using cached system"
+    SKIP_SETUP=1
+fi
+
 # Check for required disk images
 if [ ! -f "$DISKS_DIR/rsts0.dsk" ]; then
     echo "ERROR: Boot disk not found at $DISKS_DIR/rsts0.dsk"
@@ -123,8 +130,8 @@ echo "  System Ready"
 echo "=============================================="
 echo ""
 echo "Access methods:"
-echo "  Web Terminal (Game):  http://localhost:7681"
-echo "  Web Terminal (Admin): http://localhost:7682"
+echo "  Web Interface:        http://localhost:8080"
+echo "  Admin Terminal:       http://localhost:7682"
 echo "  Telnet (Console):     telnet localhost 2322"
 echo "  Telnet (Terminal):    telnet localhost 2323"
 echo ""
@@ -136,7 +143,14 @@ echo "To run the game after login:"
 echo "  RUN ADVENT"
 echo ""
 
-# Start web terminals if ttyd is available
+# Start nginx web server
+if command -v nginx &> /dev/null; then
+    echo "Starting nginx web server..."
+    nginx
+    echo "Web interface available at http://localhost:8080"
+fi
+
+# Start web terminals
 if command -v ttyd &> /dev/null; then
     # Game interface (port 7681) - connects via expect script
     ttyd -p 7681 -W "$ADVENT_DIR/game_connect.exp" &
@@ -147,6 +161,13 @@ if command -v ttyd &> /dev/null; then
     ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
     ADMIN_PID=$!
     echo "Admin web terminal started on port 7682"
+fi
+
+# Start monit to supervise services
+if command -v monit &> /dev/null; then
+    echo "Starting monit process supervisor..."
+    monit -I &
+    MONIT_PID=$!
 fi
 
 # Keep running - wait for SIMH to exit

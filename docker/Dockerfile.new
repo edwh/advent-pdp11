@@ -32,11 +32,13 @@ RUN apk add --no-cache \
     python3 \
     expect \
     netcat-openbsd \
-    coreutils
+    coreutils \
+    nginx \
+    monit
 
 # Create directories
 WORKDIR /opt/advent
-RUN mkdir -p disks scripts data src
+RUN mkdir -p disks scripts data src web
 
 # Copy disk images
 # These are the base RSTS/E system disks
@@ -66,14 +68,23 @@ COPY docker/entrypoint.sh /opt/advent/entrypoint.sh
 COPY docker/game_connect.exp /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
 
-RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py
+# Copy web interface files
+COPY docker/web/ /opt/advent/web/
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+# Copy monit configuration
+COPY docker/monitrc /etc/monitrc
+
+RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py && \
+    chmod 600 /etc/monitrc
 
 # Expose ports:
-# 7681 = Game web terminal (ttyd)
+# 8080 = Web interface (nginx)
+# 7681 = Game web terminal (ttyd) - proxied via nginx
 # 7682 = Admin web terminal (ttyd)
 # 2322 = SIMH console (telnet)
 # 2323 = RSTS/E terminal lines (telnet)
-EXPOSE 7681 7682 2322 2323
+EXPOSE 8080 7681 7682 2322 2323
 
 # Start the system
 ENTRYPOINT ["/opt/advent/entrypoint.sh"]

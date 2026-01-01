@@ -2,39 +2,69 @@
 # Auto-login to RSTS/E and run Advent MUD
 # Connects to DZ11 terminal and handles login sequence
 
-set timeout 30
-log_user 0
+set timeout 60
+log_user 1
+
+puts "\n=========================================="
+puts "  ADVENT MUD - 1987 Multi-User Dungeon"
+puts "  Connecting to RSTS/E..."
+puts "==========================================\n"
 
 # Connect to RSTS/E terminal via DZ11
 spawn nc localhost 2323
-log_user 1
 
-# Wait for Ready or login prompt
+# Give it a moment to connect
+sleep 2
+
+# Send initial CR to wake up terminal
+send "\r"
+
+# Wait for login prompt or ready
 expect {
-    "Ready" {
-        # Already logged in, just run the game
+    -re "Ready|ready" {
+        # Already logged in
+        puts "Already logged in..."
     }
-    -re ".*\[Rr\]eady.*" {
-        # Logged in
+    -re "Option:" {
+        # At login option prompt
+        send "0\r"
+        expect -re "Ready|ready|\\\$"
     }
-    -re ".*\[Bb\]ye.*|.*KB.*" {
-        # At login prompt
-        send "HELLO 1,2\r"
-        expect -re ".*\[Pp\]assword.*"
-        send "SYSTEM\r"
-        expect "Ready"
+    -re "Password:" {
+        # Need to provide password
+        send "Digital1977\r"
+        expect -re "Option:"
+        send "0\r"
+        expect -re "Ready|ready|\\\$"
+    }
+    -re "KB\[0-9\]+:" {
+        # At login prompt - need full login
+        send "\[1,2\]\r"
+        expect -re "Password:"
+        send "Digital1977\r"
+        expect -re "Option:"
+        send "0\r"
+        expect -re "Ready|ready|\\\$"
     }
     timeout {
+        # Try full login sequence
         send "\r"
-        expect -re ".*"
-        send "HELLO 1,2\r"
-        expect -re ".*\[Pp\]assword.*"
-        send "SYSTEM\r"
-        expect "Ready"
+        sleep 1
+        send "\[1,2\]\r"
+        expect -re "Password:"
+        send "Digital1977\r"
+        expect -re "Option:"
+        send "0\r"
+        expect -re "Ready|ready|\\\$"
     }
 }
 
+# Clear any previous program
+send "\003"
+sleep 1
+
 # Run Advent
+puts "\nStarting ADVENT...\n"
 send "RUN ADVENT\r"
 
 # Hand control to user
