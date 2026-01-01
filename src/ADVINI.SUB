@@ -10,26 +10,21 @@
 	BLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%),SINGLE.USER% &
 \	ON ERROR GOTO 25000 &
 
-10	J$=SYS(CHR$(12%)) &
-\	RUN.ACC$="["+NUM1$(ASCII(RIGHT(J$,6%)))+","+NUM1$(ASCII(RIGHT(J$,5%))) &
-	+"]" &
-\	J$=SYS(CHR$(6%)+CHR$(-13%)+CHR$(-1%)+CHR$(-1%)+CHR$(8%)+ &
-	STRING$(2%,0%)+CHR$(-1%)+CHR$(31%)) &
-!\	J$=SYS(CHR$(6%)+CHR$(-20%)+CHR$(0%)) &
+10	SINGLE.USER%=-1% &
+	! Set to -1% for single-user mode, 0% for multi-user mode &
+\	RUN.ACC$="[1,2]" &
+	! Hardcoded for single-user mode &
 \	RANDOMIZE &
 \	NO.OF.USERS%=0% &
 \	CRLF$=CHR$(13%)+CHR$(10%) &
 \	CI$=CHR$(9%) &
-\	SINGLE.USER%=-1% &
-	! Set to -1% for single-user mode (direct PRINT in ADVOUT) &
-	! Set to 0% for multi-user mode (terminal routing via KB device) &
-\	J$=SYS(CHR$(6%)+CHR$(22%)+CHR$(1%)+CHR$(0%)+"ADVENT"+STRING$(11%,0%)+ &
-	CHR$(3%)+CHR$(0%)+CHR$(0%)+CHR$(10%)) &
 
-20	J$=SYS(CHR$(6%)+CHR$(7%)+CHR$(128%)) &
+20	GOTO 21 IF SINGLE.USER% &
+\	J$=SYS(CHR$(6%)+CHR$(7%)+CHR$(128%)) &
 \	OPEN "_KB11:" AS FILE #1% &
-\	J$=SYS(CHR$(6%)+CHR$(10%)+STRING$(20%,0%)+"KB"+CHR$(11%)) &
-\	OPEN RUN.ACC$+"ADVENT.DTA" AS FILE #3%, MODE 257% &
+\	J$=SYS(CHR$(6%)+CHR$(10%)+STRING$(20%,0%)+"KB"+CHR$(11%))
+
+21	OPEN RUN.ACC$+"ADVENT.DTA" AS FILE #3%, MODE 257% &
 \	OPEN RUN.ACC$+"ADVENT.MON" AS FILE #5%, &
 	ACCESS MODIFY, &
 	ALLOW NONE &
@@ -54,10 +49,7 @@
 \	STOP &
 \	RESUME 20 &
 
-29000	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
-\	PRINT #4%, "ADVINI : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
-	" at line";ERL;" at ";TIME$(0%) &
-\	CLOSE #4% &
+29000	PRINT "ADVINI ERROR: ";ERR;" at line";ERL &
 \	STOP &
 
 32767	SUBEND &

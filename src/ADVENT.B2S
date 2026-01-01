@@ -10,7 +10,7 @@
 	BLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%),SINGLE.USER% &
 
 10	CALL ADVINI &
-\	FIELD #1%, 128% AS BUF$ &
+\	FIELD #1%, 128% AS BUF$ IF SINGLE.USER%=0% &
 \	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, &
 	312% AS DESC$ &
 \	DIM #5%, MONSTER$(10000%)=20% &
@@ -29,10 +29,51 @@
 	"/BELLOW    /VALUE     /CALL      /GAG       /BLIND     "+ &
 	"/MESSAGE   /REST      " &
 
-30	GOTO 25005 IF RND<0.2 &
+30	GOTO 35 IF SINGLE.USER% &
+\	GOTO 25005 IF RND<0.2 &
 \	GET #1%, RECORD 32767%+1%+16384%+8192% &
 \	USER%=INSTR(1%,USER.KB.LIST$,LEFT(BUF$,1%)) &
 \	GOTO 30 UNLESS USER% &
+\	GOTO 40 &
+
+35	! SINGLE-USER MODE INPUT LOOP &
+	&
+	&
+	USER%=1% &
+\	KB%(1%)=0% &
+\	IF ROOM%(1%)=0% THEN &
+	PRINT "No character loaded. Creating temporary character..." &
+\	NAM$(1%)="PLAYER" &
+\	ROOM%(1%)=2% &
+\	HP%(1%)=20% &
+\	LEVEL%(1%)=1% &
+\	FLAG%(1%)=0% &
+\	FATIGUE%(1%)=50% &
+\	XP.(1%)=0% &
+\	WEAPON$(1%)="" &
+\	WEAPON%(1%)=0% &
+\	FOR I%=0% TO 9% &
+\	OB$(1%,I%)="" &
+\	NEXT I% &
+\	GET #3%, RECORD ROOM%(1%) &
+\	CALL ADVDSP &
+
+36	PRINT "> "; &
+\	INPUT LINE COM$ &
+\	COM$=CVT$$(COM$,1%+4%+8%+32%+128%) &
+\	GOTO 36 IF COM$="" &
+\	GET #3%, RECORD ROOM%(USER%) &
+\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)-1%) &
+\	GOSUB 21000 &
+\	GOTO 37 UNLESS C% &
+\	CALL ADVNOR IF C%>=1% AND C%<=19% &
+\	CALL ADVCMD IF C%>19% AND C%<45% &
+\	CALL ADVODD IF C%>=45% &
+\	FIELD #3%, 1% AS ROOM$, 16% AS EX$, 83% AS PEOPLE$, 100% AS OBJECT$, &
+	312% AS DESC$ &
+
+37	GOTO 500 IF HP%(USER%)<=0% &
+\	GOTO 36 &
 
 40	KB%(USER%)=ASCII(BUF$) &
 \	J%=SQR(-1%) UNLESS ROOM%(USER%) &
@@ -48,7 +89,7 @@
 \	GOTO 30 UNLESS TIME(0%)>STUN(USER%) &
 	! Stunned. &
 \	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)) &
+\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)-1%) &
 	! They're in a corrupt room. &
 \	CALL ADVOUT(KB%(USER%),CRLF$+'ADVENT is asleep - wait, or ^Z to exit.')&
 	IF C%=-1% &
@@ -77,7 +118,7 @@
 	! Call the right sub-program.  ADVNOR is intended to be the &
 	! sub-program normally in residence.  ADVCMD contains less often &
 	! used commands. &
-\	IF ROOM$<>CHR$(ROOM%(USER%)) THEN &
+\	IF ROOM$<>CHR$(ROOM%(USER%)-1%) THEN &
 	OPEN 'MSG:LOG1.95' AS FILE #4%, MODE 2% &
 \	PRINT #4%, 'Room';ROOM%(USER%);' corrupted by command number';C% &
 \	CLOSE #4% &
@@ -409,14 +450,20 @@
 \	CALL ADVPUZ IF INSTR(1%,DESC$,'$/O/') &
 \	RETURN &
 
-24990	OPEN 'MSG:LOG100.5' AS FILE #4%, MODE 2% &
+24990	IF SINGLE.USER%=0% THEN &
+	OPEN 'MSG:LOG100.5' AS FILE #4%, MODE 2% &
 \	PRINT #4%, 'Corrupt room';ROOM%(USER%);' found by user '; &
 	NAM$(USER%);CRLF$;'at ';TIME$(0%);' on ';DATE$(0%) &
 \	CLOSE #4% &
-\	ROOM%(USER%)=449% &
+
+24991	ROOM%(USER%)=2% &
 \	GET #3%, RECORD ROOM%(USER%) &
 \	CALL ADVDSP &
-\	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$;'You got stuck in a '; &
+\	IF SINGLE.USER% THEN &
+	PRINT 'You got stuck in a corrupt room.  Report this now!' &
+\	GOTO 36 &
+
+24992	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$;'You got stuck in a '; &
 	'corrupt room.  Report this now!' &
 \	GOTO 30 &
 
@@ -429,11 +476,14 @@
 \	IF ERR=16% AND ERL=10 THEN PRINT "ADVENT already running." &
 \	STOP &
 
-25001	IF USER%<=8% THEN &
-	IF CVT$$(NAM$(USER%),255%)<>"" AND ROOM%(USER%)=0% THEN &
-	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$; &
+25001	GOTO 25003 UNLESS USER%<=8% &
+\	GOTO 25003 IF CVT$$(NAM$(USER%),255%)="" OR ROOM%(USER%)<>0% &
+\	IF SINGLE.USER% THEN PRINT "Your character got corrupted." &
+\	GOTO 25002 IF SINGLE.USER% &
+\	PRINT #1%, RECORD 32767%+1%+KB%(USER%), CRLF$; &
 	"Your character got corrupted.  Report this to a demigod." &
-\	ROOM%(USER%)=449% &
+
+25002	ROOM%(USER%)=2% &
 	! Corrupt character dump. &
 \	GET #3%, RECORD ROOM%(USER%) &
 \	CALL ADVDSP &
@@ -482,27 +532,16 @@
 \	RESUME 28999 &
 
 28999	CLOSE #8% &
-\	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
-\	PRINT #4%, "WORKMAN : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
-	" at line";ERL;" at ";TIME$(0%) &
-\	PRINT #4%, 'Room - ';NUM1$(ROOM%(USER%)) &
-\	CLOSE #4% &
+\	PRINT "WORKMAN ERROR: ";ERR;" at line";ERL &
 \	FATAL.ERR%=-1% &
 \	FLAG%(USER%)=0% &
 \	GOSUB 500 &
 \	FATAL.ERR%=0% &
 \	GOTO 30 &
 
-29000	J$=SYS(CHR$(6%)+CHR$(8%)+CHR$(PEEK(518%)/2%)+STRING$(23%,0%)+ &
-	CHR$(0%)+CHR$(255%)) IF FATAL.ERR% &
-\	FATAL.ERR%=-1% &
+29000	FATAL.ERR%=-1% &
 \	C%=-2% &
-\	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
-\	PRINT #4%, "ADVENT : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
-	" at line";ERL;" at ";TIME$(0%) &
-\	PRINT #4%, "User was ";NAM$(USER%);" in room";ROOM%(USER%) IF &
-		(USER%>0% AND USER%<=8%) &
-\	CLOSE #4% &
+\	PRINT "ADVENT ERROR: ";ERR;" at line";ERL &
 \	RESUME 32767 &
 
 32767	PRINT #1%, RECORD 32767%+1%+KB%(I%), CRLF$;"ADVENT shutting down."; &

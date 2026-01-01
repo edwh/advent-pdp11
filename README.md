@@ -21,19 +21,25 @@ For telnet access, login with:
 - User: `[1,2]`
 - Password: `Digital1977`
 
-To run the simplified working game after login:
+To run the game after login:
 ```
-RUN SY:[1,2]MINI3
+RUN ADVENT
 ```
 
-(The full multi-user ADVENT is still being debugged)
+## Status (January 2026)
 
-## Status (December 2025)
-
-**MINI-ADVENT IS WORKING!** A simplified single-user version runs successfully:
+**ADVENT SINGLE-USER MODE IS WORKING!** The full game runs in single-user mode:
 - LOOK, NORTH/SOUTH/EAST/WEST navigation works
+- GET/DROP object interaction works
+- INVENTORY and STATUS commands work
 - 1587 rooms with descriptions and exits
 - Room data reads correctly from binary data files
+
+Technical fixes applied:
+- Terminal character translation (tilde → CHR$(126%))
+- Exit data byte order parsing fixed
+- Room record offset (+1 for header) applied
+- Overlay structure fixed (ADVFND/ADVTDY in root segment)
 
 Full status:
 - RSTS/E V10.1 boots automatically in Docker
@@ -106,4 +112,4 @@ make rebuild
 - **Original authors**: Edward Hibbert, David 'Gerbil' Quest (1987)
 - **Data preservation**: Nick Hoath
 - **Tape reading**: Delwyn Holroyd @ TNMOC
-- **Resurrection**: Edward Hibbert & Claude (AI), December 2025
+- **Resurrection**: Edward Hibbert & Claude (AI), December 2025 - January 2026

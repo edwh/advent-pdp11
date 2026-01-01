@@ -126,14 +126,24 @@ class RSTSConnection:
         self.send(f"{USER}\r")
         self.wait_for("Password:", 10)
         self.send(f"{PASSWORD}\r")
+        time.sleep(3)
+        resp = self.recv_all(3)
+
+        # Handle detached job prompt - need to send 0 for new job
+        if "Job number" in resp:
+            print("  Handling detached jobs - sending 0 for new job", flush=True)
+            self.send(b"0\r")  # 0 = start new job
+            time.sleep(3)
+            resp = self.recv_all(3)
+            print(f"  After job select: got {len(resp)} bytes", flush=True)
+
+        # Wait for command prompt
+        self.send(b"\r")
         time.sleep(2)
         resp = self.wait_for("$", 10)
-
-        # Handle detached job prompt
-        if "Job number" in resp:
-            self.send(b"\r")
-            self.wait_for("$", 10)
-        print("Logged in!")
+        if "$" not in resp:
+            print(f"  WARNING: $ not found in login response: {repr(resp[:100])}", flush=True)
+        print("Logged in!", flush=True)
 
     def logout(self):
         """Logout from RSTS/E."""
@@ -177,56 +187,78 @@ def transfer_binary_file(conn, local_path, remote_name):
     print(f"  Size: {file_size} bytes")
 
     # Delete existing file
+    print("  Deleting old file...", flush=True)
     conn.send(f"DELETE {remote_name}\r")
+    time.sleep(2)
+    resp = conn.recv_all(2)
+    print(f"  Delete response: {repr(resp[:100])}", flush=True)
+
+    # Make sure we're at $ prompt
+    conn.send(b"\r")
     time.sleep(1)
-    conn.recv_all(1)
+    resp = conn.recv_all(1)
+    if "$" not in resp:
+        print(f"  WARNING: Not at $ prompt after delete: {repr(resp[:100])}", flush=True)
 
     # Start TECO
+    print("  Starting TECO...", flush=True)
     conn.send(b"TECO\r")
     time.sleep(1)
-    conn.wait_for("*", 5, echo=False)
+    resp = conn.wait_for("*", 10, echo=False)
+    if "*" not in resp:
+        print(f"  WARNING: TECO prompt not found. Got: {repr(resp[:100])}", flush=True)
+    else:
+        print("  TECO ready", flush=True)
 
     # Open output file
+    print(f"  Opening file for write: {remote_name}", flush=True)
     conn.send(f"EW{remote_name}".encode() + ESC_ESC)
     time.sleep(0.5)
     conn.recv_all(0.5)
+    print("  File opened, starting transfer...", flush=True)
 
     # Transfer data
-    BATCH_SIZE = 100
-    CHUNK_SIZE = 500
+    # TECO has limited buffer - flush frequently to avoid overflow
+    # Reduced further after crash at 92% of ADVENT.MON
+    BATCH_SIZE = 25      # Send 25 bytes at a time
+    CHUNK_SIZE = 50      # Flush buffer every 50 bytes
     start_time = time.time()
     last_report = 0
     chunk_count = 0
 
     batch = []
-    for i, byte_val in enumerate(data):
-        batch.append(f"{byte_val}I\x1b\x1b")
-        chunk_count += 1
+    try:
+        for i, byte_val in enumerate(data):
+            batch.append(f"{byte_val}I\x1b\x1b")
+            chunk_count += 1
 
-        if len(batch) >= BATCH_SIZE:
-            conn.send(''.join(batch).encode())
-            batch = []
-            time.sleep(0.02)
-            try:
-                conn.sock.settimeout(0.01)
-                conn.sock.recv(4096)
-            except socket.timeout:
-                pass
+            if len(batch) >= BATCH_SIZE:
+                conn.send(''.join(batch).encode())
+                batch = []
+                time.sleep(0.02)
+                try:
+                    conn.sock.settimeout(0.01)
+                    conn.sock.recv(4096)
+                except socket.timeout:
+                    pass
 
-        if chunk_count >= CHUNK_SIZE:
-            conn.send(b"P\x1b\x1b")
-            time.sleep(0.1)
-            conn.recv_all(0.1)
-            chunk_count = 0
+            if chunk_count >= CHUNK_SIZE:
+                conn.send(b"P\x1b\x1b")
+                time.sleep(0.15)  # Slightly longer wait for buffer flush
+                conn.recv_all(0.1)
+                chunk_count = 0
 
-        # Progress report every 10%
-        percent = (i + 1) * 100 // file_size
-        if percent >= last_report + 10:
-            elapsed = time.time() - start_time
-            rate = (i + 1) / elapsed if elapsed > 0 else 0
-            eta = (file_size - i - 1) / rate if rate > 0 else 0
-            print(f"    {percent}% ({i+1}/{file_size}) - {rate:.0f} B/s - ETA: {eta/60:.1f} min")
-            last_report = percent
+            # Progress report every 1%
+            percent = (i + 1) * 100 // file_size
+            if percent >= last_report + 1:
+                elapsed = time.time() - start_time
+                rate = (i + 1) / elapsed if elapsed > 0 else 0
+                eta = (file_size - i - 1) / rate if rate > 0 else 0
+                print(f"    {percent}% ({i+1}/{file_size}) - {rate:.0f} B/s - ETA: {eta/60:.1f} min", flush=True)
+                last_report = percent
+    except Exception as e:
+        print(f"  ERROR at {i}/{file_size} bytes: {e}", flush=True)
+        raise
 
     # Flush remaining batch
     if batch:
@@ -433,6 +465,7 @@ def main():
     parser.add_argument('--skip-data', action='store_true', help='Skip data file transfer')
     parser.add_argument('--skip-source', action='store_true', help='Skip source file transfer')
     parser.add_argument('--skip-compile', action='store_true', help='Skip compilation and linking')
+    parser.add_argument('--skip-files', default='', help='Comma-separated list of files to skip (e.g., ADVENT.DTA,ADVENT.MON)')
     parser.add_argument('--data-dir', default=None, help='Path to data files')
     parser.add_argument('--source-dir', default=None, help='Path to source files')
     args = parser.parse_args()
@@ -467,7 +500,11 @@ def main():
             print("  Transferring Data Files")
             print("=" * 60)
 
+            skip_files = [f.strip().upper() for f in args.skip_files.split(',') if f.strip()]
             for filename, expected_size in DATA_FILES:
+                if filename.upper() in skip_files:
+                    print(f"\nSkipping {filename} (--skip-files)")
+                    continue
                 local_path = os.path.join(data_dir, filename)
                 if os.path.exists(local_path):
                     actual_size = os.path.getsize(local_path)

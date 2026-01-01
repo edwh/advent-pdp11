@@ -1,10 +1,24 @@
 # Advent MUD - PDP-11/RSTS-E in Docker
 # A 1987 multi-user dungeon game running on emulated vintage hardware
 #
-# Build process:
-# 1. Run: make build (or python3 scripts/build_disk.py)
-# 2. Run: make docker (or docker build -f docker/Dockerfile.new -t advent-mud .)
-# 3. Run: make run (or docker compose -f docker-compose.new.yml up -d)
+# This Dockerfile builds a container that:
+# 1. Starts SIMH PDP-11 with RSTS/E V10.1
+# 2. Generates data files from salvaged sources
+# 3. Transfers data and source files to RSTS/E
+# 4. Compiles and links the game
+# 5. Provides web terminal access
+#
+# Build:
+#   docker build -t advent-mud .
+#
+# Run:
+#   docker run -p 7681:7681 -p 7682:7682 -p 2322:2322 -p 2323:2323 advent-mud
+#
+# Environment variables:
+#   SKIP_SETUP=1    - Use pre-built disk without setup (faster start)
+#   SKIP_DATA=1     - Skip data file transfer
+#   SKIP_SOURCE=1   - Skip source file transfer
+#   SKIP_COMPILE=1  - Skip compilation and linking
 
 FROM rattydave/alpine-simh:latest
 
@@ -21,22 +35,35 @@ RUN apk add --no-cache \
 
 # Create directories
 WORKDIR /opt/advent
-RUN mkdir -p disks scripts
+RUN mkdir -p disks scripts data src
 
-# Copy pre-built disk images (run scripts/build_disk.py first)
-# Note: kermit.dsk is optional but copied if present for file transfer
-COPY build/disks/ /opt/advent/disks/
-COPY simh/Disks/kermit.dsk* /opt/advent/disks/
+# Copy disk images
+# These are the base RSTS/E system disks
+COPY build/disks/rsts0.dsk /opt/advent/disks/
+COPY build/disks/rsts1.dsk /opt/advent/disks/
+
+# Copy salvaged data files (for conversion)
+COPY data/roomfil.fil /opt/advent/data/
+COPY data/REFRSH.CTL /opt/advent/data/
+COPY data/monfil.fil /opt/advent/data/
+
+# Copy pre-converted data files (if available)
+COPY build/data/*.DTA build/data/*.MON build/data/*.CHR build/data/*.NTC build/data/*.NPC /opt/advent/data/
+
+# Copy source files
+COPY src/*.SUB src/*.B2S /opt/advent/src/
+
+# Copy scripts
+COPY scripts/migrate_data.py /opt/advent/scripts/
+COPY scripts/setup_advent.py /opt/advent/scripts/
 
 # Copy SIMH configuration
 COPY docker/pdp11.ini /opt/advent/
 
 # Copy startup scripts
-COPY docker/start.sh /opt/advent/start.sh
-COPY docker/autoboot.exp /opt/advent/
+COPY docker/entrypoint.sh /opt/advent/entrypoint.sh
 COPY docker/game_connect.exp /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
-COPY docker/connect.py /opt/advent/scripts/
 
 RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py
 
@@ -48,4 +75,4 @@ RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py
 EXPOSE 7681 7682 2322 2323
 
 # Start the system
-CMD ["/opt/advent/start.sh"]
+ENTRYPOINT ["/opt/advent/entrypoint.sh"]
