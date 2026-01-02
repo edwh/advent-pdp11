@@ -35,11 +35,15 @@ COPY docker/admin_connect.sh /opt/advent/
 # Copy web interface files
 COPY docker/web/ /opt/advent/web/
 
-# Copy current disk images (should have MINI3.TSK)
+# Copy documentation files for the modal
+COPY STATUS.md RESURRECTION.md PROVENANCE.md TECHNICAL.md CONTINUATION.md NEWADV.md /opt/advent/
+
+# Copy current disk images
 COPY build/disks/rsts0.dsk /opt/advent/disks/
 COPY build/disks/rsts1.dsk /opt/advent/disks/
 
-RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp
+RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp && \
+    chmod 644 /opt/advent/*.md
 
 # Ports:
 # 8080 = Web interface (nginx with CRT terminal)
