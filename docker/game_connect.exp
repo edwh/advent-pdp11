@@ -1,71 +1,142 @@
 #!/usr/bin/expect -f
 # Auto-login to RSTS/E and run Advent MUD
 # Connects to DZ11 terminal and handles login sequence
+# Writes status to /tmp/login_status.json for web UI
 
 set timeout 60
 log_user 1
 
-puts "\n=========================================="
-puts "  ADVENT MUD - 1987 Multi-User Dungeon"
-puts "  Connecting to RSTS/E..."
-puts "==========================================\n"
+# Status file for web UI polling
+set status_file "/tmp/login_status.json"
+
+# Write status update
+proc write_status {step message} {
+    global status_file
+    set fd [open $status_file w]
+    puts $fd "{\"step\": \"$step\", \"message\": \"$message\"}"
+    close $fd
+}
+
+# Clear any stale status from previous sessions
+catch {file delete $status_file}
+
+# Initial status - start fresh
+write_status "connect" "Connecting to PDP-11..."
 
 # Connect to RSTS/E terminal via DZ11
 spawn nc localhost 2323
 
-# Give it a moment to connect
-sleep 2
-
-# Send initial CR to wake up terminal
-send "\r"
-
-# Wait for login prompt or ready
+# Wait for DZ connection banner
 expect {
-    -re "Ready|ready" {
-        # Already logged in
-        puts "Already logged in..."
-    }
-    -re "Option:" {
-        # At login option prompt
-        send "0\r"
-        expect -re "Ready|ready|\\\$"
-    }
-    -re "Password:" {
-        # Need to provide password
-        send "Digital1977\r"
-        expect -re "Option:"
-        send "0\r"
-        expect -re "Ready|ready|\\\$"
-    }
-    -re "KB\[0-9\]+:" {
-        # At login prompt - need full login
-        send "\[1,2\]\r"
-        expect -re "Password:"
-        send "Digital1977\r"
-        expect -re "Option:"
-        send "0\r"
-        expect -re "Ready|ready|\\\$"
+    "Connected to the PDP-11 simulator DZ device" {
+        write_status "boot" "Connected to PDP-11, waiting for RSTS/E..."
+        sleep 1
+        send "\r"
     }
     timeout {
-        # Try full login sequence
-        send "\r"
-        sleep 1
-        send "\[1,2\]\r"
-        expect -re "Password:"
-        send "Digital1977\r"
-        expect -re "Option:"
-        send "0\r"
-        expect -re "Ready|ready|\\\$"
+        write_status "error" "Timeout connecting to PDP-11"
+        exit 1
     }
 }
 
-# Clear any previous program
-send "\003"
-sleep 1
+write_status "login" "Logging in as \[1,2\]..."
 
-# Run Advent
-puts "\nStarting ADVENT...\n"
+# Wait for login prompt
+expect {
+    "User:" {
+        send "\[1,2\]\r"
+    }
+    -re "KB\[0-9\]:" {
+        send "HELLO \[1,2\]\r"
+    }
+    -re "Bye" {
+        send "HELLO \[1,2\]\r"
+    }
+    "Ready" {
+        write_status "game" "Starting ADVENT..."
+        send "RUN ADVENT\r"
+        sleep 5
+        write_status "ready" "Game ready!"
+        interact
+        exit 0
+    }
+    timeout {
+        send "\[1,2\]\r"
+    }
+}
+
+# Wait for password prompt
+expect {
+    -re "\[Pp\]assword" {
+        send "Digital1977\r"
+    }
+    timeout {
+        write_status "error" "Timeout waiting for password"
+        exit 1
+    }
+}
+
+# Handle job attachment prompt or Ready
+expect {
+    "Job number to attach to?" {
+        send "\r"
+    }
+    "Ready" {
+    }
+    -re "Sorry" {
+        write_status "error" "Login failed - wrong password"
+        exit 1
+    }
+    timeout {
+        write_status "error" "Timeout during login"
+        exit 1
+    }
+}
+
+# Wait for command prompt
+expect {
+    -re {\$} {
+    }
+    "Ready" {
+    }
+    timeout {
+        write_status "error" "Timeout waiting for prompt"
+        exit 1
+    }
+}
+
+write_status "game" "Starting ADVENT..."
+
+# Run ADVENT
 send "RUN ADVENT\r"
+
+# Wait for game to start
+sleep 5
+
+# Check for game output
+expect {
+    "ERROR" {
+        write_status "error" "Game error - another session may be active"
+        puts "\n============================================="
+        puts "  ADVENT encountered an error."
+        puts "  Another game session may be active."
+        puts "  Restart the container to reset:"
+        puts "    docker restart advent-mud"
+        puts "=============================================\n"
+        sleep 3
+        send "\003"
+        send "BYE\r"
+        expect eof
+        exit 1
+    }
+    -re "standing|Exits|>" {
+        write_status "ready" "Game ready!"
+    }
+    timeout {
+        # Assume game is running
+        write_status "ready" "Game ready!"
+    }
+}
 
 # Hand control to user
 interact

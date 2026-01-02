@@ -20,22 +20,26 @@
 #   SKIP_SOURCE=1   - Skip source file transfer
 #   SKIP_COMPILE=1  - Skip compilation and linking
 
-FROM rattydave/alpine-simh:latest
+# Use Alpine 3.18 (stable, compatible with all kernels)
+FROM alpine:3.18
 
 LABEL maintainer="Edward Hibbert"
 LABEL description="1987 Advent MUD running on SIMH PDP-11 with RSTS/E"
 
-# Install dependencies
+# Install SIMH and dependencies
 RUN apk add --no-cache \
+    simh \
     ttyd \
     bash \
     python3 \
     expect \
-    netcat-openbsd
+    netcat-openbsd \
+    nginx \
+    tmux
 
 # Create directories
 WORKDIR /opt/advent
-RUN mkdir -p disks scripts data src
+RUN mkdir -p disks scripts data src web
 
 # Copy disk images
 # These are the base RSTS/E system disks
@@ -63,16 +67,22 @@ COPY docker/pdp11.ini /opt/advent/
 # Copy startup scripts
 COPY docker/entrypoint.sh /opt/advent/entrypoint.sh
 COPY docker/game_connect.exp /opt/advent/
+COPY docker/game_session.sh /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
+
+# Copy web interface files
+COPY docker/web/ /opt/advent/web/
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py
 
 # Expose ports:
 # 7681 = Game web terminal (ttyd)
 # 7682 = Admin web terminal (ttyd)
+# 8080 = Web interface (nginx)
 # 2322 = SIMH console (telnet)
 # 2323 = RSTS/E terminal lines (telnet)
-EXPOSE 7681 7682 2322 2323
+EXPOSE 7681 7682 8080 2322 2323
 
 # Start the system
 ENTRYPOINT ["/opt/advent/entrypoint.sh"]

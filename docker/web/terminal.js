@@ -1,21 +1,14 @@
 /**
  * ADVENT MUD Terminal Controller
- * Manages connection status display, input blocking, and documentation viewer
+ * Event-driven status via polling /api/status
  */
 
 (function() {
     'use strict';
 
-    // Configuration - timing for each step (in ms)
-    // These are MAXIMUM times - ideally we'd detect actual progress
-    // TODO: Implement server-side status endpoint for true event-driven progress
-    const STEP_TIMING = {
-        connect: 3000,      // Initial connection to SIMH
-        boot: 4000,         // RSTS/E detection
-        login: 10000,       // Login sequence (can be slow)
-        game: 8000,         // Game startup
-        ready: 500          // Final transition
-    };
+    // Polling configuration
+    const POLL_INTERVAL = 500;  // Poll every 500ms
+    const MAX_POLL_TIME = 60000;  // Fallback timeout after 60 seconds
 
     // DOM Elements
     const terminalFrame = document.getElementById('terminal-frame');
@@ -27,7 +20,7 @@
     const docTitle = document.getElementById('doc-title');
     const docBody = document.getElementById('doc-body');
 
-    // Status step elements (now inside the overlay)
+    // Status step elements
     const steps = {
         connect: document.getElementById('step-connect'),
         boot: document.getElementById('step-boot'),
@@ -36,9 +29,11 @@
         ready: document.getElementById('step-ready')
     };
 
-    // Current state
+    // State
     let isReady = false;
-    let connectionSequenceId = 0;
+    let pollTimer = null;
+    let pollStartTime = null;
+    let lastStatus = null;
 
     /**
      * Update a step's visual state
@@ -61,14 +56,31 @@
     }
 
     /**
-     * Progress to the next step
+     * Map status step to UI steps and update display
      */
-    function progressStep(stepName, sequenceId) {
-        if (sequenceId !== connectionSequenceId) return;
+    function updateFromStatus(status) {
+        if (!status || !status.step) return;
 
         const stepOrder = ['connect', 'boot', 'login', 'game', 'ready'];
-        const currentIndex = stepOrder.indexOf(stepName);
+        const currentIndex = stepOrder.indexOf(status.step);
 
+        // Handle error state
+        if (status.step === 'error') {
+            if (waitMessage) {
+                waitMessage.textContent = status.message || 'Connection failed';
+                waitMessage.style.color = '#ff6666';
+            }
+            // Keep overlay visible but show error
+            const overlayTitle = connectionOverlay?.querySelector('h2');
+            if (overlayTitle) {
+                overlayTitle.textContent = 'Connection Failed';
+                overlayTitle.style.color = '#ff6666';
+            }
+            stopPolling();
+            return;
+        }
+
+        // Update steps
         for (let i = 0; i < stepOrder.length; i++) {
             if (i < currentIndex) {
                 updateStep(stepOrder[i], 'complete');
@@ -79,7 +91,7 @@
             }
         }
 
-        // Update overlay title
+        // Update overlay title and message
         const overlayTitle = connectionOverlay?.querySelector('h2');
         if (overlayTitle) {
             const titles = {
@@ -89,13 +101,20 @@
                 game: 'Starting game...',
                 ready: 'Ready!'
             };
-            overlayTitle.textContent = titles[stepName] || 'Connecting...';
+            overlayTitle.textContent = titles[status.step] || 'Connecting...';
+            overlayTitle.style.color = '';
         }
 
-        // Update LED state
-        if (stepName === 'ready') {
+        if (waitMessage) {
+            waitMessage.textContent = status.message || 'Please wait...';
+            waitMessage.style.color = '';
+        }
+
+        // Update LED
+        if (status.step === 'ready') {
             onlineLed?.classList.remove('on');
             onlineLed?.classList.add('connected');
+            enableInput();
         } else {
             onlineLed?.classList.add('on');
             onlineLed?.classList.remove('connected');
@@ -103,18 +122,87 @@
     }
 
     /**
-     * Reset to initial state for reconnection
+     * Poll the status endpoint
+     */
+    function pollStatus() {
+        // Check if we've been polling too long
+        if (pollStartTime && (Date.now() - pollStartTime > MAX_POLL_TIME)) {
+            console.log('Polling timeout - enabling input anyway');
+            enableInput();
+            return;
+        }
+
+        fetch('/api/status')
+            .then(response => {
+                if (!response.ok) {
+                    // Status file doesn't exist yet - keep polling
+                    return null;
+                }
+                return response.json();
+            })
+            .then(status => {
+                if (status) {
+                    // Only update if status changed
+                    if (!lastStatus || lastStatus.step !== status.step || lastStatus.message !== status.message) {
+                        lastStatus = status;
+                        updateFromStatus(status);
+                    }
+
+                    // Stop polling when ready
+                    if (status.step === 'ready') {
+                        stopPolling();
+                    }
+                }
+            })
+            .catch(err => {
+                // Ignore errors - file might not exist yet
+                console.log('Status poll:', err.message);
+            });
+    }
+
+    /**
+     * Start polling for status
+     */
+    function startPolling() {
+        stopPolling();
+        pollStartTime = Date.now();
+        lastStatus = null;
+        pollStatus();  // Initial poll
+        pollTimer = setInterval(pollStatus, POLL_INTERVAL);
+    }
+
+    /**
+     * Stop polling
+     */
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    /**
+     * Reset UI to initial state
      */
     function resetState() {
         isReady = false;
+        lastStatus = null;
         inputBlocker?.classList.add('active');
         connectionOverlay?.classList.add('active');
+
         if (waitMessage) {
             waitMessage.classList.remove('hidden');
             waitMessage.textContent = 'Please wait while we connect you...';
             waitMessage.style.color = '';
         }
+
         onlineLed?.classList.remove('connected', 'on');
+
+        const overlayTitle = connectionOverlay?.querySelector('h2');
+        if (overlayTitle) {
+            overlayTitle.textContent = 'Connecting...';
+            overlayTitle.style.color = '';
+        }
 
         Object.keys(steps).forEach(stepName => {
             updateStep(stepName, 'pending');
@@ -122,11 +210,10 @@
     }
 
     /**
-     * Enable user input (remove blocker and overlay)
+     * Enable user input
      */
-    function enableInput(sequenceId) {
-        if (sequenceId !== connectionSequenceId) return;
-
+    function enableInput() {
+        stopPolling();
         inputBlocker?.classList.remove('active');
         connectionOverlay?.classList.remove('active');
         waitMessage?.classList.add('hidden');
@@ -139,12 +226,9 @@
     }
 
     /**
-     * Start the connection sequence
+     * Start connection sequence
      */
     function startConnectionSequence() {
-        connectionSequenceId++;
-        const thisSequenceId = connectionSequenceId;
-
         resetState();
 
         // Load the terminal iframe (triggers new ttyd session with auto-login)
@@ -152,37 +236,21 @@
             terminalFrame.src = '/terminal/';
         }
 
-        let delay = 0;
-
-        setTimeout(() => progressStep('connect', thisSequenceId), delay);
-        delay += STEP_TIMING.connect;
-
-        setTimeout(() => progressStep('boot', thisSequenceId), delay);
-        delay += STEP_TIMING.boot;
-
-        setTimeout(() => progressStep('login', thisSequenceId), delay);
-        delay += STEP_TIMING.login;
-
-        setTimeout(() => progressStep('game', thisSequenceId), delay);
-        delay += STEP_TIMING.game;
-
-        setTimeout(() => {
-            progressStep('ready', thisSequenceId);
-            enableInput(thisSequenceId);
-        }, delay);
+        // Start polling for status updates
+        startPolling();
     }
 
     /**
-     * Handle click on blocker
+     * Handle click on overlay
      */
-    function handleBlockerClick(e) {
+    function handleOverlayClick(e) {
         if (!isReady && waitMessage) {
-            waitMessage.style.color = '#ff6666';
-            waitMessage.textContent = 'Please wait - automatic login in progress...';
+            waitMessage.style.color = '#ffaa00';
+            waitMessage.textContent = 'Automatic login in progress...';
             setTimeout(() => {
-                if (waitMessage) {
+                if (waitMessage && !isReady) {
                     waitMessage.style.color = '';
-                    waitMessage.textContent = 'Please wait while we connect you...';
+                    waitMessage.textContent = lastStatus?.message || 'Please wait...';
                 }
             }, 1500);
         }
@@ -192,9 +260,9 @@
      * Initialize
      */
     function init() {
-        setTimeout(startConnectionSequence, 500);
-        inputBlocker?.addEventListener('click', handleBlockerClick);
-        connectionOverlay?.addEventListener('click', handleBlockerClick);
+        setTimeout(startConnectionSequence, 300);
+        inputBlocker?.addEventListener('click', handleOverlayClick);
+        connectionOverlay?.addEventListener('click', handleOverlayClick);
     }
 
     if (document.readyState === 'loading') {
@@ -211,7 +279,9 @@
         'RESURRECTION.md': 'The Resurrection Story',
         'PROVENANCE.md': 'File Provenance',
         'TECHNICAL.md': 'Technical Details',
-        'CONTINUATION.md': 'Continuation Guide'
+        'CONTINUATION.md': 'Continuation Guide',
+        'NEWADV.md': 'Guidelines for Dungeon Writers (1987)',
+        'STATUS.md': 'Feature Implementation Status'
     };
 
     window.showDoc = function(filename) {

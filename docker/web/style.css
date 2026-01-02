@@ -56,13 +56,15 @@ body {
 
 .crt-label {
     position: absolute;
-    top: 8px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 12px;
-    color: #666;
-    letter-spacing: 3px;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 2px;
     text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 5;
 }
 
 .crt-screen {
@@ -218,11 +220,12 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 10, 0, 0.92);
+    background: rgba(0, 8, 0, 0.5);
     z-index: 25;
     display: none;
     align-items: center;
     justify-content: center;
+    /* No blur - let terminal show through clearly */
 }
 
 .connection-overlay.active {
@@ -232,6 +235,9 @@ body {
 .overlay-content {
     text-align: center;
     padding: 40px;
+    background: rgba(0, 10, 0, 0.85);
+    border-radius: 12px;
+    border: 1px solid rgba(51, 255, 51, 0.3);
 }
 
 .overlay-content h2 {
@@ -513,6 +519,23 @@ body {
 
 .commands li:last-child {
     border-bottom: none;
+}
+
+.status-link {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(51, 255, 51, 0.2);
+    text-align: center;
+    font-size: 13px;
+}
+
+.status-link a {
+    color: #559955;
+    text-decoration: none;
+}
+
+.status-link a:hover {
+    color: #88ff88;
 }
 
 .commands .cmd {

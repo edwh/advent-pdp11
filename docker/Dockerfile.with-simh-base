@@ -1,0 +1,90 @@
+# Advent MUD - PDP-11/RSTS-E in Docker
+# A 1987 multi-user dungeon game running on emulated vintage hardware
+#
+# This Dockerfile builds a container that:
+# 1. Starts SIMH PDP-11 with RSTS/E V10.1
+# 2. Generates data files from salvaged sources
+# 3. Transfers data and source files to RSTS/E
+# 4. Compiles and links the game
+# 5. Provides web terminal access
+#
+# Build:
+#   docker build -f docker/Dockerfile.new -t advent-mud .
+#
+# Run:
+#   docker run -p 7681:7681 -p 7682:7682 -p 2322:2322 -p 2323:2323 advent-mud
+#
+# Environment variables:
+#   SKIP_SETUP=1    - Use pre-built disk without setup (faster start)
+#   SKIP_DATA=1     - Skip data file transfer
+#   SKIP_SOURCE=1   - Skip source file transfer
+#   SKIP_COMPILE=1  - Skip compilation and linking
+
+FROM rattydave/alpine-simh:latest
+
+LABEL maintainer="Edward Hibbert"
+LABEL description="1987 Advent MUD running on SIMH PDP-11 with RSTS/E"
+
+# Install dependencies
+RUN apk add --no-cache \
+    ttyd \
+    bash \
+    python3 \
+    expect \
+    netcat-openbsd \
+    coreutils \
+    nginx \
+    monit
+
+# Create directories
+WORKDIR /opt/advent
+RUN mkdir -p disks scripts data src web
+
+# Copy disk images
+# These are the base RSTS/E system disks
+COPY build/disks/rsts0.dsk /opt/advent/disks/
+COPY build/disks/rsts1.dsk /opt/advent/disks/
+
+# Copy salvaged data files (for conversion)
+COPY data/roomfil.fil /opt/advent/data/
+COPY data/REFRSH.CTL /opt/advent/data/
+COPY data/monfil.fil /opt/advent/data/
+
+# Copy pre-converted data files (if available)
+COPY build/data/*.DTA build/data/*.MON build/data/*.CHR build/data/*.NTC build/data/*.NPC /opt/advent/data/
+
+# Copy source files
+COPY src/*.SUB src/*.B2S /opt/advent/src/
+
+# Copy scripts
+COPY scripts/migrate_data.py /opt/advent/scripts/
+COPY scripts/setup_advent.py /opt/advent/scripts/
+
+# Copy SIMH configuration
+COPY docker/pdp11.ini /opt/advent/
+
+# Copy startup scripts
+COPY docker/entrypoint.sh /opt/advent/entrypoint.sh
+COPY docker/game_connect.exp /opt/advent/
+COPY docker/admin_connect.sh /opt/advent/
+
+# Copy web interface files
+COPY docker/web/ /opt/advent/web/
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+# Copy monit configuration
+COPY docker/monitrc /etc/monitrc
+
+RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py && \
+    chmod 600 /etc/monitrc
+
+# Expose ports:
+# 8080 = Web interface (nginx)
+# 7681 = Game web terminal (ttyd) - proxied via nginx
+# 7682 = Admin web terminal (ttyd)
+# 2322 = SIMH console (telnet)
+# 2323 = RSTS/E terminal lines (telnet)
+EXPOSE 8080 7681 7682 2322 2323
+
+# Start the system
+ENTRYPOINT ["/opt/advent/entrypoint.sh"]
