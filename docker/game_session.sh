@@ -17,5 +17,9 @@ echo ""
 echo "Connecting to the PDP-11..."
 echo ""
 
+# Configure terminal to not send LF after CR
+# RSTS/E only expects CR, and treats LF as an empty command (producing "?" prompts)
+stty -icrnl -onlcr -inlcr igncr 2>/dev/null || true
+
 # Run the expect script directly - it handles login and runs ADVENT
 exec "$EXPECT_SCRIPT"

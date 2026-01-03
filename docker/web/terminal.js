@@ -420,4 +420,26 @@
         if (e.target === docModal) closeDoc();
     });
 
+    // ============================================
+    // SESSION RESTART
+    // ============================================
+
+    window.restartSession = function() {
+        // Reset state
+        resetState();
+        systemBooted = false;
+
+        // Clear the terminal iframe
+        if (terminalFrame) {
+            terminalFrame.src = 'about:blank';
+        }
+
+        // Clear status files on server
+        fetch('/api/restart', { method: 'POST' })
+            .catch(() => {}); // Ignore errors
+
+        // Start boot polling again
+        setTimeout(startBootPolling, 500);
+    };
+
 })();

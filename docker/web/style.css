@@ -545,6 +545,39 @@ body {
     min-width: 90px;
 }
 
+/* Session Controls */
+.controls {
+    text-align: center;
+}
+
+.restart-btn {
+    background: linear-gradient(180deg, #553333 0%, #331111 100%);
+    border: 2px solid #884444;
+    color: #ffaaaa;
+    padding: 10px 20px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+}
+
+.restart-btn:hover {
+    background: linear-gradient(180deg, #664444 0%, #442222 100%);
+    border-color: #aa6666;
+    color: #ffcccc;
+}
+
+.restart-btn:active {
+    transform: scale(0.98);
+}
+
+.help-text {
+    font-size: 12px;
+    color: #888;
+    margin-top: 8px;
+}
+
 /* Footer */
 .footer {
     margin-top: auto;
