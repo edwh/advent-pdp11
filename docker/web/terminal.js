@@ -425,21 +425,50 @@
     // ============================================
 
     window.restartSession = function() {
+        // Confirm restart
+        if (!confirm('Restart the game session? This will disconnect and reconnect.')) {
+            return;
+        }
+
+        // Show restarting message
+        const overlayTitle = connectionOverlay?.querySelector('h2');
+        if (overlayTitle) {
+            overlayTitle.textContent = 'Restarting...';
+            overlayTitle.style.color = '#ffaa00';
+        }
+        if (waitMessage) {
+            waitMessage.textContent = 'Reconnecting to PDP-11...';
+            waitMessage.style.color = '#ffaa00';
+        }
+
+        // Show the overlay
+        connectionOverlay?.classList.add('active');
+        inputBlocker?.classList.add('active');
+
         // Reset state
-        resetState();
+        isReady = false;
         systemBooted = false;
+        lastStatus = null;
+
+        // Reset step indicators
+        Object.keys(steps).forEach(stepName => {
+            updateStep(stepName, 'pending');
+        });
 
         // Clear the terminal iframe
         if (terminalFrame) {
             terminalFrame.src = 'about:blank';
         }
 
-        // Clear status files on server
-        fetch('/api/restart', { method: 'POST' })
-            .catch(() => {}); // Ignore errors
-
-        // Start boot polling again
-        setTimeout(startBootPolling, 500);
+        // Short delay then reload the terminal
+        setTimeout(function() {
+            // Reload the terminal iframe to get a fresh session
+            if (terminalFrame) {
+                terminalFrame.src = '/terminal/';
+            }
+            // Start polling for status
+            startPolling();
+        }, 1000);
     };
 
 })();
