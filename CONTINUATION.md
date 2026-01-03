@@ -6,38 +6,50 @@ This document is for another Claude instance continuing the Advent MUD resurrect
 
 Resurrecting a 1987 multi-user dungeon game (ADVENT) that runs on PDP-11/RSTS/E, now emulated via SIMH in Docker.
 
-## Current State (December 31, 2025)
+## QUICK START - Build and Run (January 2026)
 
-### MINI-ADVENT IS WORKING!
+**Read `claude.md` first!** It has the exact tested commands.
 
-A simplified single-user version (`MINI3.TSK`) is now fully functional:
-- **LOOK** command shows room descriptions and exits
-- **NORTH/SOUTH/EAST/WEST** navigation works correctly
-- **QUIT** command exits cleanly
-- Room data read correctly from `ADVENT.DTA`
+```bash
+# Restore working disk images (if modified)
+git checkout build/disks/rsts0.dsk build/disks/rsts1.dsk
 
-### What Works
-- Docker container boots RSTS/E V10.1 successfully
-- **MINI3.TSK** - Simplified single-user game, fully working
-- Room descriptions display correctly (1587 rooms)
-- Navigation between rooms works
-- Exit display works
-- BASIC-PLUS-2 compilation via BP2IC2 works
-- TKB linking works
+# Build using ROOT Dockerfile (not docker/Dockerfile!)
+docker build -f Dockerfile -t advent-mud .
 
-### The Original Multi-User Version
-The full ADVENT.TSK compiles and links but has output routing issues:
-- Uses `PRINT #1%, RECORD 32767+KB%` for multi-terminal output
-- Single-user version sets KB%(1%)=0, sending output to KB0 instead of our terminal (KB5)
-- Solution: Created MINI3 with direct PRINT statements
+# Run container
+docker stop advent-mud 2>/dev/null; docker rm advent-mud 2>/dev/null
+docker run -d --name advent-mud -p 8080:8080 -p 2322:2322 -p 2323:2323 advent-mud
+
+# Access (wait ~2 min for boot)
+open http://localhost:8080
+```
+
+## Current State (January 3, 2026)
+
+### FULL ADVENT IS WORKING!
+
+The complete ADVENT game now runs in single-user mode:
+- Full navigation: NORTH/SOUTH/EAST/WEST, UP/DOWN
+- LOOK shows room descriptions and exits
+- GET/TAKE and DROP for objects
+- INVENTORY shows carried items
+- STATUS shows character information
+- Combat system operational
+- 1,587 rooms with descriptions
+- 402 monsters, 417 objects
+
+### Key Fix: Single-User Mode
+
+The original ADVENT used multi-terminal output routing (`PRINT #1%, RECORD 32767+KB%`). We added a `SINGLE.USER%` flag to ADVOUT.SUB that, when set to -1, uses direct PRINT statements instead.
+
+ADVINI.SUB sets `SINGLE.USER%=-1%` to enable this mode.
 
 ### How to Play
 
-1. Start Docker: `docker-compose up -d`
-2. Wait 60 seconds for RSTS/E to boot
-3. Connect: `telnet localhost 2323`
-4. Login: `[1,2]` / `Digital1977`
-5. Run: `RUN SY:[1,2]MINI3`
+1. Build and run: See QUICK START above
+2. Open http://localhost:8080 (CRT web interface with auto-login)
+3. Or telnet: `telnet localhost 2322`, login `[1,2]` / `Digital1977`, then `RUN ADVENT`
 
 ## Technical Issues Solved
 
@@ -182,19 +194,35 @@ See `scripts/teco_transfer.py` for the complete binary transfer implementation.
 
 ## Useful Commands
 
-### flx Tool (USE WITH CAUTION)
+### flx Tool (USE WITH EXTREME CAUTION)
+
+**CRITICAL**: NEVER use flx while the Docker container is running. Stop the container FIRST!
+
 ```bash
+# ALWAYS stop container before using flx
+docker stop advent-mud
+
 # List directory
-./flx -di simh/Disks/rsts1.dsk
+./flx -di build/disks/rsts1.dsk
 
 # Extract file
-./flx -id simh/Disks/rsts1.dsk -ge "[1,2]ADVENT.DTA" > extracted.dat
+./flx -id build/disks/rsts1.dsk -ge "[1,2]ADVENT.DTA" > extracted.dat
 
-# Put file (disk must be dismounted) - MAY NOT PERSIST!
-./flx -id simh/Disks/rsts1.dsk -pu "[1,2]FILENAME.EXT" < local_file
+# Put file (disk must be dismounted)
+./flx -id build/disks/rsts1.dsk -pu "[1,2]FILENAME.EXT" < local_file
+
+# Clean dirty flag (ONLY on rsts1.dsk, NEVER on rsts0.dsk!)
+./flx -id build/disks/rsts1.dsk -cl
+
+# Restart container after modifications
+docker start advent-mud
 ```
 
-**WARNING**: FLX-injected files at high block offsets disappear on restart. Use TECO method instead.
+**WARNINGS**:
+1. Modifying disks while RSTS/E is running corrupts swap files, causing "swap file is invalid" on next boot
+2. NEVER run `flx clean` on rsts0.dsk (boot disk) - causes "Odd address trap" errors
+3. FLX-injected files at high block offsets may disappear on restart. Use TECO for reliability.
+4. If you corrupt the disks, restore with: `git checkout build/disks/*.dsk`
 
 ### RSTS/E
 ```bash
@@ -302,6 +330,8 @@ This resurrection project is at: https://github.com/edwh/advent-pdp11
 
 ---
 
-**STATUS: MINI-ADVENT IS WORKING!** (December 31, 2025)
+**STATUS: FULL ADVENT IS WORKING!** (January 3, 2026)
 
-The simplified version reads room data, displays descriptions, and allows navigation. The full multi-user version needs the KB% routing fixed but that's a separate task.
+The complete single-user game is operational with navigation, inventory, combat, and all 1,587 rooms. The multi-user version still needs file locking fixes for concurrent access.
+
+**Live demo**: https://advent-mud.fly.dev
