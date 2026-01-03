@@ -174,18 +174,5 @@ expect {
     }
 }
 
-# Hand control to user
-# Intercept Ctrl+Z and send it properly to RSTS/E
-# Also watch for "Type ^Z to exit" and auto-exit
-interact {
-    # Pass Ctrl+Z (ASCII 26) to the process
-    "\032" {
-        send "\032"
-    }
-    # If user types "quit" and we see the exit message, send Ctrl+Z
-    -o "Type ^Z to exit" {
-        send_user "\r\nExiting game...\r\n"
-        sleep 1
-        send "\032"
-    }
-}
+# Hand control to user - no extra sends!
+interact
