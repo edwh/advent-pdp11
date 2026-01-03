@@ -77,3 +77,12 @@ telnet localhost 2322
 - Run game: `RUN ADVENT`
 - Console is KB0 (port 2322)
 - DZ terminals are KB1-KB8 (port 2323)
+
+## Deployment
+
+Fly.io auth token is in `/home/edward/.env`. To deploy:
+
+```bash
+source /home/edward/.env
+/home/edward/.fly/bin/flyctl deploy --remote-only
+```
