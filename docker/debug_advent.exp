@@ -1,0 +1,29 @@
+#!/usr/bin/expect -f
+set timeout 120
+log_user 1
+spawn nc localhost 2323
+expect "Connected"
+sleep 2
+send "\r"
+expect "User:"
+send "\[1,2\]\r"
+expect -re "\[Pp\]assword"
+send "Digital1977\r"
+expect {
+    "Job number to attach to?" { send "\r" }
+    -re {\$} {}
+}
+expect -re {\$}
+
+# Send RUN ADVENT and wait for any output
+puts "\n--- Running ADVENT ---"
+send "RUN ADVENT\r"
+
+# Just wait and see what happens
+sleep 30
+puts "\n--- Waiting done, capturing output ---"
+expect -re {.*}
+puts "Buffer: $expect_out(buffer)"
+
+send "BYE\r"
+expect eof

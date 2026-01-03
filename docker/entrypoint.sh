@@ -27,8 +27,12 @@ echo "  Running on SIMH PDP-11 / RSTS/E V10.1"
 echo "=============================================="
 echo
 
-# Clear any stale login status from previous runs
+# Clear any stale status from previous runs
 rm -f /tmp/login_status.json
+rm -f /tmp/boot_ready.json
+
+# Write initial boot status (system starting)
+echo '{"status": "booting", "message": "Starting PDP-11 emulator..."}' > /tmp/boot_status.json
 
 # Configuration
 ADVENT_DIR="/opt/advent"
@@ -54,22 +58,33 @@ if [ -f "$DATA_DIR/roomfil.fil" ] && [ ! -f "$DATA_DIR/ADVENT.DTA" ]; then
     python3 "$SCRIPTS_DIR/migrate_data.py" --data-dir "$DATA_DIR" --output-dir "$DATA_DIR" 2>&1 || true
 fi
 
+# Start nginx early so health checks pass during boot
+# The web interface will show "booting" status until RSTS/E is ready
+if command -v nginx &> /dev/null; then
+    nginx
+    echo "Web interface started on port 8080 (serving boot status)"
+fi
+
 # Start SIMH in background
 echo "Starting SIMH emulator..."
 echo "  Console: telnet localhost 2322"
 echo "  Terminals: telnet localhost 2323"
 echo
 
-/usr/src/simh/BIN/pdp11 "$ADVENT_DIR/pdp11.ini" &
+/usr/local/bin/pdp11 "$ADVENT_DIR/pdp11.ini" &
 SIMH_PID=$!
 
 # Wait for SIMH to start
 sleep 3
 if ! kill -0 $SIMH_PID 2>/dev/null; then
     echo "ERROR: SIMH failed to start"
+    echo '{"status": "error", "message": "SIMH failed to start"}' > /tmp/boot_status.json
     exit 1
 fi
 echo "SIMH started (PID: $SIMH_PID)"
+
+# Update boot status
+echo '{"status": "booting", "message": "Waiting for RSTS/E to boot (this takes ~5 minutes)..."}' > /tmp/boot_status.json
 
 # Wait for RSTS/E to boot (check if port 2323 is accepting connections)
 echo "Waiting for RSTS/E to boot..."
@@ -88,11 +103,38 @@ done
 if [ $BOOT_WAIT -ge $MAX_BOOT_WAIT ]; then
     echo ""
     echo "ERROR: RSTS/E did not respond within $MAX_BOOT_WAIT seconds"
+    echo '{"status": "error", "message": "RSTS/E boot timeout"}' > /tmp/boot_status.json
     exit 1
 fi
 
-# Give RSTS/E a bit more time to fully initialize
-sleep 10
+# Update boot status - waiting for full initialization
+echo '{"status": "booting", "message": "RSTS/E initializing services..."}' > /tmp/boot_status.json
+
+# Give RSTS/E more time to fully initialize
+# Disk rebuild + startup scripts can take 5+ minutes on first boot
+# This ensures DZ terminals are fully ready for login
+sleep 300
+
+# Start web terminals BEFORE marking system ready
+# This ensures ttyd is running when users try to connect
+if command -v ttyd &> /dev/null; then
+    # Game interface (port 7681) - auto-login and run ADVENT (proxied via nginx)
+    # -b /terminal tells ttyd it's being proxied at /terminal/ path
+    ttyd -p 7681 -b /terminal -W "$ADVENT_DIR/game_session.sh" &
+    GAME_PID=$!
+    echo "Game web terminal started on port 7681"
+
+    # Admin interface (port 7682) - direct console access
+    ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
+    ADMIN_PID=$!
+    echo "Admin web terminal started on port 7682"
+
+    # Give ttyd a moment to start
+    sleep 2
+fi
+
+# Mark system as ready
+echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
 
 # Run setup if not skipped
 if [ "${SKIP_SETUP:-0}" != "1" ]; then
@@ -139,24 +181,8 @@ echo "To run the game after login:"
 echo "  RUN ADVENT"
 echo ""
 
-# Start web terminals if ttyd is available
-if command -v ttyd &> /dev/null; then
-    # Game interface (port 7681) - auto-login and run ADVENT (proxied via nginx)
-    ttyd -p 7681 -W "$ADVENT_DIR/game_session.sh" &
-    GAME_PID=$!
-    echo "Game web terminal started on port 7681"
-
-    # Admin interface (port 7682) - direct console access
-    ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
-    ADMIN_PID=$!
-    echo "Admin web terminal started on port 7682"
-fi
-
-# Start nginx for the CRT web interface
-if command -v nginx &> /dev/null; then
-    nginx
-    echo "Web interface started on port 8080"
-fi
+# Note: nginx started at beginning of boot for health checks
+# Note: ttyd started before marking system ready
 
 # Keep running - wait for SIMH to exit
 wait $SIMH_PID

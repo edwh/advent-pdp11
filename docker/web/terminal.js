@@ -8,7 +8,8 @@
 
     // Polling configuration
     const POLL_INTERVAL = 500;  // Poll every 500ms
-    const MAX_POLL_TIME = 60000;  // Fallback timeout after 60 seconds
+    const BOOT_POLL_INTERVAL = 2000;  // Poll boot status every 2s
+    const MAX_POLL_TIME = 120000;  // Fallback timeout after 120 seconds
 
     // DOM Elements
     const terminalFrame = document.getElementById('terminal-frame');
@@ -32,8 +33,10 @@
     // State
     let isReady = false;
     let pollTimer = null;
+    let bootPollTimer = null;
     let pollStartTime = null;
     let lastStatus = null;
+    let systemBooted = false;
 
     /**
      * Update a step's visual state
@@ -226,7 +229,79 @@
     }
 
     /**
-     * Start connection sequence
+     * Poll boot status before allowing connection
+     */
+    function pollBootStatus() {
+        fetch('/api/boot-status')
+            .then(response => {
+                if (!response.ok) return null;
+                return response.json();
+            })
+            .then(status => {
+                if (!status) return;
+
+                const overlayTitle = connectionOverlay?.querySelector('h2');
+
+                if (status.status === 'booting') {
+                    // System still booting - show holding message
+                    if (overlayTitle) {
+                        overlayTitle.textContent = 'System Starting...';
+                        overlayTitle.style.color = '#ffaa00';
+                    }
+                    if (waitMessage) {
+                        waitMessage.textContent = status.message || 'Please wait...';
+                        waitMessage.style.color = '#ffaa00';
+                    }
+                    // Show only boot step as active
+                    updateStep('connect', 'pending');
+                    updateStep('boot', 'active');
+                    updateStep('login', 'pending');
+                    updateStep('game', 'pending');
+                    updateStep('ready', 'pending');
+                } else if (status.status === 'ready') {
+                    // System ready - start connection
+                    stopBootPolling();
+                    systemBooted = true;
+                    startConnectionSequence();
+                } else if (status.status === 'error') {
+                    // Boot error
+                    if (overlayTitle) {
+                        overlayTitle.textContent = 'System Error';
+                        overlayTitle.style.color = '#ff6666';
+                    }
+                    if (waitMessage) {
+                        waitMessage.textContent = status.message || 'Boot failed';
+                        waitMessage.style.color = '#ff6666';
+                    }
+                    stopBootPolling();
+                }
+            })
+            .catch(err => {
+                console.log('Boot status poll:', err.message);
+            });
+    }
+
+    /**
+     * Start polling boot status
+     */
+    function startBootPolling() {
+        stopBootPolling();
+        pollBootStatus();
+        bootPollTimer = setInterval(pollBootStatus, BOOT_POLL_INTERVAL);
+    }
+
+    /**
+     * Stop boot polling
+     */
+    function stopBootPolling() {
+        if (bootPollTimer) {
+            clearInterval(bootPollTimer);
+            bootPollTimer = null;
+        }
+    }
+
+    /**
+     * Start connection sequence (only after boot is ready)
      */
     function startConnectionSequence() {
         resetState();
@@ -244,7 +319,15 @@
      * Handle click on overlay
      */
     function handleOverlayClick(e) {
-        if (!isReady && waitMessage) {
+        if (!systemBooted && waitMessage) {
+            waitMessage.style.color = '#ffaa00';
+            waitMessage.textContent = 'RSTS/E is still booting, please wait...';
+            setTimeout(() => {
+                if (waitMessage && !systemBooted) {
+                    waitMessage.style.color = '#ffaa00';
+                }
+            }, 1500);
+        } else if (!isReady && waitMessage) {
             waitMessage.style.color = '#ffaa00';
             waitMessage.textContent = 'Automatic login in progress...';
             setTimeout(() => {
@@ -257,10 +340,22 @@
     }
 
     /**
-     * Initialize
+     * Initialize - first check boot status
      */
     function init() {
-        setTimeout(startConnectionSequence, 300);
+        // Show initial state
+        const overlayTitle = connectionOverlay?.querySelector('h2');
+        if (overlayTitle) {
+            overlayTitle.textContent = 'System Starting...';
+            overlayTitle.style.color = '#ffaa00';
+        }
+        if (waitMessage) {
+            waitMessage.textContent = 'Checking system status...';
+            waitMessage.style.color = '#ffaa00';
+        }
+
+        // Start checking boot status
+        setTimeout(startBootPolling, 300);
         inputBlocker?.addEventListener('click', handleOverlayClick);
         connectionOverlay?.addEventListener('click', handleOverlayClick);
     }

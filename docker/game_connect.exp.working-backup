@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+# Auto-login to RSTS/E and run Advent MUD
+# Connects to DZ11 terminal and handles login sequence
+
+set timeout 30
+log_user 0
+
+# Connect to RSTS/E terminal via DZ11
+spawn nc localhost 2323
+log_user 1
+
+# Wait for Ready or login prompt
+expect {
+    "Ready" {
+        # Already logged in, just run the game
+    }
+    -re ".*\[Rr\]eady.*" {
+        # Logged in
+    }
+    -re ".*\[Bb\]ye.*|.*KB.*" {
+        # At login prompt
+        send "HELLO 1,2\r"
+        expect -re ".*\[Pp\]assword.*"
+        send "SYSTEM\r"
+        expect "Ready"
+    }
+    timeout {
+        send "\r"
+        expect -re ".*"
+        send "HELLO 1,2\r"
+        expect -re ".*\[Pp\]assword.*"
+        send "SYSTEM\r"
+        expect "Ready"
+    }
+}
+
+# Run Advent
+send "RUN ADVENT\r"
+
+# Hand control to user
+interact

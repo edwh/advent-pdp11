@@ -1,0 +1,45 @@
+# fly.toml - Advent MUD deployment configuration
+# Deploy with: fly launch / fly deploy
+
+app = "advent-pdp11"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Skip setup - using pre-built disk images with ADVENT
+  SKIP_SETUP = "1"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+# Health check - verify nginx is responding
+# Grace period needs to be long because RSTS/E takes ~4 minutes to fully boot
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "10s"
+  grace_period = "300s"
+  method = "GET"
+  path = "/"

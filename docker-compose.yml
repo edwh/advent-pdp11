@@ -22,7 +22,7 @@ services:
       dockerfile: docker/Dockerfile.new
     container_name: advent-mud
     ports:
-      - "8080:8080"   # Web interface (nginx)
+      - "8888:8080"   # Web interface (nginx)
       - "7681:7681"   # Game web terminal (ttyd)
       - "7682:7682"   # Admin web terminal
       - "2322:2322"   # SIMH console (telnet)

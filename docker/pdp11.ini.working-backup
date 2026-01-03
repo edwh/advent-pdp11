@@ -1,0 +1,60 @@
+; SIMH PDP-11 Configuration for RSTS/E V10.1 + Advent MUD
+; Auto-boots without requiring console interaction
+
+; Set CPU type - PDP-11/44 with 4MB memory
+set cpu 11/44
+set cpu 4M
+set cpu idle
+set nothrottle
+
+; Disable unused devices
+set rk disable
+
+; Enable RL02 for Kermit disk
+set rl enable
+set rl0 RL02
+attach rl0 /opt/advent/disks/kermit.dsk
+set tm disable
+set rx disable
+set rp disable
+set ts disable
+set tq disable
+
+; Configure RK07 disk drives (HK controller)
+set hk enable
+set hk0 RK07
+set hk1 RK07
+
+; Attach disk images
+attach hk0 /opt/advent/disks/rsts0.dsk
+attach hk1 /opt/advent/disks/rsts1.dsk
+
+; Configure terminal multiplexer for game players
+set dz enable
+set dz lines=8
+attach dz 2323
+
+; Dedicated line for file transfer (line 7 -> port 2324)
+attach dz line=7,connect=2324
+
+; Paper tape reader for file transfer
+set ptr enable
+attach ptr /opt/advent/disks/ADVINI.SUB
+
+; Console on TCP (buffered = don't wait for connection before boot)
+set console telnet=2322
+set console telnet=buffered
+
+; Remote console for SIMH control (allows WRU/Ctrl+E to work)
+set remote telnet=2325
+set remote connections=1
+
+; Auto-answer boot prompts
+; These expect commands handle the RSTS/E startup sequence
+expect "Today's date?" send "1-JAN-92\r"; continue
+expect "Current time?" send "12:00\r"; continue
+expect "Start timesharing?" send "Y\r"; continue
+expect "Option:" send "\r"; continue
+
+; Boot from HK0
+boot hk0

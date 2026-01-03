@@ -1,0 +1,103 @@
+#!/usr/bin/expect -f
+# Explore RSTS/E disk to find ADVENT files
+
+set timeout 30
+log_user 1
+
+# Connect to RSTS/E terminal via DZ11
+spawn nc localhost 2333
+
+# Wait for DZ banner
+expect "Connected to the PDP-11 simulator DZ device"
+
+# Send CR to wake up terminal
+sleep 1
+send "\r"
+
+# Wait for User: prompt or handle existing session
+expect {
+    "User:" {
+        send "\[1,2\]\r"
+    }
+    -re {KB[0-9]:} {
+        send "HELLO \[1,2\]\r"
+    }
+    "Bye" {
+        send "HELLO \[1,2\]\r"
+    }
+    -re {\$} {
+        # Already at command prompt
+        send "\r"
+    }
+    "Ready" {
+        send "\r"
+    }
+    timeout {
+        send "\r"
+        expect "User:"
+        send "\[1,2\]\r"
+    }
+}
+
+# Wait for password prompt if needed
+expect {
+    -re "\[Pp\]assword" {
+        send "Digital1977\r"
+    }
+    -re {\$} {
+        # Already logged in
+    }
+    "Ready" {
+        # Already logged in
+    }
+}
+
+# Handle job attachment or wait for prompt
+expect {
+    "Job number to attach to?" {
+        send "\r"
+        expect -re {\$|Ready}
+    }
+    -re {\$} {}
+    "Ready" {}
+    timeout {}
+}
+
+# Make sure we're at a command prompt
+expect {
+    -re {\$} {}
+    "Ready" {}
+    timeout {
+        send "\r"
+        expect -re {\$|Ready}
+    }
+}
+
+# Now explore the disk
+puts "\n\n=== Listing TSK files ===\n"
+send "DIR *.TSK\r"
+expect -re {\$}
+
+puts "\n\n=== Listing OBJ files ===\n"
+send "DIR *.OBJ\r"
+expect -re {\$}
+
+puts "\n\n=== Listing B2S files ===\n"
+send "DIR *.B2S\r"
+expect -re {\$}
+
+puts "\n\n=== Listing SUB files ===\n"
+send "DIR *.SUB\r"
+expect -re {\$}
+
+puts "\n\n=== Listing all files ===\n"
+send "DIR/FULL\r"
+expect -re {\$}
+
+puts "\n\n=== Check DM1 disk ===\n"
+send "DIR DM1:\[1,2\]*.*\r"
+expect -re {\$}
+
+puts "\n\n=== Done exploring ===\n"
+send "BYE\r"
+expect eof

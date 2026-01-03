@@ -26,12 +26,47 @@ write_status "connect" "Connecting to PDP-11..."
 # Connect to RSTS/E terminal via DZ11
 spawn nc localhost 2323
 
-# Wait for DZ connection banner
+# DZ multiplexer doesn't send banner until we send something
+# Brief pause then send carriage return to trigger connection
+sleep 1
+send "\r"
+
+# Wait for DZ connection banner AND the User: prompt together
+# This ensures we don't miss User: due to timing
 expect {
+    -re "Connected to the PDP-11 simulator DZ device.*User:" {
+        write_status "login" "Logging in as \[1,2\]..."
+        send "\[1,2\]\r"
+    }
     "Connected to the PDP-11 simulator DZ device" {
         write_status "boot" "Connected to PDP-11, waiting for RSTS/E..."
+        # Send CR to wake terminal, then wait for User:
         sleep 1
         send "\r"
+        expect {
+            "User:" {
+                write_status "login" "Logging in..."
+                send "\[1,2\]\r"
+            }
+            "Ready" {
+                # Already logged in
+                write_status "game" "Starting ADVENT..."
+                send "RUN ADVENT\r"
+            }
+            timeout {
+                send "\r"
+                expect {
+                    "User:" {
+                        write_status "login" "Logging in..."
+                        send "\[1,2\]\r"
+                    }
+                    timeout {
+                        write_status "error" "Timeout waiting for login prompt"
+                        exit 1
+                    }
+                }
+            }
+        }
     }
     timeout {
         write_status "error" "Timeout connecting to PDP-11"
@@ -39,36 +74,13 @@ expect {
     }
 }
 
-write_status "login" "Logging in as \[1,2\]..."
-
-# Wait for login prompt
-expect {
-    "User:" {
-        send "\[1,2\]\r"
-    }
-    -re "KB\[0-9\]:" {
-        send "HELLO \[1,2\]\r"
-    }
-    -re "Bye" {
-        send "HELLO \[1,2\]\r"
-    }
-    "Ready" {
-        write_status "game" "Starting ADVENT..."
-        send "RUN ADVENT\r"
-        sleep 5
-        write_status "ready" "Game ready!"
-        interact
-        exit 0
-    }
-    timeout {
-        send "\[1,2\]\r"
-    }
-}
-
 # Wait for password prompt
 expect {
     -re "\[Pp\]assword" {
         send "Digital1977\r"
+    }
+    "Ready" {
+        # No password needed, continue
     }
     timeout {
         write_status "error" "Timeout waiting for password"
@@ -93,7 +105,7 @@ expect {
     }
 }
 
-# Wait for command prompt
+# Wait for command prompt ($ or Ready)
 expect {
     -re {\$} {
     }
@@ -107,36 +119,37 @@ expect {
 
 write_status "game" "Starting ADVENT..."
 
-# Run ADVENT
+# Run ADVENT - don't add any extra sleeps that could cause issues
 send "RUN ADVENT\r"
 
-# Wait for game to start
-sleep 5
-
-# Check for game output
+# Wait for game to start - look for the game prompt ">"
+# ADVENT shows room description then "> " prompt
 expect {
-    "ERROR" {
-        write_status "error" "Game error - another session may be active"
-        puts "\n============================================="
-        puts "  ADVENT encountered an error."
-        puts "  Another game session may be active."
-        puts "  Restart the container to reset:"
-        puts "    docker restart advent-mud"
-        puts "=============================================\n"
-        sleep 3
-        send "\003"
-        send "BYE\r"
-        expect eof
+    "?Illegal file name" {
+        write_status "error" "ADVENT.TSK not found"
         exit 1
     }
-    -re "standing|Exits|>" {
+    "ERROR" {
+        write_status "error" "Game error - another session may be active"
+        exit 1
+    }
+    -re "Exits\[^\r\n\]*\r\n" {
+        # Got room description with Exits, game is running
+        write_status "ready" "Game ready!"
+    }
+    -re "\n> $" {
+        # Got the game prompt
+        write_status "ready" "Game ready!"
+    }
+    -re "You are standing" {
+        # Got room description
         write_status "ready" "Game ready!"
     }
     timeout {
-        # Assume game is running
+        # If we get here, assume game started anyway
         write_status "ready" "Game ready!"
     }
 }
 
-# Hand control to user
+# Hand control to user - no extra sends!
 interact

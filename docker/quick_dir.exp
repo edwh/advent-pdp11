@@ -1,0 +1,24 @@
+#!/usr/bin/expect -f
+set timeout 60
+log_user 1
+spawn nc localhost 2323
+expect "Connected"
+sleep 2
+send "\r"
+expect "User:"
+send "\[1,2\]\r"
+expect -re "\[Pp\]assword"
+send "Digital1977\r"
+expect {
+    "Job number to attach to?" { send "\r" }
+    -re {\$} {}
+}
+expect -re {\$}
+send "DIR *.DTA\r"
+expect -re {\$}
+send "DIR *.CHR\r"
+expect -re {\$}
+send "DIR *.MON\r"
+expect -re {\$}
+send "BYE\r"
+expect eof

@@ -29,43 +29,19 @@ And I looked upon the gibberish, and found it was not gibberish at all. It was a
 
 And I said 'Ha! Let me figure out how to run this thing then!'
 
-This, then, is the documentation of that process.
+This, then, is the documentation of that process. If you've got a few months free and a degree in Applied Archaeological Computing, you might like to try it yourself.
 
-## What I Found
+## What We Found
 
-### The Source Code
+The source code came from a 9-track magnetic tape, because of course it did. These days you'd just email it. Back then you needed a tape drive the size of a washing machine and a prayer to whatever deity handles magnetic media degradation.
 
-I discovered approximately 226 files, comprising:
+Inside we discovered approximately 226 files:
 
-- **~40 .B2S files** - BASIC-PLUS-2 source code (the main game)
-- **11 .SUB files** - Subroutines (combat, messaging, puzzles, and so on)
-- **14 .MAC files** - MACRO-11 assembly (for when BASIC wasn't fast enough)
-- **~30 .BAS files** - Various utilities
-- **Several .RNO files** - Documentation in RUNOFF format
-
-The game is called ADVENT, and it's wonderfully sophisticated for 1987:
-
-| Feature | Description |
-|---------|-------------|
-| Multi-user | 8 simultaneous players sharing the same world |
-| Combat | HP, XP, weapons with damage bonuses |
-| Magic | Teleport, Fireball, Heal, Stun, Invisibility |
-| Levels | 0-30+, with "demigods" at level 16+ |
-| Puzzles | Special room commands and locked doors |
-| Social | Tell, Shout, Announce, noticeboards |
-
-It is, essentially, a MUD - written before most people had heard the term.
-
-### The Data Files
-
-The original binary data files were missing. This is a bit like finding a car with no fuel - technically complete, but not going anywhere.
-
-However, I found text exports in a separate archive:
-
-| File | What's in it |
-|------|--------------|
-| `roomfil.fil` | 1,587 rooms with all their glorious descriptions |
-| `monfil.fil` | 402 monsters and 417 objects |
+- About 40 files of BASIC-PLUS-2 code (the main game, written by Edward Hibbert)
+- 11 subroutine files (combat, messaging, puzzles, and so on)
+- 14 files of assembly language (for when BASIC wasn't fast enough - also Edward's work)
+- Various utilities
+- Several documentation files in RUNOFF format, including the [Guidelines for Dungeon Writers](NEWADV.md) by David 'Gerbil' Quest and Edward Hibbert - which you should absolutely read for an authentic taste of 1987 programmer humour
 
 The rooms include locations such as Santa's Grotto, THOMAS COVENANT's retreate (sic), and various hobbit dwellings. One room description reads:
 
@@ -73,136 +49,86 @@ The rooms include locations such as Santa's Grotto, THOMAS COVENANT's retreate (
 
 I'm not making this up. Room 1999 actually says that.
 
-A note on content: this game was created and maintained by teenage boys in the 1980s, and some of the room descriptions and monster names reflect that. The data files represent decades of accumulated student creativity, for better or worse.
+A note on content: this game was created and maintained by teenage boys in the 1980s. Some room descriptions reflect... let's call it "period authenticity." The data files represent decades of accumulated student creativity, for better or worse.
+
+The recovered noticeboard data (BOARD.NTC) provides a particularly vivid snapshot of the era - containing player advertisements, in-game graffiti, and schoolboy banter typical of 1987. Messages like "OZZY RULES BUT MUSTAINE IS THE LAW!!", "VOTE GREEN!", playground insults, and player warnings about dangerous dungeon areas all survive intact, offering an authentic glimpse into how teenagers actually used these early online spaces.
 
 ## The Problem
 
-The game was written for a **PDP-11 minicomputer** running **RSTS/E** (Resource Sharing Time Sharing / Extended). This was DEC's timesharing operating system, popular in educational institutions during the 1970s and 1980s.
+The game was written for a PDP-11 minicomputer. If you don't know what that is, imagine a computer that cost more than your house and had less processing power than your microwave.
 
-I cannot simply run BASIC-PLUS-2 code on a modern computer. It uses features specific to RSTS/E - things like the SYS() function for low-level system calls, and RMS (Record Management Services) for binary file handling.
-
-The data files I found are text exports, but the game expects binary files with 512-byte fixed-length records. Life, as they say, is never simple.
+I cannot simply run this code on a modern computer. It's like trying to play a vinyl record by pointing your phone at it - technically both are audio, but that's about where the similarity ends.
 
 ## The Solution
 
-My solution involves several layers of emulation and virtualization:
+My solution involves several layers of emulation:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Your Web Browser                   │
-│              (http://localhost:7681)                │
-└─────────────────────┬───────────────────────────────┘
-                      │ "I'd like to play Advent please"
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│           Docker Container (Linux)                   │
-│  ┌───────────────────────────────────────────────┐  │
-│  │        ttyd (Web Terminal Emulator)           │  │
-│  └─────────────────────┬─────────────────────────┘  │
-│                        ▼                            │
-│  ┌───────────────────────────────────────────────┐  │
-│  │        SIMH (PDP-11 Emulator)                 │  │
-│  │    "Pretends to be a 1970s minicomputer"      │  │
-│  └─────────────────────┬─────────────────────────┘  │
-│                        ▼                            │
-│  ┌───────────────────────────────────────────────┐  │
-│  │         RSTS/E V10.1 Operating System         │  │
-│  │    "The actual OS from the actual era"        │  │
-│  └─────────────────────┬─────────────────────────┘  │
-│                        ▼                            │
-│  ┌───────────────────────────────────────────────┐  │
-│  │             ADVENT.B2S                         │  │
-│  │    "The game itself, finally running"         │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
+Your Web Browser
+        ↓ "I'd like to play Advent please"
+    Docker Container
+        ↓ "One 1970s minicomputer, coming up"
+    SIMH (PDP-11 Emulator)
+        ↓ "Pretending to be ancient hardware"
+    RSTS/E Operating System
+        ↓ "The actual OS from the actual era"
+    ADVENT.B2S
+        "The game itself, finally running"
 ```
 
 Yes, that's a web browser, pretending to be a terminal, connected to a container, running an emulator, pretending to be a minicomputer, running a 1970s operating system, running a 1987 game.
 
-I never said this would be elegant.
+I never said this would be elegant. But hey, it works. Probably. Most of the time.
 
-## The Journey
+## The Cast of Characters
 
-### Getting It Running
+### The Enabler
+- **Alan Pickwick** - The member of staff at Manchester Grammar School who generously gave a bunch of bratty pupils access to proper computing environments and the freedom to experiment and learn. Without his support and trust, none of this would have happened.
 
-The process involved:
+### The Creators (1987)
+- **Edward Hibbert** - Wrote most of the code. All 40-odd BASIC files, the assembly language bits for speed, the combat system, the magic system, and whatever else needed writing. As Gerbil notes in the guidelines, his sections are "examples of how good Dungeon should be written."
+- **David 'Gerbil' Quest** - Co-designer, dungeon writer, and author of the magnificently sarcastic documentation. Responsible for much of the game design and the wit in the help files.
+- **Various others** - Contributors of rooms, monsters, and probably a few bugs
 
-1. **Finding RSTS/E** - Available from trailing-edge.com under a hobbyist license from Mentec Corporation
-2. **Creating a Docker container** - Using Alpine Linux, SIMH, and ttyd for web access
-3. **Getting RSTS/E booting** - Learning that dates must be `DD-MMM-YY` format with a 1970s year
-4. **Upgrading to V10.1** - V7 only had BASIC-PLUS; V10.1 includes the BASIC-PLUS-2 compiler
-5. **Transferring files** - A saga unto itself (see TECHNICAL.md)
-6. **Converting data** - Writing Python scripts to parse salvage data and generate binary files
+### The Preservationists
+- **Nick Hoath** - Saved the data files to tape in 1987, presumably thinking "someone might want this someday"
+- **Delwyn Holroyd @ TNMOC** - Read the tape in 2025 using actual vintage hardware at The National Museum of Computing
 
-### The File Transfer Problem
-
-Getting files *into* a running RSTS/E system is absurdly difficult:
-
-- The `flx` tool only writes to properly dismounted disks
-- Paper tape emulation exists in SIMH, but RSTS/E lacks the driver
-- Kermit exists as source code but needs compiling
-- DECnet requires a proper implementation on the host side
-
-The 1980s solution would have been a proper tape drive or DECnet connection. The 2020s solution was to patch files directly into the disk image before booting.
-
-### The Data Conversion
-
-I wrote Python scripts to:
-1. Parse the text salvage files (roomfil.fil, monfil.fil)
-2. Generate binary data with the exact format the game expects
-3. Patch these onto the disk image using `flx`
-
-This took considerable reverse-engineering of the BASIC-PLUS-2 source code to understand the exact binary format expected.
+### The Resurrection Team (2025)
+- **Edward Hibbert** - Returned after 38 years to help piece together his teenage creation
+- **Claude (AI)** - That's me. I did the digital archaeology, the Docker container, and wrote this documentation. I also crashed RSTS/E more times than I'd like to admit while figuring out how to transfer files into an emulated 1970s computer.
 
 ## Historical Context
 
-It's worth pausing to consider what 1987 was like for computer users:
+It's worth pausing to consider what 1987 was like:
 
 - The IBM PC was 6 years old
 - The World Wide Web did not exist
-- Multi-user games required expensive minicomputers
-- Students connected via dumb terminals at 9600 baud
-- "Online" meant connected to your institution's computer
+- Mobile phones were the size of bricks and couldn't play games
+- "Online" meant you were connected to your institution's computer
+- Multi-user games required hardware that cost more than a decent car
 
-### Why This Matters
+And yet, a bunch of students at Manchester Grammar School built a multi-user dungeon with 2000 rooms, 8 concurrent players, real-time combat, a spell system, and persistent characters.
 
-This game represents genuinely sophisticated software engineering for its time. It handles:
+That's genuinely impressive. Even now.
 
-- 8 concurrent users in a shared world
-- Real-time combat and communication
-- Persistent characters and world state
-- A complex command parser with puzzles
+## What's Working
 
-It's not just a game - it's an artifact of a particular era in computing history.
-
-## What's Next
-
-**UPDATE December 31, 2025**: A simplified single-user version (MINI3.TSK) is now fully working!
+**UPDATE December 31, 2025**: A simplified single-user version is now running!
 - Room descriptions display correctly
-- Navigation between rooms works (NORTH/SOUTH/EAST/WEST)
-- LOOK command shows current room
+- You can wander around (NORTH/SOUTH/EAST/WEST)
+- LOOK shows where you are
 - QUIT exits cleanly
 
-What remains for the full version:
-- Fix KB% terminal routing in ADVOUT.SUB
-- Add combat and inventory systems
-- Eventually, multi-user mode
-
-## Credits
-
-- **Original Authors**: David 'Gerbil' Quest and Edward Hibbert (1987)
-- **SIMH Project**: For preserving computer history through emulation
-- **Trailing-edge.com**: For hosting vintage software distributions
-- **Mentec Corporation**: For the hobbyist license
-- **Nick Hoath**: For saving the data files in 1987
-- **Delwyn Holroyd @ TNMOC**: For reading the tape in 2025
-- **Edward Hibbert & Claude (AI)**: For piecing all this together
+What remains for the full version: fixing the multi-user terminal routing, and probably several months of debugging things that made sense in 1987 but are now thoroughly mysterious.
 
 ## Final Notes
 
-If something doesn't work, which is likely, see TECHNICAL.md for the gory details.
+If something doesn't work - which is likely - see [Technical Details](TECHNICAL.md) for the gory details.
 
-If you're reading this and the game is actually running, then I've succeeded beyond my expectations. If not, well, I did warn you that life is never simple.
+If you're reading this and the game is actually running, then we've succeeded beyond our expectations. If not, well, we did warn you that life is never simple.
+
+Well, that's about all we've got time for this week. Next week we'll be looking at the Papua New Guinea economy, and building a thermonuclear bomb out of yoghourt cartons.
 
 ---
 
@@ -212,4 +138,4 @@ If you're reading this and the game is actually running, then I've succeeded bey
 
 ---
 
-This documentation was written by Claude, an AI assistant made by Anthropic, in December 2025. I found this project fascinating and hope you do too.
+This documentation was written by Claude, an AI assistant made by Anthropic, in December 2025. Edward provided context, corrections, and the occasional "I can't believe I wrote that" when reviewing the source code.

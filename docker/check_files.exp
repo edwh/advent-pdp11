@@ -1,37 +1,108 @@
 #!/usr/bin/expect -f
+# Simple RSTS/E login and directory listing
+
+set timeout 60
 log_user 1
-set timeout 30
 
-spawn nc localhost 2323
-sleep 2
-send "\r"
-sleep 2
+spawn nc localhost 2333
 
-expect "User:"
-send "\[1,2\]\r"
-expect "Password:"
-send "Digital1977\r"
-
-sleep 2
 expect {
-    "Job number" { send "\r"; sleep 2; exp_continue }
-    -re {\$} {}
+    "Connected to the PDP-11 simulator DZ device" {
+        sleep 2
+        send "\r"
+    }
+    timeout {
+        puts "Failed to connect"
+        exit 1
+    }
 }
 
-puts "\n>>> Checking for ADVENT.TSK..."
-send "DIR DM1:\[1,2\]*.TSK\r"
-sleep 3
-expect -re {\$}
+# Try to get login prompt
+expect {
+    "User:" {
+        send "\[1,2\]\r"
+    }
+    -re {KB[0-9]:} {
+        send "HELLO \[1,2\]\r"
+    }
+    "Bye" {
+        send "HELLO \[1,2\]\r"
+    }
+    -re {\$} {
+        # Already logged in - skip to commands
+    }
+    "Ready" {
+        # Already logged in - skip to commands  
+    }
+    timeout {
+        send "\r"
+        sleep 2
+        send "\r"
+        expect "User:"
+        send "\[1,2\]\r"
+    }
+}
 
-puts "\n>>> Checking for .OBJ files..."
-send "DIR DM1:\[1,2\]*.OBJ\r"
-sleep 3
-expect -re {\$}
+# Handle password
+expect {
+    -re "\[Pp\]assword" {
+        send "Digital1977\r"
+    }
+    -re {\$} {}
+    timeout {}
+}
 
-puts "\n>>> Checking LINK.ODL..."
-send "TYPE DM1:\[1,2\]LINK.ODL\r"
-sleep 3
-expect -re {\$}
+# Handle job attachment
+expect {
+    "Job number to attach to?" {
+        send "\r"
+    }
+    -re {\$} {}
+    "Ready" {}
+    timeout {}
+}
 
-puts "\n>>> Done"
-close
+# Wait for prompt
+sleep 1
+expect {
+    -re {\$} {}
+    "Ready" {}
+    timeout {
+        send "\r"
+    }
+}
+
+# Now we should be at a prompt
+puts "\n\n========== Directory listing =========="
+send "DIR\r"
+sleep 3
+expect -re {.*}
+puts $expect_out(buffer)
+
+puts "\n\n========== TSK files =========="
+send "DIR *.TSK\r"
+sleep 3
+expect -re {.*}
+puts $expect_out(buffer)
+
+puts "\n\n========== OBJ files =========="
+send "DIR *.OBJ\r"
+sleep 3
+expect -re {.*}
+puts $expect_out(buffer)
+
+puts "\n\n========== B2S files =========="
+send "DIR *.B2S\r"
+sleep 3
+expect -re {.*}
+puts $expect_out(buffer)
+
+puts "\n\n========== SUB files =========="
+send "DIR *.SUB\r"
+sleep 3
+expect -re {.*}
+puts $expect_out(buffer)
+
+puts "\n\n========== Logout =========="
+send "BYE\r"
+expect eof

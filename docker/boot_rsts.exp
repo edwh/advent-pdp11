@@ -1,0 +1,83 @@
+#!/usr/bin/expect -f
+# Boot RSTS/E by answering console prompts
+# This script connects to the SIMH console and handles the startup sequence
+
+set timeout 120
+log_user 1
+
+puts "Connecting to RSTS/E console..."
+
+# Wait a moment for SIMH to be ready
+sleep 2
+
+# Connect to SIMH console using telnet
+spawn telnet localhost 2322
+
+# Wait for connection
+expect {
+    "Connected" {
+        puts "Connected to SIMH console"
+    }
+    "Connection refused" {
+        puts "Connection refused"
+        exit 1
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+# Send initial carriage return
+sleep 1
+send "\r"
+
+# Handle boot prompts with pattern matching
+set done 0
+while {!$done} {
+    expect {
+        "Today's date?" {
+            puts "Setting date..."
+            send "1-JAN-92\r"
+        }
+
+        "Current time?" {
+            puts "Setting time..."
+            send "12:00\r"
+        }
+
+        "Start timesharing?" {
+            puts "Starting timesharing..."
+            send "Y\r"
+        }
+
+        "Option:" {
+            puts "Boot complete!"
+            send "\r"
+            set done 1
+        }
+
+        "RSTS V" {
+            puts "RSTS/E is booting..."
+        }
+
+        "sim>" {
+            # SIMH prompt means something went wrong
+            puts "Got SIMH prompt unexpectedly"
+            exit 1
+        }
+
+        timeout {
+            puts "Timeout waiting for prompts"
+            exit 1
+        }
+    }
+}
+
+# Give it a moment to finish
+sleep 2
+puts "RSTS/E boot sequence complete!"
+
+# Close the connection cleanly
+close
+exit 0
