@@ -83,6 +83,7 @@ COPY docker/game_connect.exp /opt/advent/
 COPY docker/game_session.sh /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
 COPY docker/verify_ready.exp /opt/advent/
+COPY docker/restart_service.sh /opt/advent/
 
 # Copy web interface
 COPY docker/web/ /opt/advent/web/

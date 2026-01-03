@@ -65,6 +65,10 @@ if command -v nginx &> /dev/null; then
     echo "Web interface started on port 8080 (serving boot status)"
 fi
 
+# Start the restart service (listens on port 8081, kills SIMH when called)
+"$ADVENT_DIR/restart_service.sh" &
+echo "Restart service started on port 8081"
+
 # Start SIMH in background
 echo "Starting SIMH emulator..."
 echo "  Console: telnet localhost 2322"
@@ -200,5 +204,37 @@ echo ""
 # Note: nginx started at beginning of boot for health checks
 # Note: ttyd started before marking system ready
 
-# Keep running - wait for SIMH to exit
-wait $SIMH_PID
+# Run SIMH in a loop - if it exits (or is killed for restart), restart it
+while true; do
+    echo ""
+    echo "SIMH exited. Restarting in 3 seconds..."
+    echo '{"status": "booting", "message": "Restarting PDP-11..."}' > /tmp/boot_status.json
+    rm -f /tmp/login_status.json
+    sleep 3
+
+    echo "Starting SIMH emulator..."
+    /usr/local/bin/pdp11 "$ADVENT_DIR/pdp11.ini" &
+    SIMH_PID=$!
+
+    # Wait for SIMH to be ready
+    sleep 5
+
+    # Wait for RSTS/E to boot
+    echo "Waiting for RSTS/E to boot..."
+    echo '{"status": "booting", "message": "Waiting for RSTS/E..."}' > /tmp/boot_status.json
+
+    MAX_READY_WAIT=300
+    READY_WAIT=0
+    while [ $READY_WAIT -lt $MAX_READY_WAIT ]; do
+        if "$ADVENT_DIR/verify_ready.exp" 2>/dev/null; then
+            echo "RSTS/E is ready!"
+            echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
+            break
+        fi
+        sleep 10
+        READY_WAIT=$((READY_WAIT + 10))
+    done
+
+    # Wait for SIMH to exit
+    wait $SIMH_PID
+done
