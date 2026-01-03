@@ -110,10 +110,26 @@ fi
 # Update boot status - waiting for full initialization
 echo '{"status": "booting", "message": "RSTS/E initializing services..."}' > /tmp/boot_status.json
 
-# Give RSTS/E more time to fully initialize
-# Disk rebuild + startup scripts can take 5+ minutes on first boot
-# This ensures DZ terminals are fully ready for login
-sleep 300
+# Actively verify RSTS/E is ready for terminal logins
+# Instead of a blind wait, we actually try to get a User: prompt
+echo "Verifying RSTS/E terminal readiness..."
+MAX_READY_WAIT=600  # 10 minutes max
+READY_WAIT=0
+while [ $READY_WAIT -lt $MAX_READY_WAIT ]; do
+    if "$ADVENT_DIR/verify_ready.exp" 2>/dev/null; then
+        echo "RSTS/E terminals are ready for login!"
+        break
+    fi
+    echo -n "."
+    sleep 10
+    READY_WAIT=$((READY_WAIT + 10))
+done
+
+if [ $READY_WAIT -ge $MAX_READY_WAIT ]; then
+    echo ""
+    echo "WARNING: RSTS/E may not be fully ready after $MAX_READY_WAIT seconds"
+    echo "Continuing anyway..."
+fi
 
 # Start web terminals BEFORE marking system ready
 # This ensures ttyd is running when users try to connect

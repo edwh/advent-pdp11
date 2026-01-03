@@ -114,13 +114,19 @@ That's genuinely impressive. Even now.
 
 ## What's Working
 
-**UPDATE December 31, 2025**: A simplified single-user version is now running!
+**UPDATE January 2026**: Single-user mode is fully operational!
+
 - Room descriptions display correctly
-- You can wander around (NORTH/SOUTH/EAST/WEST)
-- LOOK shows where you are
+- Full navigation: NORTH/SOUTH/EAST/WEST, UP/DOWN
+- LOOK shows room descriptions with exits
+- GET/TAKE and DROP for objects
+- INVENTORY shows carried items
+- STATUS shows character information
 - QUIT exits cleanly
 
-What remains for the full version: fixing the multi-user terminal routing, and probably several months of debugging things that made sense in 1987 but are now thoroughly mysterious.
+The game runs in a Docker container with a CRT-style web interface that auto-logs into RSTS/E and starts ADVENT. You can play immediately at [advent-mud.fly.dev](https://advent-mud.fly.dev).
+
+What remains for the full version: fixing the multi-user file locking, and probably several months of debugging things that made sense in 1987 but are now thoroughly mysterious.
 
 ## Final Notes
 

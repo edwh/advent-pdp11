@@ -1,6 +1,6 @@
 # ADVENT Function Status
 
-*Last updated: January 2, 2026*
+*Last updated: January 3, 2026*
 
 This table shows the current implementation status of all ADVENT features.
 
@@ -110,9 +110,9 @@ This table shows the current implementation status of all ADVENT features.
 
 ## Known Display Issues
 
-- Prompt shows "> ?" instead of just ">"
-- Exits display shows "^B" control character
-- Text alignment issues in room descriptions
+- Exit display shows "^B" control character after "West"
+- Tab alignment issues in exits display (first Tab stripped)
+- Occasional "?" prompts from CR/LF handling (stty fix deployed)
 
 ## Summary
 

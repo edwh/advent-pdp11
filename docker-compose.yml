@@ -19,7 +19,7 @@ services:
   advent:
     build:
       context: .
-      dockerfile: docker/Dockerfile.new
+      dockerfile: Dockerfile
     container_name: advent-mud
     ports:
       - "8888:8080"   # Web interface (nginx)

@@ -1,0 +1,46 @@
+#!/usr/bin/expect -f
+# Verify RSTS/E is ready for terminal logins
+# Returns 0 if ready, 1 if not
+
+set timeout 10
+log_user 0
+
+# Try to connect to console and get User: prompt
+# Console (port 2322) is more reliable than DZ terminals (port 2323)
+spawn nc localhost 2322
+sleep 2
+send "\r"
+
+expect {
+    "User:" {
+        # Got login prompt - system is ready
+        close
+        exit 0
+    }
+    "Ready" {
+        # Already logged in - system is ready
+        close
+        exit 0
+    }
+    -re {\$} {
+        # DCL prompt - already logged in - system is ready
+        close
+        exit 0
+    }
+    -re {> $} {
+        # Game prompt - already in ADVENT - system is ready
+        close
+        exit 0
+    }
+    "CON-TEL" {
+        # Got SIMH banner - wait for RSTS/E
+        exp_continue
+    }
+    timeout {
+        close
+        exit 1
+    }
+    eof {
+        exit 1
+    }
+}

@@ -23,58 +23,72 @@ catch {file delete $status_file}
 # Initial status - start fresh
 write_status "connect" "Connecting to PDP-11..."
 
-# Connect to RSTS/E terminal via DZ11
-spawn nc localhost 2323
+# Configure terminal: RSTS/E expects CR only, not LF
+# The key issue is that xterm.js sends CR+LF on Enter, but RSTS/E
+# treats LF as a separate empty command, producing "?" prompts
+# Use catch in case stty fails (no controlling terminal in some environments)
+catch {exec stty -icrnl -onlcr}
 
-# DZ multiplexer doesn't send banner until we send something
-# Brief pause then send carriage return to trigger connection
-sleep 1
+# Connect to RSTS/E via console (KB0) - more reliable than DZ terminals
+# The console is special in RSTS/E and always available
+# Note: SIMH sends "Connected to the PDP-11 simulator CON-TEL device"
+spawn nc localhost 2322
+
+# The console banner should arrive immediately
+expect {
+    -re "Connected to the PDP-11 simulator CON-TEL device" {
+        puts "DEBUG: Connected to console (KB0)"
+        write_status "boot" "Connected to PDP-11 console..."
+    }
+    timeout {
+        puts "ERROR: No console banner received - SIMH may not be running"
+        write_status "error" "No response from PDP-11 simulator"
+        exit 1
+    }
+}
+
+# Console may already have User: prompt or OMS messages
+# Wait briefly then send CR to wake up or confirm the login prompt
+sleep 2
 send "\r"
 
-# Wait for DZ connection banner AND the User: prompt together
-# This ensures we don't miss User: due to timing
+# Wait for User: prompt from RSTS/E
+# Note: Console may have OMS broadcast messages - be patient
+set timeout 30
 expect {
-    -re "Connected to the PDP-11 simulator DZ device.*User:" {
+    "User:" {
         write_status "login" "Logging in as \[1,2\]..."
         send "\[1,2\]\r"
     }
-    "Connected to the PDP-11 simulator DZ device" {
-        write_status "boot" "Connected to PDP-11, waiting for RSTS/E..."
-        # Send CR to wake terminal, then wait for User:
-        sleep 1
+    "Ready" {
+        # Already logged in from previous session
+        write_status "game" "Starting ADVENT..."
+        send "RUN ADVENT\r"
+        exp_continue
+    }
+    -re "OMS V" {
+        # OMS broadcast message - wait for it to finish then try again
+        exp_continue
+    }
+    timeout {
+        # Try sending another CR
+        puts "DEBUG: No User: prompt, sending another CR..."
         send "\r"
         expect {
             "User:" {
                 write_status "login" "Logging in..."
                 send "\[1,2\]\r"
             }
-            "Ready" {
-                # Already logged in
-                write_status "game" "Starting ADVENT..."
-                send "RUN ADVENT\r"
-            }
             timeout {
-                send "\r"
-                expect {
-                    "User:" {
-                        write_status "login" "Logging in..."
-                        send "\[1,2\]\r"
-                    }
-                    timeout {
-                        write_status "error" "Timeout waiting for login prompt"
-                        exit 1
-                    }
-                }
+                write_status "error" "RSTS/E not responding to terminal"
+                exit 1
             }
         }
-    }
-    timeout {
-        write_status "error" "Timeout connecting to PDP-11"
-        exit 1
     }
 }
 
 # Wait for password prompt
+set timeout 30
 expect {
     -re "\[Pp\]assword" {
         send "Digital1977\r"
@@ -82,38 +96,47 @@ expect {
     "Ready" {
         # No password needed, continue
     }
+    -re "OMS V" {
+        # Ignore OMS messages
+        exp_continue
+    }
     timeout {
         write_status "error" "Timeout waiting for password"
         exit 1
     }
 }
 
-# Handle job attachment prompt or Ready
+# Handle job attachment prompt, ready prompt, or command prompt
+# The console may show detached jobs, password warnings, etc.
+set timeout 30
 expect {
     "Job number to attach to?" {
         send "\r"
+        exp_continue
+    }
+    -re "Please change it" {
+        # Password warning - ignore and continue
+        exp_continue
+    }
+    -re {\$} {
+        # Got DCL prompt
+        write_status "game" "Starting ADVENT..."
     }
     "Ready" {
+        # Got RSTS ready prompt
+        write_status "game" "Starting ADVENT..."
     }
     -re "Sorry" {
         write_status "error" "Login failed - wrong password"
         exit 1
     }
-    timeout {
-        write_status "error" "Timeout during login"
-        exit 1
-    }
-}
-
-# Wait for command prompt ($ or Ready)
-expect {
-    -re {\$} {
-    }
-    "Ready" {
+    -re "OMS V" {
+        # Ignore OMS messages
+        exp_continue
     }
     timeout {
-        write_status "error" "Timeout waiting for prompt"
-        exit 1
+        # If timeout, assume we're at prompt and try anyway
+        write_status "game" "Starting ADVENT..."
     }
 }
 
