@@ -126,6 +126,24 @@
         </div>
     </div>
 
+    <!-- Reboot confirmation modal -->
+    <div id="reboot-modal" class="modal hidden">
+        <div class="modal-content reboot-modal-content">
+            <div class="modal-header">
+                <h2>Reboot PDP-11?</h2>
+            </div>
+            <div class="modal-body reboot-body">
+                <p>This will restart the RSTS/E operating system.</p>
+                <p>The reboot takes approximately <strong>2 minutes</strong>.</p>
+                <p class="reboot-warning">Any unsaved game progress will be lost.</p>
+                <div class="reboot-buttons">
+                    <button class="reboot-cancel" onclick="closeRebootModal()">Cancel</button>
+                    <button class="reboot-confirm" onclick="confirmReboot()">Reboot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="terminal.js"></script>
 </body>

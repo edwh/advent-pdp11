@@ -424,20 +424,30 @@
     // SESSION RESTART
     // ============================================
 
+    // Reboot modal elements
+    const rebootModal = document.getElementById('reboot-modal');
+
     window.restartSession = function() {
-        // Confirm restart
-        if (!confirm('Restart the game session? This will disconnect and reconnect.')) {
-            return;
-        }
+        // Show the reboot confirmation modal
+        rebootModal?.classList.remove('hidden');
+    };
+
+    window.closeRebootModal = function() {
+        rebootModal?.classList.add('hidden');
+    };
+
+    window.confirmReboot = function() {
+        // Close the modal
+        rebootModal?.classList.add('hidden');
 
         // Show restarting message
         const overlayTitle = connectionOverlay?.querySelector('h2');
         if (overlayTitle) {
-            overlayTitle.textContent = 'Restarting...';
+            overlayTitle.textContent = 'Rebooting PDP-11...';
             overlayTitle.style.color = '#ffaa00';
         }
         if (waitMessage) {
-            waitMessage.textContent = 'Reconnecting to PDP-11...';
+            waitMessage.textContent = 'Killing SIMH and rebooting RSTS/E...';
             waitMessage.style.color = '#ffaa00';
         }
 
@@ -460,15 +470,31 @@
             terminalFrame.src = 'about:blank';
         }
 
-        // Short delay then reload the terminal
+        // Call the restart API to kill SIMH
+        fetch('/api/restart')
+            .then(response => {
+                console.log('Restart API called, response:', response.status);
+            })
+            .catch(err => {
+                console.log('Restart API error (expected if connection drops):', err);
+            });
+
+        // Wait for SIMH to restart and RSTS/E to boot, then start polling
         setTimeout(function() {
-            // Reload the terminal iframe to get a fresh session
-            if (terminalFrame) {
-                terminalFrame.src = '/terminal/';
-            }
-            // Start polling for status
-            startPolling();
-        }, 1000);
+            startBootPolling();
+        }, 3000);
     };
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && rebootModal && !rebootModal.classList.contains('hidden')) {
+            closeRebootModal();
+        }
+    });
+
+    // Close modal when clicking outside
+    rebootModal?.addEventListener('click', function(e) {
+        if (e.target === rebootModal) closeRebootModal();
+    });
 
 })();

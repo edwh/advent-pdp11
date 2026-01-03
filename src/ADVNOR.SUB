@@ -428,8 +428,8 @@
 330	! EXIT &
 	&
 	&
-	CALL ADVOUT(KB%(USER%),CRLF$+'Type ^Z to exit.') &
-\	RETURN &
+	CALL ADVBYE &
+\	STOP &
 
 11000	MESS$="You can't carry any more." &
 \	GOTO 11100 &
