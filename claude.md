@@ -142,3 +142,66 @@ source /home/edward/.env
 | Port 8080 in use | Stop other containers: `docker ps` then `docker stop <id>` |
 | SIMH port conflicts | Container restarted while old sockets still bound. Wait 30s or restart Docker |
 | "Address already in use" | Kill container, wait for port release, restart |
+
+## Tape Drive File Transfer (January 2026) - WORKING!
+
+### BREAKTHROUGH: Tape Transfer Works!
+
+**Date: January 4, 2026**
+
+After extensive investigation, tape-based file transfer is now **fully working**:
+
+- **Transfer speed: ~18 KB/sec** (140x faster than TECO's 130 bytes/sec!)
+- **90KB transferred in 5 seconds**
+- **The 1MB ADVENT.DTA file would take ~55 seconds** instead of 2+ hours via TECO
+
+### How It Works
+
+1. Create a tape image with DOS-11 format headers using `scripts/create_tape.py`
+2. Attach the tape in SIMH via `attach ts /opt/advent/tapes/transfer.tap`
+3. In RSTS/E: `MOUNT MS:` then `COPY MS:filename.ext destination`
+
+**Critical Discovery**: You must specify the exact filename when copying. Using `DIR MS:` first corrupts the tape position and causes "Fatal system I/O failure" on subsequent operations.
+
+### Usage
+
+```bash
+# Create a tape from files
+python3 scripts/create_tape.py create output.tap file1.dat file2.bas
+
+# Include in Docker build
+cp output.tap build/tapes/transfer.tap
+docker build -f Dockerfile -t advent-mud .
+
+# In RSTS/E after boot:
+$ MOUNT MS:
+Density is 1600
+Tape is in DOS format
+$ COPY MS:FILE1.DAT FILE1.DAT
+[File MS:[1,2]FILE1.DAT copied to [1,2]FILE1.DAT]
+```
+
+### Technical Details
+
+DOS-11 Tape Header (14 bytes = 7 words):
+```
+Word 0-1: RAD50 filename chars 1-6
+Word 2:   RAD50 extension
+Word 3:   UIC as (group << 8) | user
+Word 4:   Protection code (0o233 = 155)
+Word 5:   Date ((year-1970)*1000 + day_of_year)
+Word 6:   RAD50 filename chars 7-9 (optional)
+```
+
+SIMH tape format:
+- 4-byte record length (little-endian)
+- Data (padded to even bytes)
+- 4-byte record length (same)
+- Tape mark = 0x00000000
+- End of medium = 0xFFFFFFFF
+
+### Files Created
+- `scripts/create_tape.py` - Creates SIMH tape images with DOS-11 format
+- `build/tapes/transfer.tap` - Tape image included in container
+
+Reference: https://github.com/andreax79/xferx (xferx/pdp11/dos11magtapefs.py)

@@ -55,7 +55,7 @@ COPY --from=simh-builder /src/simh/BIN/pdp11 /usr/local/bin/pdp11
 
 # Create directories
 WORKDIR /opt/advent
-RUN mkdir -p disks scripts data src web
+RUN mkdir -p disks scripts data src web tapes
 
 # Copy RSTS/E disk images with ADVENT pre-built
 # Use base-os disks + SKIP_SETUP=0 if you want to build from source
@@ -65,6 +65,9 @@ COPY build/disks/rsts1.dsk /opt/advent/disks/rsts1.dsk
 
 # Copy data files for building from source
 COPY build/data/ /opt/advent/data/
+
+# Copy tape images for file transfer
+COPY build/tapes/ /opt/advent/tapes/
 
 # Copy source files for building from source
 COPY src/*.SUB src/*.B2S /opt/advent/src/

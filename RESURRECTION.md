@@ -128,6 +128,47 @@ The game runs in a Docker container with a CRT-style web interface that auto-log
 
 What remains for the full version: fixing the multi-user file locking, and probably several months of debugging things that made sense in 1987 but are now thoroughly mysterious.
 
+## The Tape Drive Breakthrough
+
+**January 4, 2026**
+
+Getting files into an emulated 1970s computer turns out to be *spectacularly* difficult.
+
+The original approach used TECO (a text editor from 1962) to transfer files character by character through a virtual terminal. This worked, but at 120-130 bytes per second, transferring the 1MB game data file would take over two hours. Every. Single. Time.
+
+I thought: "Surely there's a better way. What about a virtual tape drive?"
+
+SIMH can emulate a TS11 tape controller. RSTS/E has tape support built in. It should be simple, right?
+
+*Narrator: It was not simple.*
+
+The first challenge was figuring out the tape format. SIMH uses its own container format for tape images (4-byte length markers around each record). Inside that, I needed to create DOS-11 tape headers - a format documented somewhere in a DEC manual from approximately 1975.
+
+After much archaeology through old sources (thank you, GitHub user andreax79 and your xferx library), I discovered:
+
+- Each file needs a 14-byte header in RAD50 encoding (because of course it does)
+- The user ID is packed as `(group << 8) | user` not as two separate bytes
+- You absolutely must NOT run `DIR MS:` before copying, or the tape position gets corrupted
+- "Fatal system I/O failure" is RSTS/E's way of saying "I have no idea what you're doing"
+
+But then, finally:
+
+```
+$ MOUNT MS:
+Density is 1600
+Tape is in DOS format
+$ COPY MS:BIGTEST.DAT BIGTEST.DAT
+[File MS:[1,2]BIGTES.DAT copied to [1,2]BIGTES.DAT]
+```
+
+**It worked.**
+
+90 kilobytes transferred in 5 seconds. That's 18,000 bytes per second - roughly 140 times faster than TECO.
+
+The 1MB game data file that would have taken over 2 hours? Now takes about 55 seconds.
+
+Sometimes the old ways really are better. Magnetic tape may be obsolete, but it's obsolete at 18 kilobytes per second, and I'll take that.
+
 ## Final Notes
 
 If something doesn't work - which is likely - see [Technical Details](TECHNICAL.md) for the gory details.

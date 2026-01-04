@@ -10,9 +10,10 @@
 	SPEC$(10%)=6%,MON.ROOM%(10%),MON.XP%(10%),RUN.ACC$=9%,MMM$=128%, &
 	BLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%)
 
-! Single-user mode: strip control code and print directly
+! Single-user mode: convert Tab to spaces, strip other control codes
 15	IF LEN(MESS$)>0% THEN &
-	IF ASC(MESS$)<32% THEN MESS$=RIGHT(MESS$,2%) &
+	IF ASC(MESS$)=9% THEN MESS$="    "+RIGHT(MESS$,2%) &
+\	IF ASC(MESS$)<32% THEN MESS$=RIGHT(MESS$,2%) &
 \	PRINT MESS$ &
 \	SUBEXIT
 
