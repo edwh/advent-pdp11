@@ -601,6 +601,38 @@ Looking for a clean, bootable RSTS/E V10.1 disk image:
 3. If successful, migrate ADVENT source and build there
 4. Update Dockerfile to use RA72 instead of RK07
 
+### BOOT TEST SUCCESSFUL (January 5, 2026)
+
+**Result: RA72 disk boots successfully!**
+
+- No swap file errors (unlike RK07 images)
+- RSTS/E V10.1-L starts cleanly
+- System startup completes: "RSTS/E is on the air..."
+- All services start normally
+
+**Login Credentials:**
+- User: `1,2`
+- Password: `SYSTEM`
+
+(Password found via [SIMH mailing list archives](https://simh.trailing-edge.narkive.com/9suYvkWD/rsts-e-default-password))
+
+**This is the new clean starting point for ADVENT development.**
+
+---
+
+## Docker Images
+
+| Image Name | Dockerfile | Purpose | Disk Type | Status |
+|------------|------------|---------|-----------|--------|
+| advent-mud | Dockerfile | Main production image | RK07 (27MB) | Issues with swap corruption |
+| advent-ra72-test | Dockerfile.ra72-test | Test RA72 boot | RA72 (1GB) | **WORKING** - boots clean, login works |
+
+**To build and run RA72 test:**
+```bash
+docker build -f Dockerfile.ra72-test -t advent-ra72-test .
+docker run -it --name advent-ra72-test -p 2322:2322 -p 2323:2323 advent-ra72-test
+```
+
 ---
 
 ### Files to Modify
