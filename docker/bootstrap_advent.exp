@@ -1,0 +1,804 @@
+#!/usr/bin/expect -f
+#
+# bootstrap_advent.exp - Build ADVENT from source via tape transfer
+#
+# Robust login with state tracking
+#
+
+set timeout 120
+log_user 1
+
+# File lists - must match what's on the tape IN ORDER
+# NOTE: ADVENT.ODL removed - it will be created in-place with RT11 format
+# (Tape transfer creates RSX format which TKB rejects as "illegal format")
+set source_files {
+    ADVENT.B2S
+    ADVINI.SUB
+    ADVOUT.SUB
+    ADVNOR.SUB
+    ADVCMD.SUB
+    ADVODD.SUB
+    ADVMSG.SUB
+    ADVBYE.SUB
+    ADVSHT.SUB
+    ADVNPC.SUB
+    ADVPUZ.SUB
+    ADVDSP.SUB
+    ADVFND.SUB
+    ADVTDY.SUB
+}
+
+set data_files {
+    ADVENT.DTA
+    ADVENT.MON
+    ADVENT.CHR
+    BOARD.NTC
+}
+
+# Connect to console using nc
+spawn nc localhost 2322
+
+# Wait for CON-TEL banner (connection established)
+set timeout 30
+expect {
+    "CON-TEL" {
+        puts "\nConnected to PDP-11 console"
+    }
+    timeout {
+        puts "ERROR: No console connection"
+        exit 1
+    }
+}
+
+# Wait for boot to complete - handle various states
+# The system might already be booted by the time we connect
+set timeout 180
+expect {
+    "on the air" {
+        puts "RSTS/E boot complete (saw on the air)"
+    }
+    "startup is complete" {
+        puts "RSTS/E boot complete (saw startup complete)"
+    }
+    "User:" {
+        puts "RSTS/E already booted (saw User: prompt)"
+    }
+    -re {\n\$ } {
+        puts "RSTS/E already booted (saw command prompt)"
+    }
+    -re "OMS V" {
+        # OMS messages during boot - keep waiting for User: or $
+        exp_continue
+    }
+    timeout {
+        puts "ERROR: Timeout waiting for RSTS/E boot"
+        exit 1
+    }
+}
+
+# Now do login - event-driven state machine
+# Consume any remaining startup messages, then login
+puts "Starting login sequence..."
+
+set timeout 60
+set login_state "init"
+
+# Main state machine - respond to what we see
+while {$login_state ne "done"} {
+    expect {
+        "User:" {
+            puts "  -> User: prompt, sending login"
+            send "\[1,2\]\r"
+            set login_state "sent_user"
+        }
+        -re "Password:" {
+            # Only respond to actual password prompts (ends with colon)
+            if {$login_state eq "sent_user"} {
+                puts "  -> Password: prompt, sending password"
+                send "Digital1977\r"
+                set login_state "sent_pass"
+            } else {
+                # "Your password has not been changed" warning - ignore
+                exp_continue
+            }
+        }
+        "Job number to attach to?" {
+            puts "  -> Job attach prompt, skipping"
+            send "\r"
+        }
+        "Please change it" {
+            # Password change warning - ignore
+            exp_continue
+        }
+        -re {Ready\r?\n} {
+            if {$login_state eq "init"} {
+                puts "  -> In BASIC, exiting to DCL"
+                send "BYE\r"
+            } else {
+                puts "  -> Got Ready prompt"
+                set login_state "done"
+            }
+        }
+        -re {\n\$ } {
+            puts "  -> Got command prompt"
+            set login_state "done"
+        }
+        -re "OMS V" {
+            # System broadcast message - keep waiting
+            exp_continue
+        }
+        -re "Message \[0-9\]+" {
+            # Message header - keep waiting
+            exp_continue
+        }
+        -re "RSTS V" {
+            # Version banner - keep waiting
+            exp_continue
+        }
+        timeout {
+            if {$login_state eq "init"} {
+                puts "  -> No prompt, sending CR"
+                send "\r"
+            } else {
+                puts "ERROR: Login timeout in state: $login_state"
+                exit 1
+            }
+        }
+    }
+}
+
+puts "Login complete"
+
+# Now we should be at a $ prompt
+puts "\n=========================================="
+puts "ADVENT Bootstrap - Building from Source"
+puts "==========================================\n"
+
+# IMPORTANT: First find and examine system ODL files to understand correct format
+puts "\n>>> FINDING SYSTEM ODL FILES..."
+send "DIR SY:\[*,*\]*.ODL\r"
+set timeout 60
+expect -re {\$}
+
+puts "\n>>> EXAMINING FOUND ODL FILES..."
+
+# FEDTKB.ODL is in [0,200]
+puts "\n--- FEDTKB.ODL content (system overlay) ---"
+send "TYPE SY:\[0,200\]FEDTKB.ODL\r"
+set timeout 60
+expect -re {\$}
+
+# BP2IC2.ODL is for BASIC-PLUS-2 - might be relevant
+puts "\n--- BP2IC2.ODL content (BASIC-PLUS-2) ---"
+send "TYPE SY:\[1,1\]BP2IC2.ODL\r"
+set timeout 60
+expect -re {\$}
+
+# Show file attributes
+puts "\n--- File attributes ---"
+send "DIR/FULL SY:\[0,200\]FEDTKB.ODL\r"
+set timeout 60
+expect -re {\$}
+
+send "DIR/FULL SY:\[1,1\]BP2IC2.ODL\r"
+set timeout 60
+expect -re {\$}
+
+# Compare with our ADVENT.ODL
+puts "\n--- Our ADVENT.ODL for comparison ---"
+send "TYPE SY:\[1,2\]ADVENT.ODL\r"
+set timeout 60
+expect -re {\$}
+
+send "DIR/FULL SY:\[1,2\]ADVENT.ODL\r"
+set timeout 60
+expect -re {\$}
+
+puts "\n--- End of ODL examination ---\n"
+
+# Mount tape
+puts ">>> Mounting tape drive..."
+send "MOUNT MS:\r"
+set timeout 30
+expect {
+    "DOS format" {
+        puts "    Tape mounted (DOS format)"
+    }
+    "Device offline" {
+        puts "ERROR: Tape not attached"
+        exit 1
+    }
+    -re {\$} { }
+    timeout {
+        puts "ERROR: Tape mount timeout"
+        exit 1
+    }
+}
+expect -re {\$}
+
+# Copy source files from tape to SY:[1,2] (system disk, not default DM1:)
+puts "\n>>> Copying source files from tape to SY:..."
+foreach filename $source_files {
+    puts "    $filename"
+    send "COPY MS:$filename SY:$filename\r"
+    set timeout 60
+    expect {
+        "OK to replace" {
+            # Base disk may have existing files - replace them
+            send "Y\r"
+            exp_continue
+        }
+        "copied to" {
+            puts "      copied"
+        }
+        "Fatal" {
+            puts "ERROR: Failed to copy $filename"
+            exit 1
+        }
+        timeout {
+            puts "ERROR: Timeout copying $filename"
+            exit 1
+        }
+    }
+    expect -re {\$}
+}
+
+# Skip ADVENTD.ODL on tape - we create ODL in-place with RT11 format instead
+# (Tape-transferred ODL has RSX format which TKB rejects)
+# Note: Must still read past this file to maintain tape sequence
+puts "\n>>> Skipping ADVENTD.ODL from tape (will create in-place)..."
+send "COPY MS:ADVENTD.ODL SY:SKIP.TMP\r"
+set timeout 60
+expect {
+    "OK to replace" {
+        send "Y\r"
+        exp_continue
+    }
+    "copied to" {
+        puts "    Skipped (copied to temp)"
+    }
+    "Fatal" {
+        # File might not exist on tape - that's OK
+        puts "    Note: ADVENTD.ODL not on tape (OK)"
+    }
+    timeout {
+        puts "WARNING: Timeout reading ADVENTD.ODL"
+    }
+}
+expect -re {\$}
+
+# Delete the temp file
+send "DELETE SY:SKIP.TMP\r"
+set timeout 10
+expect -re {\$}
+
+# Copy data files to game disk (DM1:)
+puts "\n>>> Copying data files from tape..."
+foreach filename $data_files {
+    puts "    $filename -> DM1:"
+    send "COPY MS:$filename DM1:$filename\r"
+    set timeout 120
+    expect {
+        "OK to replace" {
+            send "Y\r"
+            exp_continue
+        }
+        "copied to" {
+            puts "      copied"
+        }
+        "Fatal" {
+            puts "ERROR: Failed to copy $filename"
+            exit 1
+        }
+        timeout {
+            puts "ERROR: Timeout copying $filename"
+            exit 1
+        }
+    }
+    expect -re {\$}
+}
+
+puts "\n>>> Verifying files on SY:..."
+send "DIR SY:*.B2S,SY:*.SUB\r"
+expect -re {\$}
+
+# Install BP2RES library (needed for compilation)
+puts "\n>>> Installing BP2 runtime library..."
+send "INSTALL/LIBRARY SY:\[0,1\]BP2RES.LIB\r"
+set timeout 30
+expect -re {\$}
+
+# Create ODL file with RT11 format
+# CRITICAL: Tape transfer creates RSX format which TKB rejects.
+# Solution: Copy existing RT11-format ODL file, then overwrite with correct content.
+puts "\n>>> Creating ADVENT.ODL with RT11 format..."
+
+# Step 1: Copy FEDTKB.ODL to get RT11 file format attribute
+send "COPY SY:\[0,200\]FEDTKB.ODL SY:\[1,2\]ADVENT.ODL\r"
+set timeout 60
+expect {
+    "OK to replace" {
+        send "Y\r"
+        exp_continue
+    }
+    "copied to" {
+        puts "    Created RT11-format file from FEDTKB.ODL"
+    }
+    -re {\$} { }
+    timeout {
+        puts "WARNING: timeout copying FEDTKB.ODL"
+    }
+}
+expect -re {\$}
+
+# Step 2: Delete and recreate with correct ADVENT overlay content
+# Using CREATE to write the overlay descriptor
+puts "\n>>> Writing ADVENT overlay content..."
+send "DELETE SY:ADVENT.ODL\r"
+set timeout 30
+expect -re {\$}
+
+send "CREATE SY:ADVENT.ODL\r"
+set timeout 30
+expect {
+    "Enter text" { }
+    -re {\$} { }
+}
+
+# Write ODL content line by line
+send ".ROOT ADVENT-LIBR-*(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\r"
+sleep 1
+send ".NAME ADVENT\r"
+sleep 1
+send "INI: .FCTR SY:\[1,2\]ADVINI\r"
+sleep 1
+send "OUT: .FCTR SY:\[1,2\]ADVOUT\r"
+sleep 1
+send "NOR: .FCTR SY:\[1,2\]ADVNOR\r"
+sleep 1
+send "CMD: .FCTR SY:\[1,2\]ADVCMD\r"
+sleep 1
+send "ODD: .FCTR SY:\[1,2\]ADVODD\r"
+sleep 1
+send "MSG: .FCTR SY:\[1,2\]ADVMSG\r"
+sleep 1
+send "BYE: .FCTR SY:\[1,2\]ADVBYE\r"
+sleep 1
+send "SHT: .FCTR SY:\[1,2\]ADVSHT\r"
+sleep 1
+send "NPC: .FCTR SY:\[1,2\]ADVNPC\r"
+sleep 1
+send "PUZ: .FCTR SY:\[1,2\]ADVPUZ\r"
+sleep 1
+send "DSP: .FCTR SY:\[1,2\]ADVDSP\r"
+sleep 1
+send "FND: .FCTR SY:\[1,2\]ADVFND\r"
+sleep 1
+send "TDY: .FCTR SY:\[1,2\]ADVTDY\r"
+sleep 1
+send "LIBR: .FCTR SY:\[1,1\]BP2OTS/LB\r"
+sleep 1
+send ".END\r"
+sleep 1
+send "\032"
+sleep 3
+expect -re {\$}
+
+# Verify ODL file was created and check its format
+puts "\n>>> Verifying ADVENT.ODL..."
+send "DIR/FULL SY:ADVENT.ODL\r"
+set timeout 30
+expect -re {\$}
+
+send "TYPE SY:ADVENT.ODL\r"
+set timeout 30
+expect -re {\$}
+
+send "DIR DM0:\[*,*\]*.ODL\r"
+set timeout 60
+expect -re {\$}
+
+# Skip creating new ODL for now - focus on debugging the format issue
+
+# Start BASIC-PLUS-2 compiler (correct command is RUN $BP2IC2)
+puts "\n>>> Starting BASIC-PLUS-2 compiler..."
+send "RUN \$BP2IC2\r"
+set timeout 60
+expect {
+    "Ready" { puts "    BP2 compiler ready" }
+    "BASIC2" {
+        # Got banner, proceed directly - Ready may come later
+        puts "    BP2 started (saw banner)"
+    }
+    "BASIC-PLUS-2" {
+        exp_continue
+    }
+    -re "OMS V" {
+        # System message during startup, keep waiting
+        exp_continue
+    }
+    timeout {
+        puts "ERROR: BP2 failed to start (timeout)"
+        exit 1
+    }
+}
+
+# Compile each subroutine
+# Note: BP2IC2 prompt is "BASIC2", not "Ready" - match either
+set subs {ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY}
+
+foreach sub $subs {
+    puts "    Compiling $sub.SUB"
+    send "OLD SY:$sub.SUB\r"
+    set timeout 60
+    expect {
+        -re "\nBASIC2|\nReady" { }
+        timeout { puts "ERROR: OLD timeout for $sub"; exit 1 }
+    }
+    send "COMPILE SY:$sub\r"
+    set timeout 600
+    expect {
+        -re "\nBASIC2|\nReady" { }
+        -re "\\?.*\[Ee\]rror" {
+            puts "    WARNING: Error in $sub"
+            # Still wait for prompt
+            expect -re "\nBASIC2|\nReady"
+        }
+        timeout {
+            puts "ERROR: Compile timeout for $sub"
+            exit 1
+        }
+    }
+}
+
+# Compile main program
+puts "    Compiling ADVENT.B2S"
+send "OLD SY:ADVENT.B2S\r"
+set timeout 60
+expect -re "\nBASIC2|\nReady"
+send "COMPILE SY:ADVENT\r"
+set timeout 600
+expect -re "\nBASIC2|\nReady"
+
+# Try BUILD command with /ODL option to include overlay specification
+puts "\n>>> Running BUILD command with /ODL option..."
+puts "    BUILD/ODL:ADVENT ADVENT=ADVENT,ADVINI,ADVOUT,ADVNOR,ADVCMD,ADVODD,ADVMSG,ADVBYE,ADVSHT,ADVNPC,ADVPUZ,ADVDSP,ADVFND,ADVTDY"
+send "BUILD/ODL:ADVENT ADVENT=ADVENT,ADVINI,ADVOUT,ADVNOR,ADVCMD,ADVODD,ADVMSG,ADVBYE,ADVSHT,ADVNPC,ADVPUZ,ADVDSP,ADVFND,ADVTDY\r"
+set timeout 120
+expect {
+    -re "TKB --" {
+        puts "    TKB invoked by BUILD"
+        exp_continue
+    }
+    -re {\\?.*[Ee]rror} {
+        puts "    BUILD error"
+    }
+    -re "Ready|BASIC2" {
+        puts "    BUILD command returned"
+    }
+    timeout {
+        puts "WARNING: BUILD timeout"
+    }
+}
+
+# Exit BP2IC2 first, then try TKB with the ODL file directly
+puts "\n>>> Exiting BP2IC2..."
+send "EXIT\r"
+set timeout 30
+expect {
+    -re "Unsaved" {
+        send "EXIT\r"
+        expect -re {\$}
+    }
+    -re {\$} { }
+}
+
+# Check if BUILD created a .CMD file
+puts "\n>>> Checking for CMD files created by BUILD..."
+send "DIR SY:ADVENT.CMD\r"
+set timeout 30
+expect -re {\$}
+
+send "DIR SY:*.CMD\r"
+set timeout 30
+expect -re {\$}
+
+# First copy OBJ files to DM1 since the ODL references DM1:
+puts "\n>>> Copying OBJ files to DM1 before TKB..."
+set obj_files {ADVENT ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY}
+foreach objname $obj_files {
+    send "COPY SY:$objname.OBJ DM1:\r"
+    set timeout 120
+    expect {
+        "OK to replace" {
+            send "Y\r"
+            exp_continue
+        }
+        "copied to" { }
+        -re {\$} { }
+        timeout { puts "    timeout" }
+    }
+    expect -re {\$}
+}
+
+# Instead of using ODL, try specifying TKB commands directly
+# First, let's see what ADVENT.CMD contains
+puts "\n>>> Examining ADVENT.CMD created by BUILD..."
+send "TYPE SY:ADVENT.CMD\r"
+set timeout 30
+expect -re {\$}
+
+# Try TKB with multiline input to specify overlay structure directly
+puts "\n>>> Trying TKB with manual overlay specification..."
+send "RUN \$TKB\r"
+set timeout 30
+expect "TKB>"
+
+# Try TKB with inline overlay syntax using -*(overlay,overlay) format
+# Based on ODL structure: ADVENT-LIBR-*(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)
+puts "    Trying inline overlay specification..."
+
+# First line: output, map, root segment
+send "DM1:ADVENT,DM1:ADVENT=DM1:ADVENT-\r"
+set timeout 60
+expect "TKB>"
+
+# Continue root with library link
+send "SY:\[1,1\]BP2OTS/LB-\r"
+set timeout 60
+expect "TKB>"
+
+# Specify autoload overlays with *()
+# Try shorter overlay list first
+send "*(DM1:ADVINI,DM1:ADVOUT,DM1:ADVNOR,DM1:ADVCMD,DM1:ADVODD,\r"
+set timeout 60
+expect "TKB>"
+
+# Continue overlay list
+send "DM1:ADVMSG,DM1:ADVBYE,DM1:ADVSHT,DM1:ADVNPC,DM1:ADVPUZ,\r"
+set timeout 60
+expect "TKB>"
+
+# Final overlays
+send "DM1:ADVDSP,DM1:ADVFND,DM1:ADVTDY)\r"
+set timeout 60
+expect {
+    "TKB>" {
+        puts "    Overlay spec accepted"
+    }
+    -re "syntax|Syntax" {
+        puts "    Syntax error in overlay spec"
+    }
+    -re "FATAL" {
+        puts "    TKB FATAL error"
+    }
+    timeout { puts "    Timeout" }
+}
+
+# Try options terminator
+send "/\r"
+set timeout 30
+expect {
+    "TKB>" {
+        puts "    Options prompt..."
+        send "//\r"
+    }
+    "Enter Options" {
+        send "//\r"
+    }
+    -re {\$} { }
+    timeout { }
+}
+
+# Wait for result
+set timeout 300
+expect {
+    -re "address overflow" {
+        puts "    TKB address overflow - expected without overlays"
+    }
+    -re "TKB --.*DIAG" {
+        puts "    TKB completed with diagnostics"
+    }
+    -re "TKB --.*FATAL" {
+        puts "    TKB FATAL error"
+    }
+    -re {\$} {
+        puts "    TKB completed"
+    }
+    timeout { puts "    Timeout" }
+}
+
+# Check if ADVENT.TSK was created
+puts "\n>>> Checking for ADVENT.TSK on DM1..."
+send "DIR DM1:ADVENT.TSK\r"
+set timeout 30
+expect -re {\$}
+
+# If that didn't work, try @ADVENT.CMD approach
+puts "\n>>> Trying @ADVENT.CMD..."
+send "RUN \$TKB\r"
+set timeout 30
+expect "TKB>"
+
+send "@SY:ADVENT.CMD\r"
+set timeout 300
+expect {
+    "TKB>" {
+        puts "    First line accepted, sending options terminator..."
+    }
+    -re "illegal format" {
+        puts "    ERROR: ODL file format rejected"
+    }
+    -re "FATAL" {
+        puts "    ERROR: TKB FATAL error"
+    }
+    -re {\$} {
+        puts "    TKB exited unexpectedly"
+    }
+    timeout {
+        puts "    Timeout waiting for TKB response"
+    }
+}
+
+# Send options terminator
+send "/\r"
+set timeout 30
+expect {
+    "TKB>" {
+        puts "    Options prompt, ending TKB..."
+        send "//\r"
+    }
+    "Enter Options" {
+        send "//\r"
+    }
+    -re {\$} { }
+    timeout { }
+}
+
+# Wait for TKB to complete
+set timeout 300
+expect {
+    -re "TKB --.*FATAL" {
+        puts "    TKB FATAL error during link"
+    }
+    -re "TKB --.*DIAG" {
+        puts "    TKB completed with diagnostics"
+    }
+    -re "address overflow" {
+        puts "    TKB address overflow - overlays may not be working"
+    }
+    -re {\$} {
+        puts "    TKB completed"
+    }
+    timeout {
+        puts "    TKB timeout"
+    }
+}
+
+# Check what OBJ files were created by BP2IC2
+puts "\n>>> Checking compiled objects..."
+send "DIR SY:*.OBJ\r"
+set timeout 120
+expect {
+    "Total of" {
+        # Directory listing complete
+    }
+    timeout {
+        puts "ERROR: DIR timeout"
+        exit 1
+    }
+}
+expect -re {\$}
+
+# Copy all OBJ files to DM1: so overlay loader can find them at runtime
+puts "\n>>> Copying OBJ files to DM1: for overlay loading..."
+set obj_files {ADVENT ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY}
+foreach objname $obj_files {
+    puts "    $objname.OBJ"
+    send "COPY SY:$objname.OBJ DM1:$objname.OBJ\r"
+    set timeout 300
+    expect {
+        "OK to replace" {
+            send "Y\r"
+            exp_continue
+        }
+        "copied to" {
+            puts "      copied"
+        }
+        -re {\$} { }
+        timeout {
+            puts "ERROR: timeout copying $objname.OBJ"
+            exit 1
+        }
+    }
+    expect -re {\$}
+}
+
+# Verify TSK was created on SY:
+puts "\n>>> Checking SY:ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+set timeout 120
+expect {
+    "blocks in" {
+        puts "    ADVENT.TSK created on SY:"
+    }
+    -re "find|not found|no file|\\?Can" {
+        puts "*** ERROR: ADVENT.TSK not created on SY: ***"
+        exit 1
+    }
+    timeout {
+        puts "ERROR: Timeout checking SY:ADVENT.TSK"
+        exit 1
+    }
+}
+expect -re {\$}
+
+# Copy ADVENT.TSK to DM1: (game disk)
+puts ">>> Installing ADVENT.TSK to DM1:..."
+send "COPY SY:ADVENT.TSK DM1:ADVENT.TSK\r"
+set timeout 60
+expect {
+    "OK to replace" {
+        send "Y\r"
+        exp_continue
+    }
+    "copied to" {
+        puts "    Copied to DM1:"
+    }
+    -re {\$} { }
+    timeout {
+        puts "ERROR: Timeout copying to DM1:"
+        exit 1
+    }
+}
+expect -re {\$}
+
+# Verify TSK on DM1:
+puts ">>> Verifying installation on DM1:..."
+send "DIR DM1:ADVENT.TSK\r"
+set timeout 120
+expect {
+    "blocks in" {
+        puts "*** SUCCESS: ADVENT.TSK installed! ***"
+    }
+    -re "find|not found|no file|\\?Can" {
+        puts "*** ERROR: ADVENT.TSK not found on DM1: ***"
+        exit 1
+    }
+    timeout {
+        puts "ERROR: Timeout verifying installation"
+        exit 1
+    }
+}
+expect -re {\$}
+
+# Quick test
+puts "\n>>> Testing ADVENT..."
+send "RUN DM1:ADVENT\r"
+set timeout 30
+expect {
+    -re "Exits|Welcome|standing|>" {
+        puts "*** ADVENT is running! ***"
+        send "QUIT\r"
+        expect -re {\$}
+    }
+    "Memory management" {
+        puts "ERROR: Memory management trap - task may be corrupted"
+        exit 1
+    }
+    "find" {
+        puts "ERROR: Cannot run ADVENT - file not found"
+        exit 1
+    }
+    timeout {
+        puts "ERROR: Test timeout waiting for game prompt"
+        exit 1
+    }
+}
+
+puts "\n=========================================="
+puts "Bootstrap complete!"
+puts "==========================================\n"
+
+send "BYE\r"
+expect eof

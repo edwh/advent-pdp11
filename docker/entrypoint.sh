@@ -41,6 +41,16 @@ DATA_DIR="$ADVENT_DIR/data"
 SRC_DIR="$ADVENT_DIR/src"
 SCRIPTS_DIR="$ADVENT_DIR/scripts"
 
+# Restore disk images from backup on each start
+# This prevents corruption from improper shutdowns
+BACKUP_DIR="$ADVENT_DIR/disks-backup"
+if [ -f "$BACKUP_DIR/rsts0.dsk" ] && [ -f "$BACKUP_DIR/rsts1.dsk" ]; then
+    echo "Restoring fresh disk images from backup..."
+    cp "$BACKUP_DIR/rsts0.dsk" "$DISKS_DIR/rsts0.dsk"
+    cp "$BACKUP_DIR/rsts1.dsk" "$DISKS_DIR/rsts1.dsk"
+    echo "Disk images restored."
+fi
+
 # Check for required disk images
 if [ ! -f "$DISKS_DIR/rsts0.dsk" ]; then
     echo "ERROR: Boot disk not found at $DISKS_DIR/rsts0.dsk"

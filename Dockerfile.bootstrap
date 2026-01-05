@@ -1,0 +1,86 @@
+# Dockerfile.bootstrap - Build ADVENT from source at runtime
+#
+# This Dockerfile creates a container that:
+# 1. Starts with a clean RSTS/E base image
+# 2. Loads all ADVENT source code from virtual tape
+# 3. Compiles and builds ADVENT.TSK from source
+# 4. Runs the game
+#
+# This is a "clean install" approach - no pre-built binaries.
+#
+# Usage:
+#   docker build -f Dockerfile.bootstrap -t advent-bootstrap .
+#   docker run -p 8888:8080 -p 2322:2322 advent-bootstrap
+#
+# Note: First boot takes longer (~2-3 minutes) as it builds from source.
+
+# Stage 1: Build SIMH emulator
+FROM debian:bookworm-slim AS simh-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    libpcap-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Use v4.0-Beta-1 for expect support, auto-answer prompt with 'n'
+WORKDIR /src
+RUN git clone --branch v4.0-Beta-1 --depth 1 https://github.com/simh/simh.git && \
+    cd simh && \
+    yes n | make pdp11
+
+# Stage 2: Runtime container
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    expect \
+    telnet \
+    netcat-openbsd \
+    nginx-light \
+    python3 \
+    procps \
+    libpcap0.8 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create directory structure
+WORKDIR /opt/advent
+RUN mkdir -p disks scripts tapes web
+
+# Copy SIMH binary
+COPY --from=simh-builder /src/simh/BIN/pdp11 /opt/advent/pdp11
+
+# Copy BASE OS disk images (clean RSTS/E, no ADVENT pre-installed)
+COPY build/disks/rsts0-base-os.dsk /opt/advent/disks/rsts0.dsk
+COPY build/disks/rsts1-base-os.dsk /opt/advent/disks/rsts1.dsk
+
+# Copy the ADVENT source tape
+COPY build/tapes/advent_full.tap /opt/advent/tapes/advent.tap
+
+# Copy SIMH configuration (bootstrap version)
+COPY docker/pdp11_bootstrap.ini /opt/advent/pdp11.ini
+
+# Copy bootstrap and runtime scripts
+COPY docker/bootstrap_advent.exp /opt/advent/
+COPY docker/entrypoint_bootstrap.sh /opt/advent/entrypoint.sh
+COPY docker/game_connect.exp /opt/advent/
+COPY docker/verify_ready.exp /opt/advent/
+
+# Copy web interface
+COPY docker/web/ /opt/advent/web/
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+# Copy documentation
+COPY RESURRECTION.md /opt/advent/
+COPY NEWADV.md /opt/advent/
+
+# Set permissions
+RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/pdp11
+
+# Expose ports
+EXPOSE 8080 2322 2323
+
+# Start
+CMD ["/opt/advent/entrypoint.sh"]

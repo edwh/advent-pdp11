@@ -1,0 +1,49 @@
+#!/usr/bin/expect -f
+set timeout 30
+log_user 1
+
+spawn nc localhost 2322
+
+expect {
+    "CON-TEL" { }
+    timeout { puts "No connection"; exit 1 }
+}
+
+sleep 2
+send "\r"
+
+expect {
+    "User:" { }
+    -re {\$} {
+        puts "Already logged in"
+        send "TYPE DM1:ADVENT.ODL\r"
+        expect -re {\$}
+        send "DIR/FULL DM1:ADVENT.ODL\r"
+        expect -re {\$}
+        send "BYE\r"
+        expect eof
+        exit 0
+    }
+    timeout { puts "No login prompt"; exit 1 }
+}
+
+send "\[1,2\]\r"
+expect "Password:"
+send "Digital1977\r"
+
+expect {
+    "Job number" { send "\r" }
+    -re {\$} { }
+}
+
+expect -re {\$}
+
+puts "\n>>> Checking ODL on working disk..."
+send "TYPE DM1:ADVENT.ODL\r"
+expect -re {\$}
+
+send "DIR/FULL DM1:ADVENT.ODL\r"
+expect -re {\$}
+
+send "BYE\r"
+expect eof

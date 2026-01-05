@@ -55,12 +55,29 @@ COPY --from=simh-builder /src/simh/BIN/pdp11 /usr/local/bin/pdp11
 
 # Create directories
 WORKDIR /opt/advent
-RUN mkdir -p disks scripts data src web tapes
+RUN mkdir -p disks disks-backup scripts data src web tapes
 
-# Copy RSTS/E disk images with ADVENT pre-built
-# Use base-os disks + SKIP_SETUP=0 if you want to build from source
-COPY build/disks/rsts0.dsk /opt/advent/disks/rsts0.dsk
-COPY build/disks/rsts1.dsk /opt/advent/disks/rsts1.dsk
+# RSTS/E Disk Image Handling
+#
+# IMPORTANT: RSTS/E swap files get corrupted if the system doesn't shut down cleanly.
+# This happens on docker restart, docker stop without clean SHUTUP, or any crash.
+# The corruption causes "Swap file is invalid" errors on next boot.
+#
+# Solution: Keep pristine backup disks in disks-backup/ and restore them on each
+# container start. This sacrifices persistence but ensures reliable boots.
+# The entrypoint.sh copies from disks-backup/ to disks/ before starting SIMH.
+#
+# Source: simh/Disks/rsts_backup.dsk and rsts1_backup.dsk are the known-good images.
+
+# Backup disks (pristine, never modified at runtime)
+# Note: rsts0.dsk and rsts1.dsk are the actual bootable RK07 images
+# (rsts_backup.dsk is a different, non-bootable image)
+COPY simh/Disks/rsts0.dsk /opt/advent/disks-backup/rsts0.dsk
+COPY simh/Disks/rsts1.dsk /opt/advent/disks-backup/rsts1.dsk
+
+# Working disks (restored from backup on each start by entrypoint.sh)
+COPY simh/Disks/rsts0.dsk /opt/advent/disks/rsts0.dsk
+COPY simh/Disks/rsts1.dsk /opt/advent/disks/rsts1.dsk
 
 
 # Copy data files for building from source
