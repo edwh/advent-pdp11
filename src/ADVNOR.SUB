@@ -25,8 +25,9 @@
 \	RETURN &
 
 30	! MOVE &
+	&
+	&
 	OLD.ROOM%=ROOM%(USER%) &
-\	GET #3%, RECORD ROOM%(USER%) &
 \	FL%=0% &
 \	GOTO 35 IF MID(EX$,PO%,1%)=LEFT(C$,1%) FOR PO%=1% TO 16% STEP 4% &
 \	CALL ADVOUT(KB%(USER%),CRLF$+'You cannot go in that direction.') &
@@ -41,7 +42,7 @@
 \	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+J$+CVT$$(C$,128%)) &
 \	J$=FNCLEAR$ &
 \	FATIGUE%(USER%)=FATIGUE%(USER%)-3% &
-\	NEW.ROOM%=ASC(MID(EX$,PO%+2%,1%))+1% &
+\	NEW.ROOM%=CVT$%(MID(EX$,PO%+1%,2%)) &
 \	GOTO 70 UNLESS NEW.ROOM% &
 \	GOTO 60 UNLESS LEFT(PEOPLE$,1%)="*" &
 \	NAM$=LEFT(PEOPLE$,INSTR(1%,PEOPLE$,"/")-1%) &
@@ -52,11 +53,11 @@
 \	CH%=20% UNLESS J% &
 \	GOTO 60 UNLESS RND*100%<=CH% &
 
-50	GOTO 55 IF INSTR(1%,OBJECT$,"$") OR INSTR(1%,OBJECT$,CHR$(126%)) UNLESS &
+50	GOTO 55 IF INSTR(1%,OBJECT$,"$") OR INSTR(1%,OBJECT$,"~") UNLESS &
 	CH%/2.0<>CH%/2% &
 \	GOTO 55 IF FLAG%(USER%) AND 2% &
 \	GET #3%, RECORD NEW.ROOM% &
-\	GOTO 51 UNLESS CHR$(NEW.ROOM%-1%)=ROOM$ &
+\	GOTO 51 UNLESS CHR$(NEW.ROOM%)=ROOM$ &
 \	GOTO 55 IF INSTR(1%,"#*",LEFT(PEOPLE$,1%)) &
 \	SEND.NAM$=RIGHT(NAM$,2%) &
 \	SEND.NAM$="The"+RIGHT(NAM$,2%) IF LEFT(NAM$,2%)="A " &
@@ -69,12 +70,12 @@
 \	MON.ROOM%(MON%)=NEW.ROOM% &
 \	PUT #3%, RECORD NEW.ROOM% &
 \	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 51 UNLESS CHR$(ROOM%(USER%)-1%)=ROOM$ &
+\	GOTO 51 UNLESS CHR$(ROOM%(USER%))=ROOM$ &
 \	CALL ADVSHT(CRLF$+SEND.NAM$+' goes '+CVT$$(C$,128%)) &
 \	LSET PEOPLE$=RIGHT(PEOPLE$,INSTR(1%,PEOPLE$,"/")+1%) &
 \	PUT #3%, RECORD ROOM%(USER%) &
 \	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 51 UNLESS CHR$(ROOM%(USER%)-1%)=ROOM$ &
+\	GOTO 51 UNLESS CHR$(ROOM%(USER%))=ROOM$ &
 \	GOTO 60 &
 
 51	ROOM%(USER%)=OLD.ROOM% &
@@ -84,14 +85,14 @@
 \	SUBEXIT &
 
 55	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 51 UNLESS CHR$(ROOM%(USER%)-1%)=ROOM$ &
+\	GOTO 51 UNLESS CHR$(ROOM%(USER%))=ROOM$ &
 \	MON.FLAG%(MON%)=MON.FLAG%(MON%) XOR 1% &
 \	GOTO 60 &
 
 60	ROOM%(USER%)=NEW.ROOM% &
 \	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+' enters.') &
 \	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 51 UNLESS CHR$(ROOM%(USER%)-1%)=ROOM$ &
+\	GOTO 51 UNLESS CHR$(ROOM%(USER%))=ROOM$ &
 \	CALL ADVDSP &
 \	CALL ADVOUT(KB%(USER%),CRLF$+SEND.NAM$+' has followed you.') IF FL% &
 \	RETURN &
@@ -133,7 +134,7 @@
 \	OBJ1$="" &
 \	FOR J%=0% TO 9% &
 \	J$=CVT$$(OB$(I%,J%),128%) &
-\	J$=LEFT(J$,INSTR(1%,J$,CHR$(126%))-1%) IF INSTR(1%,J$,CHR$(126%)) &
+\	J$=LEFT(J$,INSTR(1%,J$,"~")-1%) IF INSTR(1%,J$,"~") &
 	AND LEVEL%(USER%)<30% &
 \	J$=LEFT(J$,INSTR(1%,J$,"$")-1%) IF INSTR(1%,J$,"$") &
 	AND LEVEL%(USER%)<30% &
@@ -150,7 +151,7 @@
 	&
 	GOTO 11040 IF (INSTR(1%,PEOPLE$,"*")+INSTR(1%,PEOPLE$,"#")+ &
 	INSTR(1%,PEOPLE$,"+"))<>0% IF LEVEL%(USER%)<30% &
-\	GOTO 11040 IF INSTR(1%,AR$,CHR$(126%)) OR INSTR(1%,AR$,'$') &
+\	GOTO 11040 IF INSTR(1%,AR$,'~') OR INSTR(1%,AR$,'$') &
 	UNLESS LEVEL(USER%)>=30% OR (FLAG%(USER%) AND 128%) &
 \	IF INSTR(1%,CVT$$(OBJECT$,255%),CVT$$(AR$,255%))=0% THEN &
 	CALL ADVOUT(KB%(USER%),CRLF$+"It's not here.") &
@@ -169,7 +170,7 @@
 \	PUT #3%, RECORD ROOM%(USER%) &
 \	J$="the"+RIGHT(J$,INSTR(1%,J$," ")) IF INSTR(1%,J$," ") <3% &
 	AND INSTR(1%,J$," ")>0% &
-\	J$=LEFT(J$,INSTR(1%,J$,CHR$(126%))-1%) IF INSTR(1%,J$,CHR$(126%)) &
+\	J$=LEFT(J$,INSTR(1%,J$,"~")-1%) IF INSTR(1%,J$,"~") &
 \	J$=LEFT(J$,INSTR(1%,J$,"$")-1%) IF INSTR(1%,J$,"$") &
 \	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+" picks up "+J$) &
 \	GOTO 11020 &
@@ -201,7 +202,7 @@
 140	! DROP &
 	&
 	&
-	GOTO 11020 IF INSTR(1%,AR$,CHR$(126%)) OR INSTR(1%,AR$,'$') &
+	GOTO 11020 IF INSTR(1%,AR$,'~') OR INSTR(1%,AR$,'$') &
 \	GOTO 150 IF INSTR(1%,CVT$$(OB$(USER%,I%),255%),CVT$$(AR$,255%)) &
 	FOR I%=0% TO 9% &
 \	GOTO 11010 &
@@ -212,7 +213,7 @@
 
 160	GOTO 170 IF INSTR(1%,CVT$$(DESC$,255%),"SHRINE") &
 
-161	GOTO 11040 IF INSTR(1%,AR$,CHR$(126%)) OR INSTR(1%,AR$,'$') &
+161	GOTO 11040 IF INSTR(1%,AR$,'~') OR INSTR(1%,AR$,'$') &
 \	J$=CVT$$(OBJECT$,128%) &
 \	GOTO 165 IF MID(J$,J%,1%)='/' FOR J%=100% TO 1% STEP -1% &
 
@@ -227,7 +228,7 @@
 \	OB$(USER%,I%)="" &
 \	J$="the"+RIGHT(J$,INSTR(1%,J$," ")) IF INSTR(1%,J$," ") <3% &
 	AND INSTR(1%,J$," ")>0% &
-\	J$=LEFT(J$,INSTR(1%,J$,CHR$(126%))-1%) IF INSTR(1%,J$,CHR$(126%)) &
+\	J$=LEFT(J$,INSTR(1%,J$,"~")-1%) IF INSTR(1%,J$,"~") &
 \	J$=LEFT(J$,INSTR(1%,J$,"$")-1%) IF INSTR(1%,J$,"$") &
 \	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+" drops "+J$) &
 \	GOTO 11020 &
@@ -235,9 +236,9 @@
 170	! DROP IN SHRINE &
 	&
 	&
-	GOTO 11040 UNLESS INSTR(1%,CVT$$(OB$(USER%,I%),128%),CHR$(126%)) &
+	GOTO 11040 UNLESS INSTR(1%,CVT$$(OB$(USER%,I%),128%),"~") &
 \	J%=VAL(RIGHT(CVT$$(OB$(USER%,I%),128%),INSTR(1%,OB$(USER%,I%), &
-	CHR$(126%))+1%)) &
+	"~")+1%)) &
 \	XP.(USER%)=XP.(USER%)+J% IF XP.(USER%)+J%>0% &
 \	OB$(USER%,I%)="" &
 \	CALL ADVSHT(CRLF$+CVT$$(NAM$(USER%),128%)+' makes an offering.') &

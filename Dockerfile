@@ -44,6 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpcap0.8 \
     curl \
     ca-certificates \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Install ttyd (not in Debian repos, download binary)
@@ -80,7 +81,7 @@ COPY simh/Disks/rsts0.dsk /opt/advent/disks/rsts0.dsk
 COPY simh/Disks/rsts1.dsk /opt/advent/disks/rsts1.dsk
 
 
-# Copy data files for building from source
+# Copy data files (includes game data and generated dungeon map)
 COPY build/data/ /opt/advent/data/
 
 # Copy source files for building from source

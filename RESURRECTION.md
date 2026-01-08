@@ -123,10 +123,32 @@ After weeks of wrestling with overlay structures, COMMON alignment, undefined sy
 
 We built from source. On an emulated 1970s computer. In 2026. Take that, teenage Edward.
 
+## Reconnecting the Dungeon
+
+When we first analyzed the room data, we discovered something curious: of the 1,590 valid rooms in ADVENT.DTA, only 33 were reachable from the starting room (room 2, an Arabian desert village).
+
+The dungeon was fragmented. Massive sections - over 1,500 rooms - sat isolated, islands in an archipelago with no bridges between them.
+
+Why? We don't know for certain. Perhaps:
+- Areas were under construction, intended to be connected later
+- Some connections were stored elsewhere and lost
+- The exit data was partially corrupted over time
+- The creators simply never got around to linking everything
+
+Whatever the cause, we fixed it. A reconstruction script analyzed the room connectivity, added return paths for one-way connections, and built chains linking isolated rooms back to the main dungeon. **4,201 exit connections** were added to make all 1,590 rooms reachable.
+
+**Important note:** This means modern players can now explore areas that may never have been accessible in 1987. You might find unfinished rooms, test areas, or sections the creators themselves hadn't visited in years. Consider it archaeological bonus content.
+
+### Finding Edward's Office
+
+While exploring the reconstructed dungeon, we discovered **Room 4: TEGNE's office**. TEGNE was Edward's in-game character name, and this small room - connected to a store room, a cliff path, a dark corridor, and a mysterious triangular metal wall - was where the creator himself would have logged in to work on the game.
+
+Other notable creator spaces include Room 100 (the demi-god's office, complete with Chateau Lafite '59 and discarded vomit), Room 353 (Gerbil's site office with an Amstrad PC1512), and Room 1000 (the annex to David's office, with its notice about authorized personnel).
+
 ## It Works!
 
 **Final Status:**
-- 1,587 rooms explorable
+- 1,590 rooms explorable (all now reachable!)
 - 402 monsters lurking
 - 417 objects scattered throughout
 - Navigation, combat, inventory - all working
@@ -134,7 +156,7 @@ We built from source. On an emulated 1970s computer. In 2026. Take that, teenage
 
 **For Modern Explorers:**
 
-New players start at **level 11 (demigod)** so you can explore freely with teleport abilities. This is just for fun - in 1987, you had to *earn* these powers!
+New players start at **level 16** so you can explore freely with teleport abilities. This is just for fun - in 1987, you had to *earn* these powers!
 
 ## Final Notes
 

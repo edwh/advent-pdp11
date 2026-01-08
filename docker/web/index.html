@@ -67,7 +67,8 @@
         <div class="status-panel">
             <div class="panel-header">
                 <h1>ADVENT</h1>
-                <h2>Multi-User Dungeon</h2>
+                <h2><span class="crossed-out">Multi-User</span> Dungeon</h2>
+                <p class="graffiti">single user</p>
                 <p class="year">circa 1987</p>
             </div>
 
@@ -87,7 +88,11 @@
                     <li><span class="cmd">STATUS</span> - Check your stats</li>
                     <li><span class="cmd">QUIT</span> - Exit game</li>
                 </ul>
-                <p class="status-link"><a href="#" onclick="showDoc('STATUS.md')">View full feature status</a></p>
+                <p class="status-link">
+                    <a href="#" onclick="showDoc('STATUS.md')">View full feature status</a>
+                    &nbsp;|&nbsp;
+                    <a href="#" onclick="showMap()">Dungeon Map</a>
+                </p>
             </div>
 
             <div class="info-box controls">
@@ -144,7 +149,35 @@
         </div>
     </div>
 
+    <!-- Dungeon Map modal -->
+    <div id="map-modal" class="modal hidden">
+        <div class="modal-content map-modal-content">
+            <div class="modal-header">
+                <h2>Dungeon Map</h2>
+                <button class="modal-close" onclick="closeMap()">&times;</button>
+            </div>
+            <div class="modal-body map-body">
+                <div class="map-legend">
+                    <span class="legend-item"><span class="legend-dot original"></span> Original connection</span>
+                    <span class="legend-item"><span class="legend-dot reconstructed"></span> Reconstructed</span>
+                    <span class="legend-item"><span class="legend-start"></span> Starting room</span>
+                </div>
+                <div class="map-controls">
+                    <label>Room: <select id="room-select"><option value="">Loading...</option></select></label>
+                    <button onclick="goToRoom(2)">Go to Start</button>
+                </div>
+                <div class="map-room" id="map-room">
+                    <div class="room-number" id="room-number"></div>
+                    <div class="room-description" id="room-description"></div>
+                    <div class="room-exits" id="room-exits"></div>
+                </div>
+                <div class="map-stats" id="map-stats"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="terminal.js"></script>
+    <script src="map.js"></script>
 </body>
 </html>

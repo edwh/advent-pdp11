@@ -391,6 +391,26 @@ body {
     letter-spacing: 2px;
 }
 
+.crossed-out {
+    text-decoration: line-through;
+    text-decoration-color: #cc3333;
+    text-decoration-thickness: 3px;
+    opacity: 0.7;
+}
+
+.graffiti {
+    font-size: 14px;
+    color: #cc3333;
+    font-style: italic;
+    transform: rotate(-3deg);
+    margin: -8px 0 5px 0;
+    text-align: left;
+    padding-left: 15px;
+    font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1px;
+}
+
 .panel-header .year {
     font-size: 14px;
     color: #559955;
@@ -884,4 +904,207 @@ body {
 .reboot-confirm:hover {
     background: linear-gradient(180deg, #dd5500 0%, #bb4400 100%);
     box-shadow: 0 0 10px rgba(255, 85, 0, 0.4);
+}
+
+/* ============================================
+   DUNGEON MAP MODAL
+   ============================================ */
+
+.map-modal-content {
+    max-width: 800px;
+    height: 80vh;
+}
+
+.map-body {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.map-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    padding: 10px;
+    background: rgba(0, 30, 0, 0.3);
+    border-radius: 4px;
+    font-size: 14px;
+    color: #88aa88;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-dot.original {
+    background: #33ff33;
+    box-shadow: 0 0 4px #33ff33;
+}
+
+.legend-dot.reconstructed {
+    background: #ffaa00;
+    box-shadow: 0 0 4px #ffaa00;
+}
+
+.legend-start {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: #ff6666;
+    border-radius: 2px;
+    box-shadow: 0 0 4px #ff6666;
+}
+
+.map-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    padding: 10px;
+    background: rgba(0, 20, 0, 0.4);
+    border-radius: 4px;
+}
+
+.map-controls label {
+    color: #88aa88;
+    font-size: 14px;
+}
+
+.map-controls select {
+    background: #111;
+    border: 1px solid #33ff33;
+    color: #33ff33;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    max-width: 400px;
+}
+
+.map-controls select:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(51, 255, 51, 0.5);
+}
+
+.map-controls button {
+    background: linear-gradient(180deg, #224422 0%, #112211 100%);
+    border: 1px solid #33ff33;
+    color: #33ff33;
+    padding: 6px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.map-controls button:hover {
+    background: linear-gradient(180deg, #335533 0%, #223322 100%);
+    box-shadow: 0 0 8px rgba(51, 255, 51, 0.3);
+}
+
+.map-room {
+    flex: 1;
+    background: rgba(0, 15, 0, 0.5);
+    border: 1px solid rgba(51, 255, 51, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.room-number {
+    font-size: 22px;
+    color: #33ff33;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(51, 255, 51, 0.2);
+}
+
+.room-description {
+    font-size: 16px;
+    color: #aaddaa;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(0, 20, 0, 0.4);
+    border-radius: 4px;
+    min-height: 80px;
+}
+
+.room-exits {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.exit-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(0, 30, 0, 0.3);
+    border-radius: 4px;
+}
+
+.exit-dir {
+    font-weight: bold;
+    color: #88ff88;
+    min-width: 60px;
+}
+
+.exit-link {
+    color: #33ff33;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.exit-link:hover {
+    color: #88ff88;
+    text-decoration: underline;
+}
+
+.exit-link.reconstructed {
+    color: #ffaa00;
+}
+
+.exit-link.reconstructed:hover {
+    color: #ffcc44;
+}
+
+.exit-dest-desc {
+    color: #668866;
+    font-size: 13px;
+    flex: 1;
+}
+
+.exit-reconstructed {
+    font-size: 11px;
+    color: #ffaa00;
+    font-style: italic;
+}
+
+.exit-dungeon {
+    color: #888;
+    font-style: italic;
+}
+
+.exit-none {
+    color: #555;
+}
+
+.map-stats {
+    text-align: center;
+    font-size: 13px;
+    color: #668866;
+    padding: 10px;
+    background: rgba(0, 20, 0, 0.3);
+    border-radius: 4px;
 }
