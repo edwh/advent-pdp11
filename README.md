@@ -2,7 +2,7 @@
 
 A multi-user dungeon game from 1987, originally written for PDP-11/RSTS-E, now running in Docker via SIMH emulation.
 
-**Live Demo:** [https://advent-mud.fly.dev](https://advent-mud.fly.dev)
+**Live Demo:** [https://advent-pdp11.fly.dev](https://advent-pdp11.fly.dev)
 
 ## Quick Start
 
@@ -34,7 +34,7 @@ Once running, you can connect via:
 
 For telnet access:
 - User: `[1,2]`
-- Password: `Digital1977`
+- Password: `SYSTEM`
 - Command: `RUN ADVENT`
 
 ## Current Status (January 2026)
@@ -95,25 +95,29 @@ Browser ---> nginx ---> ttyd ---> expect ---> SIMH ---> RSTS/E ---> ADVENT
 - `ADVENT.MON` - Monster spawns (10000 x 20 bytes)
 - `ADVENT.CHR` - Character saves
 - `MESSAG.NPC` - NPC messages
+- `dungeon_map.json` - Room connectivity for web map viewer
 
-### Disk Images (`build/disks/`)
-- `rsts0.dsk` - RSTS/E boot disk with system files
-- `rsts1.dsk` - Game disk with ADVENT code and data
-- `rsts0-base-os.dsk` - Clean RSTS/E image (no ADVENT)
-- `rsts1-base-os.dsk` - Clean game disk image
+### Disk Images (`simh/Disks/ra72/`)
+- `rstse_10_ra72.dsk` - Base RSTS/E V10.1 RA72 image (1GB, no ADVENT)
 
 ## Building from Source
 
+The game compiles from source on every container start (~10-15 minutes):
+
 ```bash
-# Generate data files from salvaged sources
-python3 scripts/migrate_data.py
-
-# Build disk images
-python3 scripts/build_disk.py
-
 # Build and run with Docker Compose
-docker compose up -d --build
+docker-compose up -d --build
+
+# Watch the build progress
+docker-compose logs -f
 ```
+
+The build process:
+1. Restores pristine RA72 disk image
+2. Boots RSTS/E V10.1
+3. Copies source files from TMSCP tape
+4. Compiles with BP2 (BASIC-PLUS-2)
+5. Links with TKB (Task Builder)
 
 ## Documentation
 
