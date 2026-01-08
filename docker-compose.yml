@@ -31,10 +31,8 @@ services:
       - "7682:7682"   # Admin web terminal
       - "2324:2322"   # SIMH console (telnet)
       - "2325:2323"   # RSTS/E terminal lines (telnet)
-    volumes:
-      # Mount disk images for persistence
-      # Changes made in RSTS/E are saved
-      - ./build/disks:/opt/advent/disks
+    # Note: No volume mount for disks - using build-from-source workflow
+    # Disk is restored from backup on each start to prevent corruption
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "2322"]
