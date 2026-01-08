@@ -8,8 +8,8 @@ primary_region = "lhr"
   dockerfile = "Dockerfile"
 
 [env]
-  # Skip setup - using pre-built disk images with ADVENT
-  SKIP_SETUP = "1"
+  # Build ADVENT from source on startup (takes ~10-15 minutes)
+  # Set SKIP_SETUP=1 to skip if using pre-built disk
 
 [http_service]
   internal_port = 8080
