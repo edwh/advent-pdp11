@@ -6,28 +6,31 @@ A multi-user dungeon game from 1987, originally written for PDP-11/RSTS-E, now r
 
 ## Quick Start
 
-### Using Docker (Recommended)
+### Using Docker Compose (Recommended)
 
 ```bash
-# Build the Docker image
-docker build -t advent-mud .
-
-# Run the container
-docker run -d --name advent-mud -p 8080:8080 advent-mud
+# Build and start the container
+docker compose up -d --build
 
 # Access the web interface
-open http://localhost:8080
+open http://localhost:8088
 ```
 
-### Alternative Access Methods
+To stop:
+```bash
+docker compose down
+```
+
+### Access Methods
 
 Once running, you can connect via:
 
 | Method | Address | Description |
 |--------|---------|-------------|
-| Web Interface | http://localhost:8080 | CRT terminal with auto-login |
-| Telnet (Console) | `telnet localhost 2322` | Operator console |
-| Telnet (Terminal) | `telnet localhost 2323` | User terminal (DZ11) |
+| Web Interface | http://localhost:8088 | CRT terminal with auto-login |
+| Admin Terminal | http://localhost:7682 | Web-based admin access |
+| Telnet (Console) | `telnet localhost 2324` | Operator console |
+| Telnet (Terminal) | `telnet localhost 2325` | User terminal (DZ11) |
 
 For telnet access:
 - User: `[1,2]`
@@ -98,8 +101,8 @@ python3 scripts/migrate_data.py
 # Build disk images
 python3 scripts/build_disk.py
 
-# Build Docker image
-docker build -t advent-mud .
+# Build and run with Docker Compose
+docker compose up -d --build
 ```
 
 ## Documentation

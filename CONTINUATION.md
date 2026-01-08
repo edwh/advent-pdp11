@@ -14,15 +14,23 @@ Resurrecting a 1987 multi-user dungeon game (ADVENT) that runs on PDP-11/RSTS/E,
 # Restore working disk images (if modified)
 git checkout build/disks/rsts0.dsk build/disks/rsts1.dsk
 
-# Build using ROOT Dockerfile (not docker/Dockerfile!)
-docker build -f Dockerfile -t advent-mud .
-
-# Run container
-docker stop advent-mud 2>/dev/null; docker rm advent-mud 2>/dev/null
-docker run -d --name advent-mud -p 8080:8080 -p 2322:2322 -p 2323:2323 advent-mud
+# Build and run using Docker Compose (ALWAYS use this method!)
+docker compose up -d --build
 
 # Access (wait ~2 min for boot)
-open http://localhost:8080
+open http://localhost:8088
+```
+
+**Local ports** (chosen to avoid conflicts):
+- 8088: Web interface
+- 7681: Game web terminal (ttyd)
+- 7682: Admin web terminal
+- 2324: SIMH console (telnet)
+- 2325: RSTS/E terminal (telnet)
+
+To stop:
+```bash
+docker compose down
 ```
 
 ## Current State (January 3, 2026)
@@ -48,8 +56,8 @@ ADVINI.SUB sets `SINGLE.USER%=-1%` to enable this mode.
 ### How to Play
 
 1. Build and run: See QUICK START above
-2. Open http://localhost:8080 (CRT web interface with auto-login)
-3. Or telnet: `telnet localhost 2322`, login `[1,2]` / `Digital1977`, then `RUN ADVENT`
+2. Open http://localhost:8088 (CRT web interface with auto-login)
+3. Or telnet: `telnet localhost 2324`, login `[1,2]` / `Digital1977`, then `RUN ADVENT`
 
 ## Technical Issues Solved
 

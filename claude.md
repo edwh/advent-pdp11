@@ -4,7 +4,7 @@ Internal development context for Claude Code sessions.
 
 ## CRITICAL: How to Build and Run a Working Container
 
-**Last verified: January 3, 2026**
+**Last verified: January 8, 2026**
 
 These are the EXACT commands that work. Do not deviate.
 
@@ -21,48 +21,55 @@ cp build/disks/rsts0-base-os.dsk build/disks/rsts0.dsk
 cp build/disks/rsts1-base-os.dsk build/disks/rsts1.dsk
 ```
 
-### Step 2: Build Docker Image
+### Step 2: Build and Run with Docker Compose
+
+**ALWAYS use Docker Compose for local development.**
 
 ```bash
-# Use the ROOT Dockerfile (NOT docker/Dockerfile)
-docker build -f Dockerfile -t advent-mud .
-```
-
-### Step 3: Run Container
-
-```bash
-# Stop any existing container first
-docker stop advent-mud 2>/dev/null; docker rm advent-mud 2>/dev/null
-
-# Run with exposed ports
-docker run -d --name advent-mud -p 8080:8080 -p 2322:2322 -p 2323:2323 advent-mud
+# Build and start
+docker compose up -d --build
 
 # Wait ~2 minutes for RSTS/E to boot, then check logs
-docker logs advent-mud
+docker compose logs -f
 ```
 
-### Step 4: Verify It Works
+To stop:
+```bash
+docker compose down
+```
+
+### Step 3: Verify It Works
 
 ```bash
-# Web interface
-open http://localhost:8080
+# Web interface (note: port 8088, not 8080)
+open http://localhost:8088
 
-# Or telnet to console
-telnet localhost 2322
+# Or telnet to console (note: port 2324, not 2322)
+telnet localhost 2324
 # Login: [1,2] / Digital1977
 # Command: RUN ADVENT
 ```
+
+### Local Ports (chosen to avoid conflicts)
+
+| Port | Maps To | Purpose |
+|------|---------|---------|
+| 8088 | 8080 | Web interface (nginx) |
+| 7681 | 7681 | Game web terminal (ttyd) |
+| 7682 | 7682 | Admin web terminal |
+| 2324 | 2322 | SIMH console (telnet) |
+| 2325 | 2323 | RSTS/E terminal (telnet) |
 
 ## WARNING: Common Mistakes That Break Things
 
 ### DO NOT modify disk images while RSTS/E is running
 The container must be STOPPED before using `flx` on disks. Modifying disks while running causes corruption ("swap file is invalid" errors on next boot).
 
-### DO NOT use docker-compose for local development
-The `docker-compose.yml` uses volume mounts which can cause issues. Use the plain `docker run` command above.
+### DO NOT use raw `docker run` commands
+Always use `docker compose up -d --build` for consistency. The docker-compose.yml file has the correct port mappings and volume mounts.
 
-### DO NOT use docker/Dockerfile
-There are multiple Dockerfiles. Use the ROOT `Dockerfile` only.
+### DO NOT use docker/Dockerfile directly
+There are multiple Dockerfiles. The ROOT `Dockerfile` is the main one, and docker-compose.yml is configured to use it.
 
 ### DO NOT use `flx clean` on the boot disk (rsts0.dsk)
 This can corrupt system files causing "Odd address trap" errors.
@@ -94,10 +101,14 @@ The git-committed working copies have ADVENT.TSK and all data files pre-installe
 
 ## Console vs DZ Terminals
 
-We switched from DZ terminals (port 2323) to console (port 2322) because:
+We switched from DZ terminals to console because:
 - DZ terminals are flaky - sometimes don't respond with User: prompt
 - Console is special in RSTS/E - always available and reliable
 - Single-user mode only needs one terminal anyway
+
+**Local port mappings** (via docker-compose.yml):
+- Console: localhost:2324 -> container:2322
+- DZ terminals: localhost:2325 -> container:2323
 
 Files changed:
 - `docker/game_connect.exp` - connects to port 2322 instead of 2323
@@ -126,12 +137,28 @@ Files changed:
 
 ## Deployment to fly.io
 
+**App name:** `advent-pdp11` (already created - DO NOT create a new app!)
+
+**Live URL:** https://advent-pdp11.fly.dev
+
 Fly.io auth token is in `/home/edward/.env`. To deploy:
 
 ```bash
+# Load the token (single-quoted to handle special characters)
 source /home/edward/.env
+
+# Check current status first
+/home/edward/.fly/bin/flyctl status
+
+# Deploy (uses existing app, don't use 'fly launch')
 /home/edward/.fly/bin/flyctl deploy --remote-only
 ```
+
+**IMPORTANT:**
+- Never run `fly launch` - that creates a NEW app. Always use `fly deploy`.
+- The app `advent-pdp11` already exists in the `lhr` (London) region.
+- Deploy takes ~5 minutes (build + RSTS/E boot time).
+- Health check grace period is 5 minutes to allow RSTS/E to boot.
 
 ## Quick Troubleshooting
 
@@ -139,9 +166,9 @@ source /home/edward/.env
 |---------|----------|
 | "Swap file is invalid" | Disk corrupted. Run `git checkout build/disks/*.dsk` |
 | "Odd address trap" | Boot disk corrupted. Restore from git |
-| Port 8080 in use | Stop other containers: `docker ps` then `docker stop <id>` |
+| Port conflict | Check `docker ps` for existing containers using ports. Run `docker compose down` first |
 | SIMH port conflicts | Container restarted while old sockets still bound. Wait 30s or restart Docker |
-| "Address already in use" | Kill container, wait for port release, restart |
+| "Address already in use" | Run `docker compose down`, wait for port release, then `docker compose up -d` |
 
 ## Tape Drive File Transfer (January 2026) - WORKING!
 
@@ -169,9 +196,9 @@ After extensive investigation, tape-based file transfer is now **fully working**
 # Create a tape from files
 python3 scripts/create_tape.py create output.tap file1.dat file2.bas
 
-# Include in Docker build
+# Include in Docker build and restart
 cp output.tap build/tapes/transfer.tap
-docker build -f Dockerfile -t advent-mud .
+docker compose up -d --build
 
 # In RSTS/E after boot:
 $ MOUNT MS:
