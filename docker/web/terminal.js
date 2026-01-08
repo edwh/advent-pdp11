@@ -83,6 +83,50 @@
             return;
         }
 
+        // Handle busy state - another session is active
+        if (status.step === 'busy') {
+            const overlayTitle = connectionOverlay?.querySelector('h2');
+            if (overlayTitle) {
+                overlayTitle.textContent = 'Session In Use';
+                overlayTitle.style.color = '#ffaa00';
+            }
+            if (waitMessage) {
+                waitMessage.innerHTML = 'Another session is currently active.<br><br>' +
+                    '<button id="takeoverBtn" style="background: #ff6666; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px; border-radius: 4px;">Take Over Session</button>' +
+                    '<br><small style="color: #888; margin-top: 10px; display: block;">This will disconnect the other user.</small>';
+                waitMessage.style.color = '#ffaa00';
+
+                // Add click handler for takeover button
+                const takeoverBtn = document.getElementById('takeoverBtn');
+                if (takeoverBtn && !takeoverBtn.hasListener) {
+                    takeoverBtn.hasListener = true;
+                    takeoverBtn.addEventListener('click', function() {
+                        takeoverBtn.textContent = 'Taking over...';
+                        takeoverBtn.disabled = true;
+
+                        fetch('/api/kick')
+                            .then(response => response.json())
+                            .then(data => {
+                                // Reload the terminal frame to reconnect
+                                setTimeout(() => {
+                                    if (terminalFrame) {
+                                        terminalFrame.src = terminalFrame.src;
+                                    }
+                                    resetConnection();
+                                    startPolling();
+                                }, 1500);
+                            })
+                            .catch(err => {
+                                takeoverBtn.textContent = 'Failed - Try Again';
+                                takeoverBtn.disabled = false;
+                            });
+                    });
+                }
+            }
+            // Keep polling to detect when connection is available
+            return;
+        }
+
         // Update steps
         for (let i = 0; i < stepOrder.length; i++) {
             if (i < currentIndex) {

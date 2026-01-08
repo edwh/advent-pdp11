@@ -79,6 +79,10 @@ fi
 "$ADVENT_DIR/restart_service.sh" &
 echo "Restart service started on port 8081"
 
+# Start the kick service (listens on port 8082, kicks console connections)
+"$ADVENT_DIR/kick_service.sh" &
+echo "Kick service started on port 8082"
+
 # Start SIMH in background
 echo "Starting SIMH emulator..."
 echo "  Console: telnet localhost 2322"

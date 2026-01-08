@@ -35,7 +35,25 @@ catch {exec stty -icrnl -onlcr}
 spawn nc localhost 2322
 
 # The console banner should arrive immediately
+# Also check for "All connections busy" which means another session is active
 expect {
+    "All connections busy" {
+        write_status "busy" "Another session is active"
+        # Wait for kick signal or timeout
+        set kick_file "/tmp/kick_console"
+        set wait_count 0
+        while {$wait_count < 60} {
+            if {[file exists $kick_file]} {
+                catch {file delete $kick_file}
+                # Exit so ttyd can restart us after kick completes
+                exit 2
+            }
+            sleep 1
+            incr wait_count
+        }
+        write_status "error" "Connection timed out - no takeover confirmed"
+        exit 1
+    }
     -re "Connected to the PDP-11 simulator CON-TEL device" {
         write_status "boot" "Connected to PDP-11 console..."
     }
