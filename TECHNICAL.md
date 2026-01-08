@@ -38,170 +38,52 @@ None of this runs on modern computers directly.
 
 ### 1. File Transfer into RSTS/E
 
-Getting files *into* a running RSTS/E system is extremely difficult. This section documents all approaches tried and the final working solution.
+Getting files *into* a running RSTS/E system was one of the biggest challenges. After trying many approaches, we found that **TMSCP tape emulation** provides the fastest and most reliable method.
 
 #### Approaches That FAILED
 
-1. **FLX Tool (Partial Success)**
-   - The `flx` tool from simtools can read/write RSTS/E disk images
-   - **Problem**: Files injected at high block offsets (>~5000) disappear when RSTS/E restarts
-   - Files at low block offsets survive, but we can't control allocation
-   - The `clean` command fixes "disk not properly dismounted" errors
-   - **Verdict**: Unreliable for persistent file transfer
+1. **FLX Tool** - Files injected at high block offsets vanish after RSTS/E restarts
+2. **RT-11/RSX RTS Programs** - Crash with "Reserved instruction trap"
+3. **BASIC-PLUS-2 Programs** - "Can't find resident library" errors
+4. **Paper Tape** - Driver not installed on this RSTS/E image
+5. **TECO Text Editor** - Works but painfully slow (~160 bytes/sec)
 
-2. **RT-11 RTS Programs with CALFIP (EMT 376)**
-   - Attempted to write MACRO-11 assembly programs using CALFIP file I/O
-   - Programs compile and link successfully with MACRO/RT11 + LINK/RT11
-   - **Problem**: Crashes with "M-Ovly err at user PC" when EMT 376 executes
-   - Root cause: RT-11 RTS doesn't support CALFIP EMT calls
-   - **Verdict**: RT-11 RTS cannot do file I/O on RSTS/E
+#### The Working Solution: TMSCP Tape Transfer
 
-3. **RSX RTS Programs (.TSK files)**
-   - Built with Task Builder (TKB)
-   - **Problem**: Crashes with "Reserved instruction trap" at PC 000124
-   - Crashes during RMS initialization before reaching user code
-   - **Verdict**: RSX RTS file I/O also doesn't work for this purpose
-
-4. **BASIC-PLUS-2 Programs**
-   - **Problem**: "Unable to attach to resident library" and "Can't find file or account"
-   - The BP2 resident library isn't properly configured on this system
-   - **Verdict**: Can't run standalone BP2 programs
-
-5. **Paper Tape (PTR:)**
-   - SIMH can emulate paper tape reader
-   - **Problem**: RSTS/E V10.1 doesn't have the paper tape driver installed
-   - **Verdict**: Would require system reconfiguration
-
-6. **Kermit**
-   - KERMIT.MAC source exists in [1,3]
-   - **Problem**: Would need compilation and serial port setup
-   - **Verdict**: Too complex for this use case
-
-#### The Working Solution: TECO Binary Transfer
-
-**TECO (Text Editor and COrrector)** is available on the system and can insert characters by ASCII code using the `nI` command.
+SIMH can emulate a **TMSCP tape drive** (TQ controller) which RSTS/E sees as device `MU0:`. This provides **18KB/sec** transfer speed - 140x faster than TECO.
 
 ##### How It Works
 
-1. Connect via telnet to port 2323
-2. Login as `[1,2]` with password `Digital1977`
-3. Start TECO: `TECO<CR>`
-4. Use `EW` to open output file, `nI` to insert bytes, `EX` to save
+1. **Build Phase** (Docker image creation):
+   - `scripts/create_advent_tape.py` creates a DOS-11 format tape image
+   - Tape contains source files (.B2S, .SUB) and data files (.DTA, .MON, .CHR)
+   - SIMH configuration attaches tape: `attach tq0 /opt/advent/tapes/advent_source.tap`
 
-##### TECO Command Reference
+2. **Runtime Phase** (container startup):
+   - RSTS/E boots from RA72 disk image
+   - `build_advent.exp` script logs in and mounts tape: `MOUNT MU0: ADVENT`
+   - Files copied from tape: `COPY MU0:filename SY:`
+   - Source compiled with BP2, linked with TKB
 
-| Command | Description |
-|---------|-------------|
-| `EWFILE.EXT$$` | Open file for writing (Enter for Writing) |
-| `nI$$` | Insert character with ASCII code n (0-255) |
-| `ITEXT$$` | Insert literal text |
-| `HT$$` | Type buffer contents |
-| `Z=$$` | Show buffer size |
-| `EX$$` | Exit and save file |
-| `$$` | Two ESC characters (`\x1b\x1b`) terminate each command |
+##### Transfer Speed Comparison
 
-##### Critical Details
+| Method | Speed | 1MB File Time |
+|--------|-------|---------------|
+| TECO (nI command) | ~160 B/s | 1.7 hours |
+| TMSCP Tape (MU0:) | ~18 KB/s | 55 seconds |
 
-1. **Each command needs `$$`**: You cannot batch like `72I66I67I$$`. Each insert must be `72I$$66I$$67I$$`.
+##### Tape Creation (`scripts/create_advent_tape.py`)
 
-2. **Batching in single send()**: You CAN send multiple complete commands in one TCP send:
-   ```python
-   sock.send(b"72I\x1b\x1b66I\x1b\x1b67I\x1b\x1b")  # Works!
-   ```
-
-3. **All byte values work**: Tested 0x00 through 0xFF including:
-   - Null bytes (0x00) - work correctly
-   - Control characters (0x01-0x1F) - work correctly
-   - High bytes (0x80-0xFF) - work correctly
-
-4. **Files persist across restarts**: Unlike FLX-injected files, TECO-created files go through the proper RSTS/E file system and survive container restarts.
-
-##### Transfer Script: `scripts/teco_transfer.py`
+Creates DOS-11 format tape images compatible with RSTS/E:
 
 ```python
-#!/usr/bin/env python3
-"""Transfer binary files to RSTS/E using TECO's nI command."""
-
-import socket
-import time
-
-# Connection settings
-HOST = 'localhost'
-PORT = 2323
-USER = '[1,2]'
-PASSWORD = 'Digital1977'
-
-# Each byte becomes "nI\x1b\x1b" where n is the decimal ASCII code
-# Batch multiple commands per send() for speed
-BATCH_SIZE = 100  # commands per batch
-
-def transfer_file(local_path, remote_name):
-    with open(local_path, 'rb') as f:
-        data = f.read()
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((HOST, PORT))
-
-    # Login sequence...
-
-    # Start TECO and open file
-    sock.send(b"TECO\r")
-    time.sleep(1)
-    sock.send(f"EW{remote_name}\x1b\x1b".encode())
-
-    # Transfer bytes in batches
-    batch = []
-    for byte_val in data:
-        batch.append(f"{byte_val}I\x1b\x1b")
-        if len(batch) >= BATCH_SIZE:
-            sock.send(''.join(batch).encode())
-            batch = []
-            time.sleep(0.02)  # Prevent buffer overflow
-
-    # Send remaining bytes
-    if batch:
-        sock.send(''.join(batch).encode())
-
-    # Save and exit
-    sock.send(b"EX\x1b\x1b")
+# Add file to tape in DOS-11 format
+def add_file_to_tape(tape_data, filename, content):
+    # DOS-11 header: 14-byte filename, then data blocks
+    header = filename.ljust(14).encode('ascii')
+    tape_data.extend(header)
+    # ... block formatting
 ```
-
-##### Transfer Speed and Time Estimates
-
-- **Effective rate**: ~100-200 bytes/second
-- **Bottleneck**: TECO command processing, not network
-
-| File | Size | Estimated Time |
-|------|------|----------------|
-| ADVENT.CHR | 51 KB | ~5-8 minutes |
-| MESSAG.NPC | 59 KB | ~6-10 minutes |
-| ADVENT.MON | 196 KB | ~20-30 minutes |
-| BOARD.NTC | 256 KB | ~25-40 minutes |
-| ADVENT.DTA | 1000 KB | ~1.5-2.5 hours |
-
-##### Verification
-
-After transfer, verify with FLX (requires stopping container first):
-
-```bash
-docker stop advent-mud
-./flx << EOF
-disk build/disks/rsts1.dsk
-clean
-get [1,2]FILENAME.EXT /tmp/extracted.bin
-quit
-EOF
-diff /tmp/extracted.bin original_file.bin
-docker start advent-mud
-```
-
-##### Tested and Confirmed Working
-
-1. Created 1024-byte test file with pattern 0x00-0xFF repeated
-2. Transferred via TECO
-3. Extracted via FLX
-4. Binary comparison: **IDENTICAL**
-5. Container restart: **File persisted**
 
 ### 2. Binary Data Format
 
@@ -244,6 +126,8 @@ Task Builder (TKB) creates the overlay structure from ADVENT.ODL.
 
 ## Build System
 
+The build system compiles ADVENT from source on every container start. This ensures source code changes are always reflected in the running game.
+
 ### Data Migration (`scripts/migrate_data.py`)
 
 Converts text salvage files to binary format:
@@ -252,51 +136,100 @@ Converts text salvage files to binary format:
 2. Parse `REFRSH.CTL` - Extract monster spawn data
 3. Generate binary files with proper record structure
 
-### Disk Patching (`scripts/build_disk.py`)
+### Room Reconstruction (`scripts/reconstruct_rooms.py`)
 
-Uses the `flx` tool from simtools:
+The original dungeon map was incomplete (only 4,201 of ~6,000+ exits). This script:
 
-1. Copy base disk image (rsts_backup.dsk)
-2. Run `flx clean` to clear dirty flag
-3. Patch source files to [1,3]
-4. Patch data files to [1,2]
+1. Analyzes existing exit patterns
+2. Discovers room clusters (Labyrinth, Arena, Shop etc.)
+3. Connects isolated rooms using heuristics
+4. Generates `dungeon_map.json` for the web map viewer
+
+### Tape Creation (`scripts/create_advent_tape.py`)
+
+Creates a DOS-11 format tape image containing all source and data files:
+
+```
+ADVENT.B2S      Main program
+ADVINI.SUB      Initialization
+ADVOUT.SUB      Output routines (in ROOT segment)
+ADVNOR.SUB      Room handling
+ADVCMD.SUB      Command parsing
+...etc...
+ADVENT.DTA      Room data (813KB)
+ADVENT.MON      Monster data
+ADVENT.CHR      Character data
+```
 
 ### Docker Build
 
 The Dockerfile:
-- Uses `rattydave/alpine-simh` as base
-- Copies pre-built disk images
-- Configures SIMH for auto-boot
-- Sets up ttyd web terminals
+- Builds SIMH PDP-11 emulator from source
+- Uses base RA72 disk image with RSTS/E V10.1 (no ADVENT)
+- Copies source files and creates tape image at build time
+- Runs room reconstruction to reconnect dungeon exits
+- On container start: boots RSTS/E, copies from tape, compiles, links
+
+### Build-from-Source Workflow
+
+Every container start:
+
+1. Restore pristine disk image (prevents corruption from unclean shutdown)
+2. Boot RSTS/E from RA72 disk
+3. Mount TMSCP tape: `MOUNT MU0: ADVENT`
+4. Copy source files: `COPY MU0:*.B2S SY:` etc.
+5. Copy data files: `COPY MU0:*.DTA SY:` etc.
+6. Compile with BP2: `OLD SY:filename` then `COMPILE`
+7. Link with TKB using ADVENT.ODL overlay definition
+8. Test game startup
+
+Build time: ~10-15 minutes on first start.
 
 ## SIMH Configuration
 
-Key settings in `pdp11.ini`:
+Key settings in `pdp11_ra72.ini`:
 
 ```ini
 ; CPU setup
 set cpu 11/44
 set cpu 4M
 
-; Disk drives
-attach hk0 /opt/advent/disks/rsts0.dsk
-attach hk1 /opt/advent/disks/rsts1.dsk
+; Throttle to realistic speed (~1.5 MIPS)
+set throttle 1500K
+
+; RA72 disk (1GB) with MSCP controller
+set rq0 ra72
+attach rq0 /opt/advent/disks/rstse_10_ra72.dsk
+
+; TMSCP tape for file transfer
+set tq enable
+attach tq0 /opt/advent/tapes/advent_source.tap
 
 ; Terminal multiplexer
+set dz enable
+set dz lines=8
 attach dz 2323
+
+; Console on TCP (buffered for auto-boot)
+set console telnet=2322
+set console telnet=buffered
 
 ; Auto-boot with expect scripts
 expect "Today's date?" send "1-JAN-92\r"; continue
 expect "Current time?" send "12:00\r"; continue
+expect "Start timesharing?" send "Y\r"; continue
+
+boot rq0
 ```
 
 ## RSTS/E Boot Sequence
 
-1. Boot from HK0 (system disk)
-2. Answer date/time prompts
-3. Start timesharing
+1. Boot from RQ0 (RA72 system disk via MSCP controller)
+2. SIMH expect scripts answer date/time prompts automatically
+3. Start timesharing (answered automatically)
 4. System runs [0,1]START.COM
-5. User can login on DZ11 terminals
+5. `build_advent.exp` logs in and compiles ADVENT from tape
+6. Users can login via web interface or DZ11 terminals
 
 ## Data Recovery
 
@@ -327,9 +260,15 @@ The test script (`scripts/test_setup.py`) verifies:
 4. Login works (with pexpect)
 5. Game starts
 
+## Accomplished
+
+- **Build from source**: Game compiles on every container start via TMSCP tape transfer
+- **Room reconstruction**: 4,201 exits connected, enabling navigation of most rooms
+- **Web interface**: CRT-style terminal with status overlay and session takeover
+
 ## Future Work
 
-- Compile game from source within RSTS/E
-- Enable multi-user mode (KB11: device)
+- Enable multi-user mode (KB11: device for multiple concurrent players)
 - Test combat and inventory systems
-- Verify all 1587 rooms are navigable
+- Verify all 1590 rooms are navigable
+- Add character persistence between sessions

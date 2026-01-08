@@ -107,14 +107,27 @@
                         fetch('/api/kick')
                             .then(response => response.json())
                             .then(data => {
-                                // Reload the terminal frame to reconnect
+                                // game_session.sh handles reconnection automatically
+                                // Just reset UI state and keep polling for status
                                 setTimeout(() => {
-                                    if (terminalFrame) {
-                                        terminalFrame.src = terminalFrame.src;
+                                    // Reset overlay to "connecting" state
+                                    const overlayTitle = connectionOverlay?.querySelector('h2');
+                                    if (overlayTitle) {
+                                        overlayTitle.textContent = 'Reconnecting...';
+                                        overlayTitle.style.color = '';
                                     }
-                                    resetConnection();
-                                    startPolling();
-                                }, 1500);
+                                    if (waitMessage) {
+                                        waitMessage.textContent = 'Taking over session...';
+                                        waitMessage.style.color = '';
+                                    }
+                                    // Reset step indicators
+                                    Object.keys(steps).forEach(stepName => {
+                                        updateStep(stepName, 'pending');
+                                    });
+                                    updateStep('connect', 'active');
+                                    // Keep polling - game_session.sh will reconnect
+                                    lastStatus = null;
+                                }, 500);
                             })
                             .catch(err => {
                                 takeoverBtn.textContent = 'Failed - Try Again';
