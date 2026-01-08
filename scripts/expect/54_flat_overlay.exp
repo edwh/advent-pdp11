@@ -1,0 +1,173 @@
+#!/usr/bin/expect -f
+#
+# 54_flat_overlay.exp - Test flat (sibling) overlays WITHOUT + nesting
+#
+# The + creates NESTED overlays. For sibling overlays, don't use +
+#
+
+set timeout 180
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 10
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        puts "\n>>> System needs date..."
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        sleep 5
+        expect "User:"
+    }
+    timeout { puts "\n>>> Timeout waiting for login"; exit 1 }
+}
+
+puts "\n>>> Logging in..."
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in! Cleaning up..."
+send "DELETE SY:ADVENT.TSK\r"
+sleep 1
+expect -re {\$ }
+
+# Start LINK/BASIC/STRUCTURE
+puts "\n>>> Starting LINK/BASIC/STRUCTURE..."
+send "LINK/BASIC/STRUCTURE\r"
+
+expect "ROOT files:"
+puts "\n>>> ROOT files: All 14 files"
+# Need to provide ALL files - root and overlay
+send "SY:ADVENT,SY:ADVINI,SY:ADVOUT,SY:ADVNOR,SY:ADVCMD,SY:ADVODD\r"
+sleep 1
+
+expect "files:"
+puts "\n>>> More files"
+send "SY:ADVMSG,SY:ADVBYE,SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP\r"
+sleep 1
+
+expect "files:"
+puts "\n>>> More files"
+send "SY:ADVFND,SY:ADVTDY\r"
+sleep 1
+
+expect "COMMON"
+puts "\n>>> Root COMMON areas: blank"
+send "\r"
+sleep 1
+
+# Now overlays - WITHOUT + for sibling overlays
+expect "Overlay:"
+puts "\n>>> Overlay 1: ADVINI,ADVOUT (NO + for sibling)"
+send "SY:ADVINI,SY:ADVOUT\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 2: ADVNOR"
+send "SY:ADVNOR\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 3: ADVCMD"
+send "SY:ADVCMD\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 4: ADVODD,ADVMSG"
+send "SY:ADVODD,SY:ADVMSG\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 5: ADVBYE,ADVSHT,ADVNPC"
+send "SY:ADVBYE,SY:ADVSHT,SY:ADVNPC\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 6: ADVPUZ,ADVDSP,ADVFND,ADVTDY"
+send "SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Ending overlays with blank"
+send "\r"
+sleep 2
+
+# Wait for Libraries or completion
+expect {
+    "Libraries:" {
+        puts "\n>>> Got Libraries prompt"
+        send "\r"
+        sleep 3
+    }
+    "undefined" {
+        puts "\n>>> Undefined symbols"
+        exp_continue
+    }
+    "overflow" {
+        puts "\n>>> Address overflow"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+sleep 2
+puts "\n>>> Checking result..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# If exists, try running
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+expect {
+    "Name" {
+        puts "\n>>> Game prompt!"
+        send "Test\r"
+        sleep 2
+    }
+    "Memory" {
+        puts "\n>>> Memory error"
+    }
+    "Reserved" {
+        puts "\n>>> Reserved instruction trap"
+    }
+    "File does not exist" {
+        puts "\n>>> No TSK"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+sleep 1
+send "\003"
+sleep 1
+
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

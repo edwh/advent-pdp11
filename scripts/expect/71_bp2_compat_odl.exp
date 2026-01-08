@@ -1,0 +1,138 @@
+#!/usr/bin/expect -f
+#
+# 71_bp2_compat_odl.exp - Create ODL compatible with BP2IC7.ODL
+#
+# BP2IC7.ODL defines BASIC2 factor. Our ODL should work WITH it,
+# not replace it.
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "system startup is complete"
+        sleep 3
+        send "\r"
+        expect "User:"
+    }
+    "User:" { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r" }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+puts "\n>>> Logged in"
+
+send "DELETE SY:ADVENT.TSK,ADVENT.MAP,ADVENT.ODL\r"
+sleep 2
+expect -re {\$ }
+
+# First, look at BP2IC7.ODL to understand the structure
+puts "\n>>> Examining BP2IC7.ODL..."
+send "TYPE LB:BP2IC7.ODL\r"
+sleep 3
+expect -re {\$ }
+
+# Create ODL that includes BP2 structure
+puts "\n>>> Creating BP2-compatible ODL..."
+send "CREATE SY:ADVENT.ODL\r"
+expect "CTRL/Z"
+
+# Include BP2's ODL first
+send "@LB:BP2IC7.ODL\r"
+sleep 0.3
+# Define our overlays within BP2's structure
+# The .ROOT must reference BASIC2 (defined in BP2IC7.ODL) and our overlay
+send ".ROOT SY:\[1,2\]ADVENT-BASIC2-*(OVLY)\r"
+sleep 0.3
+send "OVLY:\t.FCTR *(A,B,C,D,E)\r"
+sleep 0.3
+send "A:\t.FCTR SY:\[1,2\]ADVINI,SY:\[1,2\]ADVOUT,SY:\[1,2\]ADVNOR\r"
+sleep 0.3
+send "B:\t.FCTR SY:\[1,2\]ADVCMD,SY:\[1,2\]ADVODD,SY:\[1,2\]ADVMSG\r"
+sleep 0.3
+send "C:\t.FCTR SY:\[1,2\]ADVBYE,SY:\[1,2\]ADVSHT,SY:\[1,2\]ADVNPC\r"
+sleep 0.3
+send "D:\t.FCTR SY:\[1,2\]ADVPUZ,SY:\[1,2\]ADVDSP,SY:\[1,2\]ADVFND\r"
+sleep 0.3
+send "E:\t.FCTR SY:\[1,2\]ADVTDY\r"
+sleep 0.3
+send "\t.END\r"
+sleep 0.3
+send "\032"
+sleep 2
+expect -re {\$ }
+
+puts "\n>>> Showing ODL..."
+send "TYPE SY:ADVENT.ODL\r"
+sleep 3
+expect -re {\$ }
+
+# Try linking with /STRUCTURE pointing to our ODL
+puts "\n>>> Linking with BP2-compat ODL..."
+send "LINK/BASIC/STRUCTURE=@SY:ADVENT.ODL SY:ADVENT\r"
+sleep 30
+
+expect {
+    "undefined" { puts "\n>>> Undefined symbols"; exp_continue }
+    "Address overflow" { puts "\n>>> Address overflow"; exp_continue }
+    "Illegal" { puts "\n>>> Illegal error"; exp_continue }
+    "syntax" { puts "\n>>> Syntax error"; exp_continue }
+    -re {\$ } { puts "\n>>> Link done" }
+    timeout { puts "\n>>> Timeout"; send "\003" }
+}
+
+expect -re {\$ }
+
+puts "\n>>> Checking TSK..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+puts "\n>>> MAP file..."
+send "TYPE SY:ADVENT.MAP\r"
+sleep 5
+expect -re {\$ }
+
+puts "\n>>> Testing..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    "Name" { puts "\n>>> SUCCESS!"; send "Test\r"; sleep 2 }
+    "Illegal SYS" { puts "\n>>> Illegal SYS error" }
+    "Reserved instruction" { puts "\n>>> Reserved instruction" }
+    "does not exist" { puts "\n>>> No TSK" }
+    -re {\$ } { puts "\n>>> Back to prompt" }
+}
+
+send "\003"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Done"

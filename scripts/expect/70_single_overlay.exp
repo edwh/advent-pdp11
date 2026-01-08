@@ -1,0 +1,101 @@
+#!/usr/bin/expect -f
+#
+# 70_single_overlay.exp - Try single large overlay segment
+#
+# Maybe multiple overlay segments cause "Illegal SYS()"?
+# Try putting ALL subroutines in ONE overlay.
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "system startup is complete"
+        sleep 3
+        send "\r"
+        expect "User:"
+    }
+    "User:" { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r" }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+puts "\n>>> Logged in"
+
+send "DELETE SY:ADVENT.TSK,ADVENT.MAP\r"
+sleep 2
+expect -re {\$ }
+
+# Try LINK with just ONE overlay containing ALL subroutines
+# Format: main program ; all subs in ONE overlay
+# Syntax: main;(all,subs,together)
+
+puts "\n>>> Linking with single overlay..."
+
+# LINK/BASIC command with STRUCTURE: put all in one overlay
+send "LINK/BASIC/STRUCTURE=(SY:ADVENT;(SY:ADVINI,SY:ADVOUT,SY:ADVNOR,SY:ADVCMD,SY:ADVODD,SY:ADVMSG,SY:ADVBYE,SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY))\r"
+sleep 30
+
+expect {
+    "undefined" { puts "\n>>> Undefined symbols"; exp_continue }
+    "Address overflow" { puts "\n>>> Address overflow"; exp_continue }
+    "Illegal" { puts "\n>>> Illegal memory"; exp_continue }
+    -re {\$ } { puts "\n>>> Link done" }
+    timeout { puts "\n>>> Timeout"; send "\003" }
+}
+
+expect -re {\$ }
+
+puts "\n>>> Checking TSK..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+puts "\n>>> MAP file..."
+send "TYPE SY:ADVENT.MAP\r"
+sleep 5
+expect -re {\$ }
+
+puts "\n>>> Testing..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    "Name" { puts "\n>>> SUCCESS!"; send "Test\r"; sleep 2 }
+    "Illegal SYS" { puts "\n>>> Illegal SYS error" }
+    "Reserved instruction" { puts "\n>>> Reserved instruction" }
+    "does not exist" { puts "\n>>> No TSK" }
+    -re {\$ } { puts "\n>>> Back to prompt" }
+}
+
+send "\003"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Done"

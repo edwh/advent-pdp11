@@ -1,0 +1,99 @@
+#!/usr/bin/expect -f
+#
+# 08_copy_advent_source.exp - Copy ADVENT source from tape and build
+#
+# Prerequisites:
+#   - RSTS/E V10.1 running on RA72
+#   - advent_source.tap attached to MU0:
+#
+
+set timeout 60
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    timeout { puts ">>> Timeout waiting for User prompt"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+
+expect {
+    "Job number to attach to?" {
+        send "\r"
+        expect -re {\$ }
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout after login"; exit 1 }
+}
+
+puts "\n>>> Logged in successfully"
+
+# Mount advent tape
+puts ">>> Mounting ADVENT source tape..."
+send "MOUNT MU0: ADVENT\r"
+expect {
+    -re {\$ } { puts ">>> Tape mounted" }
+    timeout { puts ">>> Mount timeout"; exit 1 }
+}
+
+# List tape contents
+puts "\n>>> Tape contents:"
+send "DIR MU0:\r"
+expect -re {\$ }
+
+# Copy source files to SY:[1,2]
+puts "\n>>> Copying source files..."
+
+# Main program
+send "COPY MU0:ADVENT.B2S SY:\r"
+expect -re {\$ }
+
+# Subroutines
+foreach sub {ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY} {
+    send "COPY MU0:$sub.SUB SY:\r"
+    expect -re {\$ }
+}
+
+# Data files
+puts "\n>>> Copying data files..."
+send "COPY MU0:ADVENT.DTA SY:\r"
+expect -re {\$ }
+send "COPY MU0:ADVENT.MON SY:\r"
+expect -re {\$ }
+send "COPY MU0:ADVENT.CHR SY:\r"
+expect -re {\$ }
+send "COPY MU0:ADVENT.NTC SY:\r"
+expect -re {\$ }
+
+# Check files copied
+puts "\n>>> Files on disk:"
+send "DIR SY:*.B2S,*.SUB,*.DTA,*.MON,*.CHR,*.NTC\r"
+expect -re {\$ }
+
+# Dismount tape
+send "DISMOUNT MU0:\r"
+expect -re {\$ }
+
+# Create ADVENT.ODL with RT11 format (copy from FEDTKB.ODL)
+puts "\n>>> Creating ADVENT.ODL with RT11 format..."
+send "COPY SY:\[0,200\]FEDTKB.ODL SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Verify RT11 format
+send "DIR/FULL SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+puts "\n>>> Source files copied and ODL created"
+send "BYE\r"
+expect eof
+
+puts "\n>>> Script finished successfully"

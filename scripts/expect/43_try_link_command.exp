@@ -1,0 +1,132 @@
+#!/usr/bin/expect -f
+#
+# 43_try_link_command.exp - Try DCL LINK command instead of TKB
+#
+
+set timeout 180
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# First examine existing ADVENT.ODL
+puts "\n>>> Examining existing ADVENT.ODL..."
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# And ADVENT.CMD
+puts "\n>>> Examining existing ADVENT.CMD..."
+send "TYPE SY:ADVENT.CMD\r"
+expect -re {\$ }
+
+# Check if LINK command exists
+puts "\n>>> Checking LINK command..."
+send "HELP LINK\r"
+expect -re {\$ }
+
+# Try the LINK command
+puts "\n>>> Trying LINK SY:ADVENT..."
+send "LINK SY:ADVENT\r"
+expect {
+    "TKB" {
+        puts ">>> TKB started via LINK"
+        exp_continue
+    }
+    "Enter Options:" {
+        puts ">>> Options prompt"
+        send "//\r"
+    }
+    "FATAL" {
+        puts ">>> FATAL error"
+    }
+    -re {\$ } {
+        puts ">>> Returned to DCL"
+    }
+    timeout { puts ">>> Timeout" }
+}
+expect -re {\$ }
+
+# Try LINK with the command file
+puts "\n>>> Trying LINK @SY:ADVENT..."
+send "LINK @SY:ADVENT\r"
+expect {
+    "Enter Options:" {
+        puts ">>> Options prompt"
+        send "//\r"
+    }
+    "FATAL" {
+        puts ">>> FATAL error"
+    }
+    -re {\$ } {
+        puts ">>> Returned to DCL"
+    }
+    timeout { puts ">>> Timeout" }
+}
+expect -re {\$ }
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+# Try LINK with verbose/debug output
+puts "\n>>> Trying LINK/OPTIONS..."
+send "LINK/DEBUG SY:ADVENT\r"
+expect {
+    "FATAL" {
+        puts ">>> FATAL error"
+        exp_continue
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout" }
+}
+
+# Maybe we need to look at the LINK syntax
+puts "\n>>> Checking LINK syntax..."
+send "LINK\r"
+expect {
+    -re {[?]} {
+        puts ">>> LINK prompt"
+    }
+    "_" {
+        puts ">>> LINK continuation"
+        send "\003"
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout" }
+}
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

@@ -1,0 +1,99 @@
+#!/usr/bin/expect -f
+#
+# 09_build_advent.exp - Compile and build ADVENT with BP2
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 2
+send "\r"
+
+expect {
+    "User:" { }
+    timeout { puts ">>> Timeout waiting for User prompt"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+
+expect {
+    "Job number to attach to?" {
+        send "\r"
+        expect -re {\$ }
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout after login"; exit 1 }
+}
+
+puts "\n>>> Logged in successfully"
+
+# Start BP2 compiler
+puts "\n>>> Starting BP2 compiler..."
+send "BP2\r"
+expect {
+    "Ready" { puts ">>> BP2 ready" }
+    "BASIC2" {
+        puts ">>> BASIC2 started"
+        expect "Ready"
+    }
+    timeout { puts ">>> BP2 timeout"; exit 1 }
+}
+
+# Compile main program
+puts "\n>>> Compiling ADVENT.B2S..."
+send "OLD SY:ADVENT.B2S\r"
+expect "Ready"
+send "COMPILE\r"
+expect {
+    "Ready" { puts ">>> ADVENT compiled" }
+    timeout { puts ">>> Compile timeout" }
+}
+
+# Compile each subroutine
+foreach sub {ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY} {
+    puts ">>> Compiling $sub.SUB..."
+    send "OLD SY:$sub.SUB\r"
+    expect "Ready"
+    send "COMPILE\r"
+    expect {
+        "Ready" { }
+        timeout { puts ">>> Compile timeout for $sub" }
+    }
+}
+
+puts "\n>>> All files compiled. Attempting BUILD..."
+
+# Try BUILD command to create .TSK
+send "BUILD SY:ADVENT=SY:ADVENT,SY:ADVINI,SY:ADVOUT,SY:ADVNOR,SY:ADVCMD,SY:ADVODD,SY:ADVMSG,SY:ADVBYE,SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY\r"
+expect {
+    "Ready" { puts ">>> BUILD complete" }
+    "TKB" {
+        puts ">>> TKB output:"
+        expect "Ready"
+    }
+    "overflow" {
+        puts ">>> Address overflow - need overlays"
+        expect "Ready"
+    }
+    timeout { puts ">>> BUILD timeout" }
+}
+
+# Exit BP2
+send "BYE\r"
+expect -re {\$ }
+
+# Check what was created
+puts "\n>>> Checking build results..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Script finished"

@@ -1,0 +1,119 @@
+#!/usr/bin/expect -f
+#
+# 07_restore_bp2.exp - Properly restore BP2 compiler from tape
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    timeout { puts ">>> Timeout waiting for User prompt"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+
+expect {
+    "Job number to attach to?" {
+        send "\r"
+        expect -re {\$ }
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout after login"; exit 1 }
+}
+
+puts "\n>>> Logged in successfully"
+
+# Mount BP2 tape
+puts ">>> Mounting BP2 tape..."
+send "MOUNT MU0: BP2\r"
+expect {
+    -re {\$ } { puts ">>> Tape mounted" }
+    timeout { puts ">>> Mount timeout"; exit 1 }
+}
+
+# First, list what's in BP2.BCK
+puts "\n>>> Listing contents of BP2.BCK..."
+send "BACKUP/LIST MU0:BP2.BCK\r"
+expect {
+    -re {\$ } { puts ">>> List complete" }
+    timeout { puts ">>> List timeout" }
+}
+
+# Now restore BP2.BCK WITHOUT /NOLOG
+puts "\n>>> Restoring BP2.BCK to \[1,1\]..."
+send "BACKUP/RESTORE MU0:BP2.BCK SY:\[1,1\]\r"
+expect {
+    -re {\$ } { puts ">>> Restore complete" }
+    timeout { puts ">>> Restore timeout" }
+}
+
+# Also try INSTAL.BCK which might have installation scripts
+puts "\n>>> Checking INSTAL.BCK contents..."
+send "BACKUP/LIST MU0:INSTAL.BCK\r"
+expect {
+    -re {\$ } { }
+    timeout { }
+}
+
+# Check for compiler tasks now
+puts "\n>>> Checking for BP2 compiler tasks..."
+send "DIR SY:\[1,1\]\$BP2IC*.TSK\r"
+expect {
+    -re {\$ } { }
+    timeout { }
+}
+
+# Also check [1,2] and [0,1] directories
+send "DIR SY:\[1,2\]\$BP2IC*.TSK\r"
+expect {
+    -re {\$ } { }
+    timeout { }
+}
+
+send "DIR SY:\[0,1\]\$BP2*.TSK\r"
+expect {
+    -re {\$ } { }
+    timeout { }
+}
+
+# Try running BP2 via different methods
+puts "\n>>> Trying to run BP2..."
+send "BP2\r"
+expect {
+    "Ready" {
+        puts ">>> BP2 works!"
+        send "BYE\r"
+        expect -re {\$ }
+    }
+    "BASIC2" {
+        puts ">>> BASIC2 started!"
+        expect "Ready"
+        send "BYE\r"
+        expect -re {\$ }
+    }
+    "?Can't find" {
+        puts ">>> BP2 command not found"
+        expect -re {\$ }
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout" }
+}
+
+# Dismount tape
+send "DISMOUNT MU0:\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Script finished"

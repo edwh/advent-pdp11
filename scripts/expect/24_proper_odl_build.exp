@@ -1,0 +1,237 @@
+#!/usr/bin/expect -f
+#
+# 24_proper_odl_build.exp - Build ADVENT with proper ODL format
+#
+# Key discovery: FEDTKB.ODL uses TAB indentation before directives
+# Format: <TAB>.ROOT<TAB>...
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    "User:" { }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> LOGGED IN"
+
+# Check OBJ files exist
+puts "\n>>> Checking for OBJ files..."
+send "DIR SY:ADVENT.OBJ\r"
+expect -re {\$ }
+
+# Step: Create ODL file with proper format (matching FEDTKB.ODL)
+puts "\n>>> Creating ADVENT.ODL with proper format..."
+
+# Delete if exists
+send "DELETE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Create new ODL using CREATE (produces RT11 format)
+# Use TAB characters for indentation like FEDTKB.ODL
+send "CREATE SY:ADVENT.ODL\r"
+expect "CTRL/Z"
+sleep 1
+
+puts ">>> Sending ODL content with TAB indentation..."
+
+# Comment header
+send ";\r"
+sleep 0.2
+send "; ADVENT.ODL - Overlay descriptor for ADVENT MUD\r"
+sleep 0.2
+send ";\r"
+sleep 0.2
+
+# TAB character is \t (ASCII 9)
+# Match FEDTKB style: <TAB>.ROOT<TAB>segment-*(overlays)
+
+# Root structure - main program with library and overlays
+# Using MAIN as root name (not ADVENT to avoid conflict with .FCTR ADVENT)
+send "\t.ROOT\tMAIN-LIB-*(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\r"
+sleep 0.3
+send "\t.NAME\tADVENT\r"
+sleep 0.2
+
+# Define segments - MAIN contains the main program, LIB contains runtime
+send "MAIN:\t.FCTR\tSY:ADVENT\r"
+sleep 0.2
+send "LIB:\t.FCTR\tLB:BP2OTS/LB\r"
+sleep 0.2
+
+# Overlay segments - one for each subroutine
+send "INI:\t.FCTR\tSY:ADVINI\r"
+sleep 0.2
+send "OUT:\t.FCTR\tSY:ADVOUT\r"
+sleep 0.2
+send "NOR:\t.FCTR\tSY:ADVNOR\r"
+sleep 0.2
+send "CMD:\t.FCTR\tSY:ADVCMD\r"
+sleep 0.2
+send "ODD:\t.FCTR\tSY:ADVODD\r"
+sleep 0.2
+send "MSG:\t.FCTR\tSY:ADVMSG\r"
+sleep 0.2
+send "BYE:\t.FCTR\tSY:ADVBYE\r"
+sleep 0.2
+send "SHT:\t.FCTR\tSY:ADVSHT\r"
+sleep 0.2
+send "NPC:\t.FCTR\tSY:ADVNPC\r"
+sleep 0.2
+send "PUZ:\t.FCTR\tSY:ADVPUZ\r"
+sleep 0.2
+send "DSP:\t.FCTR\tSY:ADVDSP\r"
+sleep 0.2
+send "FND:\t.FCTR\tSY:ADVFND\r"
+sleep 0.2
+send "TDY:\t.FCTR\tSY:ADVTDY\r"
+sleep 0.2
+
+send "\t.END\r"
+sleep 0.5
+
+# Send Ctrl+Z to end CREATE
+send "\032"
+sleep 1
+expect -re {\$ }
+
+# Verify the ODL
+puts "\n>>> Verifying ODL file..."
+send "DIR/FULL SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Run TKB
+puts "\n>>> STEP: Running TKB..."
+set timeout 600
+
+send "TKB\r"
+expect "TKB>"
+
+# TKB command: taskfile/options=odlfile
+# /FP = floating point support
+send "SY:ADVENT/FP=SY:ADVENT.ODL\r"
+
+expect {
+    "TKB>" {
+        puts ">>> TKB accepted ODL - entering options"
+    }
+    "TKB -- *FATAL*" {
+        puts ">>> TKB FATAL error"
+        expect -re {.*\n}
+        expect "TKB>"
+    }
+    "TKB -- *DIAG*" {
+        puts ">>> TKB diagnostic"
+        exp_continue
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    timeout { puts ">>> TKB timeout" }
+}
+
+# Enter options
+send "/\r"
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode"
+    }
+    "TKB>" {
+        send "/\r"
+        exp_continue
+    }
+}
+
+# BP2 task options
+send "UNITS=13\r"
+expect "TKB>"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+send "EXTTSK=512\r"
+expect "TKB>"
+
+# End options and build
+send "//\r"
+
+expect {
+    -re {\$ } {
+        puts "\n>>> TKB completed - back to DCL"
+    }
+    "overflow" {
+        puts ">>> OVERFLOW ERROR"
+        exp_continue
+    }
+    "undefined symbol" {
+        puts ">>> Undefined symbols (expected during linking)"
+        exp_continue
+    }
+    "TKB -- *DIAG*" {
+        puts ">>> TKB diagnostic"
+        exp_continue
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    "TKB>" {
+        send "//\r"
+        exp_continue
+    }
+    timeout { puts ">>> TKB timeout" }
+}
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "DIR SY:*.TSK\r"
+expect -re {\$ }
+
+# If TSK exists, try to run it
+send "DIR SY:ADVENT.TSK\r"
+expect {
+    "ADVENT.TSK" {
+        puts ">>> SUCCESS - ADVENT.TSK created!"
+    }
+    "Can't find" {
+        puts ">>> ADVENT.TSK not found"
+    }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n=========================================="
+puts ">>> BUILD SCRIPT COMPLETE"
+puts "=========================================="

@@ -1,0 +1,104 @@
+#!/usr/bin/expect -f
+#
+# 41_examine_bp2_odl.exp - Examine BP2 ODL files that might work!
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Examine each BP2ICx.ODL file
+puts "\n>>> Examining BP2IC1.ODL..."
+send "TYPE LB:BP2IC1.ODL\r"
+expect -re {\$ }
+
+puts "\n>>> Examining BP2IC2.ODL..."
+send "TYPE LB:BP2IC2.ODL\r"
+expect -re {\$ }
+
+puts "\n>>> Examining BP2IC3.ODL..."
+send "TYPE LB:BP2IC3.ODL\r"
+expect -re {\$ }
+
+# Check their file format
+puts "\n>>> Checking ODL file formats..."
+send "DIR/FULL LB:BP2IC*.ODL\r"
+expect -re {\$ }
+
+# Also check BP2.LNK
+puts "\n>>> Examining BP2.LNK..."
+send "TYPE LB:BP2.LNK\r"
+expect -re {\$ }
+
+# Test TKB with one of these ODL files
+puts "\n>>> Testing TKB with BP2IC1.ODL..."
+send "TKB\r"
+expect "TKB>"
+
+send "SY:TEST=LB:BP2IC1.ODL\r"
+expect {
+    "TKB>" {
+        puts ">>> ODL accepted!"
+    }
+    "TKB -- *FATAL*" {
+        puts ">>> FATAL error"
+        expect -re {.*\n}
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+}
+
+send "/\r"
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode - ODL worked!"
+        send "//\r"
+    }
+    "TKB>" {
+        send "//\r"
+    }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+# Check if BP2 BUILD uses these ODL files somehow
+puts "\n>>> Checking BP2.COM for build process..."
+send "TYPE BP2\$:BP2.COM\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Check complete"

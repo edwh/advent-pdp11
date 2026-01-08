@@ -1,0 +1,234 @@
+#!/usr/bin/expect -f
+#
+# 18_build_with_overlays.exp - Build ADVENT with proper overlay structure
+#
+# The key issue: ADVENT program is too large for one segment.
+# Need to use overlays - each subroutine as a separate overlay.
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# First compile all source files (same as before)
+puts "\n>>> STEP 1: Copying source files..."
+send "MOUNT MU0: ADVENT\r"
+expect -re {\$ }
+
+set files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB ADVENT.DTA ADVENT.MON ADVENT.CHR}
+foreach f $files {
+    send "COPY/REPLACE MU0:$f SY:\r"
+    expect -re {\$ }
+    puts ">>> Copied $f"
+}
+send "DISMOUNT MU0:\r"
+expect -re {\$ }
+
+# Compile all files
+puts "\n>>> STEP 2: Compiling source files..."
+send "BP2\r"
+expect "BASIC2"
+
+send "OLD SY:ADVENT.B2S\r"
+expect "BASIC2"
+send "COMPILE\r"
+expect "BASIC2"
+puts ">>> ADVENT compiled"
+
+set subs {ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY}
+foreach sub $subs {
+    send "OLD SY:$sub.SUB\r"
+    expect "BASIC2"
+    send "COMPILE\r"
+    expect "BASIC2"
+    puts ">>> $sub compiled"
+}
+
+send "EXIT\r"
+expect -re {\$ }
+puts "\n>>> All files compiled"
+
+# Create ODL file with overlay structure
+# Copy FEDTKB.ODL first to get RT11 format
+puts "\n>>> STEP 3: Creating ADVENT.ODL with overlays..."
+send "COPY SY:\[0,200\]FEDTKB.ODL SY:\[1,2\]ADVENT.ODL\r"
+expect -re {\$ }
+
+# Now use CREATE to overwrite with correct content
+# Note: CREATE may change file format, so let's try a different approach
+# We'll use the APPEND method or try inline ODL
+
+puts "\n>>> Creating TKB command file with inline ODL..."
+
+# Delete the existing ODL (we'll provide it inline)
+send "DELETE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Let's try TKB directly with overlay specification inline
+# TKB can accept ODL-style commands at the prompt
+puts "\n>>> STEP 4: Running TKB with overlays..."
+set timeout 600
+
+send "TKB\r"
+expect "TKB>"
+
+# Define the task with overlays using TKB command syntax
+# Format: task=input files/-OD option for overlay descriptor
+# Or we can use inline overlay specification
+
+# Let's try the simpler approach first - build with overlays inline
+# TKB command: task/options=input,input,.../-OD=odl
+# Or: define overlays directly
+
+puts ">>> Sending TKB commands..."
+
+# First try: Simple linear linkage to see if size allows
+# Note: We discovered earlier this gives address overflow
+
+# Method 2: Use TKB's overlay syntax
+# .ROOT ADVENT-LIBR-*(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)
+
+# Actually, let me try a different approach - create ODL using BASIC OPEN/PRINT
+# The file will be RSX format but let's see if TKB actually requires RT11
+
+send "SY:ADVENT/FP/-OD=SY:ADVODL\r"
+expect {
+    "TKB>" { }
+    "TKB -- *" { exp_continue }
+}
+
+# Now provide the overlay structure inline
+send ".ROOT ADVENT-LIBR-*(INI,OUT,NOR,CMD,ODD,MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\r"
+expect "TKB>"
+
+send ".NAME ADVENT\r"
+expect "TKB>"
+
+send "ADVENT: .FCTR SY:ADVENT\r"
+expect "TKB>"
+
+send "INI: .FCTR SY:ADVINI\r"
+expect "TKB>"
+
+send "OUT: .FCTR SY:ADVOUT\r"
+expect "TKB>"
+
+send "NOR: .FCTR SY:ADVNOR\r"
+expect "TKB>"
+
+send "CMD: .FCTR SY:ADVCMD\r"
+expect "TKB>"
+
+send "ODD: .FCTR SY:ADVODD\r"
+expect "TKB>"
+
+send "MSG: .FCTR SY:ADVMSG\r"
+expect "TKB>"
+
+send "BYE: .FCTR SY:ADVBYE\r"
+expect "TKB>"
+
+send "SHT: .FCTR SY:ADVSHT\r"
+expect "TKB>"
+
+send "NPC: .FCTR SY:ADVNPC\r"
+expect "TKB>"
+
+send "PUZ: .FCTR SY:ADVPUZ\r"
+expect "TKB>"
+
+send "DSP: .FCTR SY:ADVDSP\r"
+expect "TKB>"
+
+send "FND: .FCTR SY:ADVFND\r"
+expect "TKB>"
+
+send "TDY: .FCTR SY:ADVTDY\r"
+expect "TKB>"
+
+send "LIBR: .FCTR LB:BP2OTS/LB\r"
+expect "TKB>"
+
+send ".END\r"
+expect "TKB>"
+
+# Now enter options
+send "//\r"
+expect {
+    "Enter Options:" { }
+    "TKB>" { send "/\r"; exp_continue }
+}
+
+# Enter options for BP2 task
+send "UNITS=13\r"
+expect "TKB>"
+
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+
+send "EXTTSK=512\r"
+expect "TKB>"
+
+send "//\r"
+expect {
+    -re {\$ } { puts "\n>>> TKB completed - back to DCL" }
+    "TKB>" {
+        puts "\n>>> Still at TKB prompt"
+        send "//\r"
+        exp_continue
+    }
+    "overflow" {
+        puts "\n>>> Overflow error"
+    }
+    "undefined" {
+        puts "\n>>> Undefined symbols"
+        exp_continue
+    }
+    timeout {
+        puts "\n>>> TKB timeout"
+    }
+}
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "DIR SY:*.TSK\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Build script complete"

@@ -37,6 +37,11 @@ RUN mkdir -p disks
 # Copy RA72 disk image (1GB)
 COPY simh/Disks/ra72/rstse_10_ra72.dsk /opt/rsts/disks/
 
+# Copy tape images for file transfer
+RUN mkdir -p /opt/rsts/tapes
+COPY simh/tapes/advent_source.tap /opt/rsts/tapes/
+COPY simh/tapes/bp2_v2_7.tap /opt/rsts/tapes/
+
 # Copy SIMH config
 COPY simh/pdp11_ra72.ini /opt/rsts/pdp11.ini
 

@@ -1,0 +1,117 @@
+#!/usr/bin/expect -f
+#
+# 42_test_odl_at_syntax.exp - Test @ syntax for ODL inclusion
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# First examine BP2IC7.ODL (the one referenced in BP2.LNK)
+puts "\n>>> Examining BP2IC7.ODL..."
+send "TYPE LB:BP2IC7.ODL\r"
+expect -re {\$ }
+
+# Check what other RMS ODL files exist
+puts "\n>>> Checking for RMS ODL files..."
+send "DIR LB:RMS*.ODL\r"
+expect -re {\$ }
+
+# Try TKB with @ syntax to include ODL
+puts "\n>>> Testing TKB with @ syntax..."
+send "TKB\r"
+expect "TKB>"
+
+# Try including ODL file with @ prefix
+send "@LB:BP2IC1.ODL\r"
+expect {
+    "TKB>" {
+        puts ">>> @ syntax accepted - waiting for more input"
+    }
+    "FATAL" {
+        puts ">>> FATAL error"
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+# Try entering our object file after the ODL
+send "SY:ADVENT.OBJ\r"
+expect {
+    "TKB>" {
+        puts ">>> Object file added"
+    }
+    "FATAL" {
+        puts ">>> FATAL error"
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+# Try to specify output
+send "SY:TESTADV/FP\r"
+expect "TKB>"
+
+# Enter library
+send "LB:BP2OTS/LB\r"
+expect "TKB>"
+
+# End input
+send "/\r"
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode"
+        send "//\r"
+    }
+    "FATAL" {
+        puts ">>> Build failed"
+    }
+    -re {\$ } { }
+    timeout { puts ">>> Timeout" }
+}
+
+expect -re {\$ }
+
+# Check if any TSK was created
+puts "\n>>> Checking for TESTADV.TSK..."
+send "DIR SY:TESTADV.*\r"
+expect -re {\$ }
+
+# Let's also look at what ADVENT files we have
+puts "\n>>> Current ADVENT files..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

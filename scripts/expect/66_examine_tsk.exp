@@ -1,0 +1,89 @@
+#!/usr/bin/expect -f
+#
+# 66_examine_tsk.exp - Examine working ADVENT.TSK if it exists
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "User:" {
+        send "1,2\r"
+        expect "Password:"
+        send "SYSTEM\r"
+        expect {
+            "Job number" { send "\r"; expect -re {\$ } }
+            -re {\$ } { }
+        }
+    }
+    -re {\$ } { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+puts "\n>>> Looking for TSK files..."
+send "DIR/FULL SY:\[1,2\]*.TSK\r"
+sleep 3
+expect -re {\$ }
+
+puts "\n>>> Looking for any working ADVENT..."
+send "DIR/FULL SY:\[0,1\]*.TSK\r"
+sleep 3
+expect -re {\$ }
+
+puts "\n>>> Checking system RTS..."
+send "DIR SY:\[0,1\]*.RTS\r"
+sleep 2
+expect -re {\$ }
+
+# If there's an ADVENT.TSK, try to see its attributes
+puts "\n>>> Trying to examine ADVENT.TSK attributes..."
+send "DIR/FULL DU0:\[1,2\]ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# Check what OBJ files exist (might tell us about overlay structure)
+puts "\n>>> Checking OBJ files..."
+send "DIR SY:\[1,2\]*.OBJ\r"
+sleep 2
+expect -re {\$ }
+
+# Try running the game to confirm it works
+puts "\n>>> Testing if pre-existing ADVENT works..."
+send "RUN DU0:\[1,2\]ADVENT\r"
+sleep 5
+expect {
+    "Name" {
+        puts "\n>>> Game works!"
+        send "Test\r"
+        sleep 2
+        expect {
+            ">>>" { puts "\n>>> Got debug output" }
+            -timeout 3 { }
+        }
+        send "QUIT\r"
+        sleep 2
+    }
+    "does not exist" {
+        puts "\n>>> No ADVENT.TSK exists"
+    }
+    "Illegal SYS" {
+        puts "\n>>> Illegal SYS error"
+    }
+    -re {\$ } { puts "\n>>> Back to prompt" }
+}
+
+send "\003"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Examination complete"

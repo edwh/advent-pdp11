@@ -1,14 +1,14 @@
 10	SUB ADVOUT(ADVOUT.KB%,MESS$) &
 \	ON ERROR GOTO 25000 &
-\	COMMON ACC$(8%)=7%,AR$=80%,C%,C$=10%,CRLF$=2%, &
-	FLAG%(8%),HP%(8%),LEVEL%(8%),KB%(8%),NAM$(8%)=30%,NO.OF.USERS%, &
-	XP.(8%),STUN(8%), &
-	NPCMESS$(8%)=40%,OB$(8%,9%)=30%,PASS$(8%)=10%, &
-	ROOM%(8%),SENT.KB%,SENT.MESS$=80%,SENT.PROG%,SENT.PROJ%, &
-	USER%,CI$=1%,WEAPON$(8%)=20%,WEAPON%(8%), &
+\	COMMON C%,NO.OF.USERS%,SENT.KB%,SENT.PROG%,SENT.PROJ%,USER%,USER1%,SINGLE.USER%, &
+	FLAG%(8%),HP%(8%),LEVEL%(8%),KB%(8%),ROOM%(8%),WEAPON%(8%), &
 	ATT.LEVEL%(10%),DEF.LEVEL%(10%),MON.HP%(10%),MON.DAM%(10%), &
-	SPEC$(10%)=6%,MON.ROOM%(10%),MON.XP%(10%),RUN.ACC$=9%,MMM$=128%, &
-	BLIND%(8%),USER1%,SPY%(10%),FATIGUE%(10%),SINGLE.USER% &
+	MON.ROOM%(10%),MON.XP%(10%),BLIND%(8%),SPY%(10%),FATIGUE%(10%), &
+	XP.(8%),STUN(8%), &
+	AR$=80%,C$=10%,CRLF$=2%,SENT.MESS$=80%,CI$=1%,RUN.ACC$=9%,MMM$=128%, &
+	ACC$(8%)=7%,NAM$(8%)=30%,NPCMESS$(8%)=40%,OB$(8%,9%)=30%,PASS$(8%)=10%, &
+	WEAPON$(8%)=20%,SPEC$(10%)=6% &
+
 	! &
 	! Single-user mode: print directly to console &
 	! Set SINGLE.USER%=-1% in main program to enable &
@@ -27,25 +27,16 @@
 	IF ADVOUT.KB%<=10% &
 \	SUBEXIT &
 
-25000	! ERRORS &
-	&
-	&
-	IF ERL=10 AND ERR=6 THEN &
-	SPY%(ADVOUT.KB%)=0% &
-\	RESUME 32767 &
+25000	! ERRORS - Handle ERR=6 at line 10 specially &
+	IF ERL=10 AND ERR=6 THEN SPY%(ADVOUT.KB%)=0%
 
-28999	RESUME 29000 &
+25010	! For all errors, print message and exit &
+	IF LEN(MESS$)>0% THEN &
+		IF ASC(MESS$)<32% THEN PRINT RIGHT(MESS$,2%) ELSE PRINT MESS$
 
-29000	ON ERROR GOTO 32767 &
-\	OPEN 'MSG:LOG1.95' AS FILE #4%, MODE 2% &
-\	PRINT #4%, 'ADVOUT : ';ERT$(ERR);' at line';ERL;' at ';TIME$(0%) &
-\	PRINT #4%, 'Output directed to KB';NUM1$(ADVOUT.KB%);' message was :' &
-\	PRINT #4%, MESS$ &
-\	PRINT #4%, 'Spy directed to';SPY%(ADVOUT.KB%) IF SPY%(ADVOUT.KB%) &
-\	PRINT #4%, 'Spyer was ';NAM$(I%) IF KB%(I%)=SPY%(ADVOUT.KB%) FOR &
-	I%=1% TO 8% IF SPY%(ADVOUT.KB%) &
-\	CLOSE #4% &
-\	RESUME 32767 &
+25020	RESUME 32766
+
+32766	SUBEXIT &
 
 32767	SUBEND &
 

@@ -1,0 +1,117 @@
+#!/usr/bin/expect -f
+#
+# 64_simple_build.exp - Try building WITHOUT overlays using BP2 BUILD
+#
+# If the simple TSK works, then the problem is with LINK/BASIC/STRUCTURE.
+# If it fails the same way, the problem is in the source or RTS binding.
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "User:" { }
+    -re {\$ } { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+expect {
+    -re {\$ } { puts "\n>>> Already logged in" }
+    "User:" {
+        puts "\n>>> Logging in..."
+        send "1,2\r"
+        expect "Password:"
+        send "SYSTEM\r"
+        expect {
+            "Job number" { send "\r"; expect -re {\$ } }
+            -re {\$ } { }
+        }
+    }
+}
+
+puts "\n>>> Logged in!"
+
+# Try building with just the main program and ADVINI (minimal set)
+puts "\n>>> Entering BP2..."
+send "BP2\r"
+expect "BASIC2"
+
+puts "\n>>> Loading ADVENT.B2S..."
+send "OLD SY:ADVENT.B2S\r"
+expect "BASIC2"
+
+puts "\n>>> Trying BUILD (no overlays)..."
+send "BUILD\r"
+sleep 10
+
+expect {
+    "BASIC2" {
+        puts "\n>>> BUILD completed"
+    }
+    "Error" {
+        puts "\n>>> BUILD error"
+        exp_continue
+    }
+    "Address" {
+        puts "\n>>> Address overflow - too big for simple BUILD"
+        exp_continue
+    }
+    timeout {
+        puts "\n>>> Timeout during BUILD"
+    }
+}
+
+send "EXIT\r"
+expect -re {\$ }
+
+puts "\n>>> Checking for TSK..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+puts "\n>>> Running simple-built TSK..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    ">>> ADVENT main starting" {
+        puts "\n>>> SUCCESS: Simple BUILD works! Program started!"
+        exp_continue
+    }
+    "Name" {
+        puts "\n>>> Got Name prompt - full success!"
+        send "Test\r"
+        sleep 2
+    }
+    "Illegal SYS" {
+        puts "\n>>> Same error with simple BUILD - problem is NOT overlays"
+    }
+    "does not exist" {
+        puts "\n>>> TSK not created"
+    }
+    "Address overflow" {
+        puts "\n>>> Address overflow - need overlays"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+send "\003"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Simple BUILD test complete"

@@ -1,0 +1,124 @@
+#!/usr/bin/expect -f
+#
+# 23_simple_tkb_test.exp - Test TKB with known-good ODL
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Look at FEDTKB.ODL - a known-working ODL file
+puts "\n>>> Examining FEDTKB.ODL..."
+send "TYPE SY:\[0,200\]FEDTKB.ODL\r"
+expect -re {\$ }
+
+send "DIR/FULL SY:\[0,200\]FEDTKB.ODL\r"
+expect -re {\$ }
+
+# Check our ADVENT.ODL
+puts "\n>>> Examining ADVENT.ODL..."
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+send "DIR/FULL SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Test TKB with FEDTKB.ODL first
+puts "\n>>> Testing TKB with FEDTKB.ODL (known working)..."
+send "TKB\r"
+expect "TKB>"
+
+send "SY:TESTF=SY:\[0,200\]FEDTKB.ODL\r"
+expect {
+    "TKB>" {
+        puts ">>> FEDTKB.ODL accepted!"
+    }
+    "TKB -- *" {
+        puts ">>> TKB message"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+send "/\r"
+expect -re {\$ }
+
+# Now test with ADVENT.ODL without @ prefix
+puts "\n>>> Testing TKB with ADVENT.ODL..."
+send "TKB\r"
+expect "TKB>"
+
+send "SY:ADVENT=SY:ADVENT.ODL\r"
+expect {
+    "TKB>" {
+        puts ">>> Got TKB> prompt"
+    }
+    "TKB -- *FATAL*" {
+        puts ">>> FATAL error"
+        expect -re {.*\n}
+        exp_continue
+    }
+    "TKB -- *" {
+        puts ">>> TKB message"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+# Try options
+send "/\r"
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode - ADVENT.ODL was accepted!"
+        send "UNITS=13\r"
+        expect "TKB>"
+        send "//\r"
+    }
+    "TKB>" {
+        send "//\r"
+    }
+    -re {\$ } { puts ">>> Back to DCL" }
+}
+
+expect -re {\$ }
+
+# Check results
+puts "\n>>> Results..."
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

@@ -1,0 +1,130 @@
+#!/usr/bin/expect -f
+#
+# 33_tkb_cmdfile.exp - Build using TKB command file
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Create TKB command file using CREATE
+puts "\n>>> Creating TKB command file..."
+send "DELETE SY:ADVBLD.CMD\r"
+expect -re {\$ }
+
+send "CREATE SY:ADVBLD.CMD\r"
+expect "CTRL/Z"
+sleep 1
+
+# Format: output/options=input1,input2,...
+# All on separate lines with continuation
+send "SY:ADVENT/FP=SY:ADVENT,SY:ADVINI,SY:ADVOUT,SY:ADVNOR,SY:ADVCMD,SY:ADVODD\r"
+sleep 0.2
+send "SY:ADVMSG,SY:ADVBYE,SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ\r"
+sleep 0.2
+send "SY:ADVDSP,SY:ADVFND,SY:ADVTDY,LB:BP2OTS/LB\r"
+sleep 0.2
+send "UNITS=13\r"
+sleep 0.2
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+sleep 0.2
+send "EXTTSK=512\r"
+sleep 0.2
+send "//\r"
+sleep 0.5
+send "\032"
+sleep 1
+expect -re {\$ }
+
+puts "\n>>> Verifying command file..."
+send "TYPE SY:ADVBLD.CMD\r"
+expect -re {\$ }
+
+# Run TKB with command file
+puts "\n>>> Running TKB @ADVBLD.CMD..."
+send "TKB @SY:ADVBLD.CMD\r"
+
+expect {
+    -re {\$ } {
+        puts "\n>>> TKB completed"
+    }
+    "TKB -- *FATAL*" {
+        puts "\n>>> FATAL error"
+        expect -re {.*\n}
+        expect -re {\$ }
+    }
+    "TKB -- *DIAG*-Segment ADVENT has address overflow" {
+        puts "\n>>> ADDRESS OVERFLOW"
+        expect -re {\$ }
+    }
+    "overflow" {
+        puts "\n>>> Overflow detected"
+        expect -re {\$ }
+    }
+    "TKB -- *DIAG*" {
+        puts "\n>>> Diagnostic"
+        exp_continue
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    "TKB>" {
+        puts "\n>>> TKB prompt - sending //"
+        send "//\r"
+        exp_continue
+    }
+    timeout { puts "\n>>> Timeout" }
+}
+
+# Check results
+puts "\n>>> Checking results..."
+send "DIR SY:ADVENT.TSK\r"
+expect {
+    "ADVENT.TSK" {
+        puts "\n>>> SUCCESS! ADVENT.TSK created!"
+    }
+    "Can't find" {
+        puts "\n>>> ADVENT.TSK not found"
+    }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Build complete"

@@ -1,0 +1,175 @@
+#!/usr/bin/expect -f
+#
+# 61_sys_test.exp - Test if SYS() works in overlay-built TSKs
+#
+# Creates a minimal program that just calls SYS() to isolate the problem.
+#
+
+set timeout 180
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 10
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        puts "\n>>> System needs date..."
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        sleep 5
+        expect "User:"
+    }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+puts "\n>>> Logging in..."
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in!"
+
+# Create the test program using TECO
+puts "\n>>> Creating SYSTEST.B2S..."
+send "TECO\r"
+expect "*"
+
+# Start fresh file
+send "EWSYSTEST.B2S\r"
+expect "*"
+
+# Insert the test program
+send "I1\tON ERROR GOTO 100\n"
+expect "*"
+send "I\\\tPRINT \">>> Starting SYSTEST\"\n"
+expect "*"
+send "I\\\tPRINT \">>> Before SYS(12)\"\n"
+expect "*"
+send "I\\\tJ\$=SYS(CHR\$(12%))\n"
+expect "*"
+send "I\\\tPRINT \">>> After SYS(12) - success!\"\n"
+expect "*"
+send "I\\\tPRINT \">>> SYSTEST complete\"\n"
+expect "*"
+send "I\\\tEND\n"
+expect "*"
+send "I\n"
+expect "*"
+send "I100\tPRINT \">>> ERROR: \";ERR;\" at line \";ERL\n"
+expect "*"
+send "I\\\tEND\n"
+expect "*"
+
+# Save and exit
+send "EXSYSTEST.B2S\r"
+expect -re {\$ }
+
+puts "\n>>> Compiling SYSTEST..."
+send "BP2\r"
+expect "BASIC2"
+send "OLD SYSTEST.B2S\r"
+expect "BASIC2"
+send "COMPILE\r"
+sleep 3
+expect {
+    "Error" {
+        puts "\n>>> Compile error"
+        exp_continue
+    }
+    "BASIC2" { }
+}
+
+puts "\n>>> Building TSK without overlays (simple LINK)..."
+send "BUILD\r"
+sleep 3
+expect {
+    "Error" {
+        puts "\n>>> Build error"
+        exp_continue
+    }
+    "BASIC2" { }
+}
+send "EXIT\r"
+expect -re {\$ }
+
+puts "\n>>> Checking TSK..."
+send "DIR SYSTEST.TSK\r"
+sleep 1
+expect -re {\$ }
+
+puts "\n>>> Running simple TSK (no overlays)..."
+send "RUN SYSTEST.TSK\r"
+sleep 3
+expect {
+    ">>> SYSTEST complete" {
+        puts "\n>>> SUCCESS: Simple TSK with SYS() works!"
+    }
+    "Illegal SYS" {
+        puts "\n>>> FAILED: Even simple TSK fails with Illegal SYS"
+    }
+    ">>> ERROR" {
+        puts "\n>>> Got error in program"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+# Now try with LINK/BASIC/STRUCTURE (overlays)
+puts "\n>>> Now testing with overlays..."
+send "DELETE SYSTEST.TSK\r"
+sleep 1
+expect -re {\$ }
+
+send "LINK/BASIC SY:SYSTEST\r"
+sleep 3
+expect {
+    "illegal memory" {
+        puts "\n>>> Illegal memory limits"
+        exp_continue
+    }
+    -re {\$ } { }
+}
+
+puts "\n>>> Running overlay TSK..."
+send "RUN SYSTEST.TSK\r"
+sleep 3
+expect {
+    ">>> SYSTEST complete" {
+        puts "\n>>> SUCCESS: Overlay TSK with SYS() works!"
+    }
+    "Illegal SYS" {
+        puts "\n>>> FAILED: Overlay TSK fails with Illegal SYS"
+    }
+    ">>> ERROR" {
+        puts "\n>>> Got error in program"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> SYS() test complete"

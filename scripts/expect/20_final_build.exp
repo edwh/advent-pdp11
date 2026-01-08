@@ -1,0 +1,196 @@
+#!/usr/bin/expect -f
+#
+# 20_final_build.exp - Build ADVENT with RT11-format ODL
+#
+# Key discovery: CREATE produces RT11 format files that TKB accepts!
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    "User:" { }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> LOGGED IN"
+
+# Step 1: Copy source files
+puts "\n>>> STEP 1: Copying source files..."
+send "MOUNT MU0: ADVENT\r"
+expect -re {\$ }
+
+set files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB ADVENT.DTA ADVENT.MON ADVENT.CHR}
+foreach f $files {
+    send "COPY/REPLACE MU0:$f SY:\r"
+    expect -re {\$ }
+    puts ">>> Copied $f"
+}
+send "DISMOUNT MU0:\r"
+expect -re {\$ }
+
+# Step 2: Compile all files
+puts "\n>>> STEP 2: Compiling..."
+send "BP2\r"
+expect "BASIC2"
+
+send "OLD SY:ADVENT.B2S\r"
+expect "BASIC2"
+send "COMPILE\r"
+expect "BASIC2"
+puts ">>> ADVENT compiled"
+
+foreach sub {ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY} {
+    send "OLD SY:$sub.SUB\r"
+    expect "BASIC2"
+    send "COMPILE\r"
+    expect "BASIC2"
+    puts ">>> $sub compiled"
+}
+
+send "EXIT\r"
+expect -re {\$ }
+
+# Step 3: Create ODL file with RT11 format
+puts "\n>>> STEP 3: Creating ADVENT.ODL (RT11 format)..."
+
+# Delete if exists
+send "DELETE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Create new ODL using CREATE (produces RT11 format)
+send "CREATE SY:ADVENT.ODL\r"
+expect "CTRL/Z"
+
+# Overlay structure - keep lines short to avoid wrapping
+send ";\r"
+send "; ADVENT.ODL - Overlay structure for ADVENT MUD\r"
+send ";\r"
+send ".ROOT ADVENT-LIBR-*(INI,OUT,NOR,CMD,ODD)\r"
+send ".ROOT -*(MSG,BYE,SHT,NPC,PUZ,DSP,FND,TDY)\r"
+send ".NAME ADVENT\r"
+send "ADVENT: .FCTR SY:ADVENT\r"
+send "INI: .FCTR SY:ADVINI\r"
+send "OUT: .FCTR SY:ADVOUT\r"
+send "NOR: .FCTR SY:ADVNOR\r"
+send "CMD: .FCTR SY:ADVCMD\r"
+send "ODD: .FCTR SY:ADVODD\r"
+send "MSG: .FCTR SY:ADVMSG\r"
+send "BYE: .FCTR SY:ADVBYE\r"
+send "SHT: .FCTR SY:ADVSHT\r"
+send "NPC: .FCTR SY:ADVNPC\r"
+send "PUZ: .FCTR SY:ADVPUZ\r"
+send "DSP: .FCTR SY:ADVDSP\r"
+send "FND: .FCTR SY:ADVFND\r"
+send "TDY: .FCTR SY:ADVTDY\r"
+send "LIBR: .FCTR LB:BP2OTS/LB\r"
+send ".END\r"
+send "\032"
+expect -re {\$ }
+
+# Verify the ODL
+puts ">>> Verifying ODL file..."
+send "DIR/FULL SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Step 4: Run TKB with ODL
+puts "\n>>> STEP 4: Running TKB..."
+set timeout 600
+
+send "TKB\r"
+expect "TKB>"
+
+# TKB command: taskfile=odlfile
+send "SY:ADVENT/FP=SY:ADVENT.ODL\r"
+
+expect {
+    "TKB>" {
+        puts ">>> TKB accepted command"
+    }
+    "TKB -- *FATAL*" {
+        puts ">>> TKB FATAL error"
+        expect "TKB>"
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    timeout { puts ">>> TKB timeout" }
+}
+
+# Provide options
+send "/\r"
+expect {
+    "Enter Options:" { }
+    "TKB>" { send "/\r"; exp_continue }
+}
+
+send "UNITS=13\r"
+expect "TKB>"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+send "EXTTSK=512\r"
+expect "TKB>"
+send "/\r"
+
+expect {
+    -re {\$ } { puts ">>> TKB completed - back to DCL" }
+    "overflow" {
+        puts ">>> Overflow error - overlays didn't help"
+    }
+    "undefined" {
+        puts ">>> Undefined symbols"
+        exp_continue
+    }
+    "TKB>" {
+        send "/\r"
+        exp_continue
+    }
+    timeout { puts ">>> TKB timeout" }
+}
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "DIR SY:*.TSK\r"
+expect -re {\$ }
+
+# Look for ADVENT specifically
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n=========================================="
+puts ">>> BUILD COMPLETE"
+puts "=========================================="

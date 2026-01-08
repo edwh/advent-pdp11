@@ -1,0 +1,235 @@
+#!/usr/bin/expect -f
+#
+# 77_tkb_options_test.exp - Test TKB options only
+#
+# Assumes source files already exist on disk from previous run
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "system startup is complete"
+        sleep 3
+        send "\r"
+        expect "User:"
+    }
+    "User:" { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r" }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+puts "\n>>> Logged in - checking files on disk..."
+
+# List existing files
+send "DIR SY:*.B2S,*.SUB,*.OBJ\r"
+expect -re {\$ }
+
+# Check for data files
+puts "\n>>> Checking data files..."
+send "DIR SY:*.DTA,*.MON,*.CHR,*.NTC\r"
+expect -re {\$ }
+
+# Check for ODL
+puts "\n>>> Checking ODL..."
+send "DIR SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Clean up old task
+send "DELETE SY:ADVENT.TSK,ADVENT.MAP\r"
+expect -re {\$ }
+
+# Create ADVENT.ODL if needed
+puts "\n>>> Creating ADVENT.ODL..."
+send "DELETE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+send "CREATE SY:ADVENT.ODL\r"
+expect "CTRL/Z"
+sleep 1
+
+# ODL structure for BP2 overlays
+send "; ADVENT.ODL - BP2 overlay structure\r"
+sleep 0.2
+send ";\r"
+sleep 0.2
+send "        .ROOT ROOTWL-*(OV1,OV2,OV3,OV4,OV5,OV6,OV7,OV8)\r"
+sleep 0.2
+send "ROOTWL: .FCTR SY:ADVENT-LIBR\r"
+sleep 0.2
+send "OV1:    .FCTR SY:ADVINI-LIBR\r"
+sleep 0.2
+send "OV2:    .FCTR SY:ADVOUT-LIBR\r"
+sleep 0.2
+send "OV3:    .FCTR SY:ADVNOR-LIBR\r"
+sleep 0.2
+send "OV4:    .FCTR SY:ADVCMD-LIBR\r"
+sleep 0.2
+send "OV5:    .FCTR SY:ADVODD-LIBR\r"
+sleep 0.2
+send "OV6:    .FCTR SY:ADVMSG-LIBR\r"
+sleep 0.2
+send "OV7:    .FCTR SY:ADVBYE-LIBR\r"
+sleep 0.2
+send "OV8:    .FCTR SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY-LIBR\r"
+sleep 0.2
+send "LIBR:   .FCTR LB:BP2OTS/LB\r"
+sleep 0.2
+send "        .END\r"
+sleep 0.5
+send "\032"
+sleep 1
+expect -re {\$ }
+
+# Verify ODL
+puts "\n>>> Verifying ODL..."
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Run TKB
+puts "\n>>> Running TKB..."
+send "RUN \$TKB\r"
+expect "TKB>"
+
+# Send command
+send "SY:ADVENT,SY:ADVENT=SY:ADVENT/MP\r"
+
+# Wait for options prompt (case insensitive)
+expect {
+    "FATAL" {
+        puts "\n>>> TKB FATAL error"
+        exp_continue
+    }
+    -nocase "enter options" {
+        puts "\n>>> Got Enter Options prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout waiting for options"
+    }
+}
+
+# Wait for TKB> prompt
+expect "TKB>"
+puts "\n>>> Entering options..."
+
+# Enter options
+send "LIBR=BP2RES:RO\r"
+expect {
+    "TKB>" { puts "\n>>> LIBR option accepted" }
+    "FATAL" { puts "\n>>> LIBR option failed" }
+    timeout { puts "\n>>> Timeout after LIBR" }
+}
+
+send "UNITS=12\r"
+expect {
+    "TKB>" { puts "\n>>> UNITS option accepted" }
+    "FATAL" { puts "\n>>> UNITS option failed" }
+    timeout { puts "\n>>> Timeout after UNITS" }
+}
+
+send "EXTTSK=512\r"
+expect {
+    "TKB>" { puts "\n>>> EXTTSK option accepted" }
+    "FATAL" { puts "\n>>> EXTTSK option failed" }
+    timeout { puts "\n>>> Timeout after EXTTSK" }
+}
+
+# End with //
+send "//\r"
+
+# Wait for completion
+set timeout 120
+expect {
+    "DIAG" {
+        puts "\n>>> TKB diagnostic"
+        exp_continue
+    }
+    "FATAL" {
+        puts "\n>>> TKB fatal error"
+        exp_continue
+    }
+    "undefined" {
+        puts "\n>>> Undefined symbols"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> TKB completed"
+    }
+    timeout {
+        puts "\n>>> TKB timeout"
+        send "\003"
+        expect -re {\$ }
+    }
+}
+set timeout 300
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+puts "\n>>> Checking MAP file for undefined symbols..."
+send "TYPE SY:ADVENT.MAP\r"
+expect -re {\$ }
+
+# Try running the TSK
+puts "\n>>> Testing ADVENT.TSK..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    "Name" {
+        puts "\n>>> SUCCESS! Got Name prompt!"
+        send "TestUser\r"
+        sleep 3
+    }
+    "ADVENT ERROR" {
+        puts "\n>>> Got ADVENT ERROR"
+        exp_continue
+    }
+    "?Illegal SYS" {
+        puts "\n>>> Got Illegal SYS() error"
+    }
+    "?Reserved instruction" {
+        puts "\n>>> Got Reserved instruction trap"
+    }
+    "?File does not exist" {
+        puts "\n>>> TSK not created"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout running TSK"
+    }
+}
+
+send "\003"
+sleep 1
+send "BYE\r"
+expect eof
+
+puts "\n>>> TKB options test complete"

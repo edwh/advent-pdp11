@@ -1,0 +1,121 @@
+#!/usr/bin/expect -f
+#
+# 02_copy_from_tape.exp - Copy ADVENT source files from tape to disk
+#
+# Prerequisites:
+#   - RSTS/E V10.1 running on RA72
+#   - Tape attached to MU0: with advent_source.tap
+#
+# This script:
+#   1. Logs in as [1,2]
+#   2. Mounts the tape
+#   3. Copies source files to SY:[1,2]
+#
+# The tape contains DOS-format files created by scripts/create_advent_tape.py
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+# Wait for boot and User prompt
+expect {
+    "User:" { }
+    "system startup is complete" {
+        sleep 2
+        send "\r"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout waiting for User prompt"; exit 1 }
+}
+
+# Login
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+
+expect {
+    "Job number to attach to?" { send "\r" }
+    -re {\$} { }
+}
+
+expect -re {\$}
+puts "\n>>> Logged in successfully"
+
+# Mount the tape (DOS format)
+puts "\n>>> Mounting tape MU0:..."
+send "MOUNT MU0: ADVENT\r"
+expect {
+    "Mount complete" { puts ">>> Tape mounted" }
+    -re {\$} { puts ">>> Mount command completed" }
+    "error" { puts ">>> Mount error"; exit 1 }
+    timeout { puts ">>> Mount timeout"; exit 1 }
+}
+expect -re {\$}
+
+# Directory of tape to see what's there
+puts "\n>>> Checking tape contents..."
+send "DIR MU0:\r"
+expect -re {\$}
+
+# Copy each source file from tape
+puts "\n>>> Copying source files from tape..."
+
+# Main program
+send "COPY MU0:ADVENT.B2S SY:\r"
+expect -re {\$}
+
+# Subroutines - copy each one individually
+send "COPY MU0:ADVINI.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVOUT.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVNOR.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVCMD.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVODD.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVMSG.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVBYE.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVSHT.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVNPC.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVPUZ.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVDSP.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVFND.SUB SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVTDY.SUB SY:\r"
+expect -re {\$}
+
+# Data files (if present)
+puts "\n>>> Copying data files from tape..."
+send "COPY MU0:ADVENT.DTA SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVENT.MON SY:\r"
+expect -re {\$}
+send "COPY MU0:ADVENT.CHR SY:\r"
+expect -re {\$}
+send "COPY MU0:BOARD.NTC SY:\r"
+expect -re {\$}
+
+# Show what we copied
+puts "\n>>> Files copied to SY:\[1,2\]:"
+send "DIR SY:\r"
+expect -re {\$}
+
+# Dismount tape
+puts "\n>>> Dismounting tape..."
+send "DISMOUNT MU0:\r"
+expect -re {\$}
+
+puts "\n>>> Tape copy complete"
+send "BYE\r"
+expect eof

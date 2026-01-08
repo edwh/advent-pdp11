@@ -1,0 +1,164 @@
+#!/usr/bin/expect -f
+#
+# 48_build_sub_tsks.exp - Build each subroutine as separate TSK
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Build each subroutine as a separate TSK
+# The main program calls these at runtime
+
+# First, delete old files
+send "DELETE SY:ADV*.TSK\r"
+expect -re {\$ }
+
+send "DELETE SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+# Build ADVINI.TSK
+puts "\n>>> Building ADVINI.TSK..."
+send "LINK/BASIC SY:ADVINI\r"
+expect -re {\$ }
+
+# Build ADVOUT.TSK
+puts "\n>>> Building ADVOUT.TSK..."
+send "LINK/BASIC SY:ADVOUT\r"
+expect -re {\$ }
+
+# Build ADVNOR.TSK
+puts "\n>>> Building ADVNOR.TSK..."
+send "LINK/BASIC SY:ADVNOR\r"
+expect -re {\$ }
+
+# Build ADVCMD.TSK
+puts "\n>>> Building ADVCMD.TSK..."
+send "LINK/BASIC SY:ADVCMD\r"
+expect -re {\$ }
+
+# Build ADVODD.TSK
+puts "\n>>> Building ADVODD.TSK..."
+send "LINK/BASIC SY:ADVODD\r"
+expect -re {\$ }
+
+# Build ADVMSG.TSK
+puts "\n>>> Building ADVMSG.TSK..."
+send "LINK/BASIC SY:ADVMSG\r"
+expect -re {\$ }
+
+# Build ADVBYE.TSK
+puts "\n>>> Building ADVBYE.TSK..."
+send "LINK/BASIC SY:ADVBYE\r"
+expect -re {\$ }
+
+# Build ADVSHT.TSK
+puts "\n>>> Building ADVSHT.TSK..."
+send "LINK/BASIC SY:ADVSHT\r"
+expect -re {\$ }
+
+# Build ADVNPC.TSK
+puts "\n>>> Building ADVNPC.TSK..."
+send "LINK/BASIC SY:ADVNPC\r"
+expect -re {\$ }
+
+# Build ADVPUZ.TSK
+puts "\n>>> Building ADVPUZ.TSK..."
+send "LINK/BASIC SY:ADVPUZ\r"
+expect -re {\$ }
+
+# Build ADVDSP.TSK
+puts "\n>>> Building ADVDSP.TSK..."
+send "LINK/BASIC SY:ADVDSP\r"
+expect -re {\$ }
+
+# Build ADVFND.TSK
+puts "\n>>> Building ADVFND.TSK..."
+send "LINK/BASIC SY:ADVFND\r"
+expect -re {\$ }
+
+# Build ADVTDY.TSK
+puts "\n>>> Building ADVTDY.TSK..."
+send "LINK/BASIC SY:ADVTDY\r"
+expect -re {\$ }
+
+# Now build main program (it will have undefined symbols but that's expected for external calls)
+puts "\n>>> Building ADVENT.TSK (main)..."
+send "LINK/BASIC SY:ADVENT\r"
+expect -re {\$ }
+
+# Check all TSK files
+puts "\n>>> Checking TSK files..."
+send "DIR SY:ADV*.TSK\r"
+expect -re {\$ }
+
+# Check file sizes
+send "DIR/SIZE SY:ADV*.TSK\r"
+expect -re {\$ }
+
+# Try running the main program
+puts "\n>>> Trying to run ADVENT..."
+send "RUN SY:ADVENT.TSK\r"
+expect {
+    "Memory" {
+        puts ">>> Memory error"
+    }
+    "file" {
+        puts ">>> File error"
+    }
+    "Name" {
+        puts ">>> Got name prompt - SUCCESS!"
+        send "Test\r"
+        sleep 1
+        expect {
+            "?" {
+                puts ">>> Game is running!"
+                send "QUIT\r"
+            }
+            timeout { }
+        }
+    }
+    "Welcome" {
+        puts ">>> Welcome message!"
+        sleep 1
+        send "Test\r"
+    }
+    timeout { puts ">>> Timeout" }
+}
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

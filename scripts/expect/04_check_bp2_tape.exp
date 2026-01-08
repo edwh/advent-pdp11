@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+#
+# 04_check_bp2_tape.exp - Check contents of BP2 installation tape
+#
+# Prerequisites:
+#   - RSTS/E V10.1 running on RA72
+#   - BP2 tape attached to MU0: (TQ0)
+
+set timeout 30
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+# Wait for boot and login
+expect {
+    "User:" { }
+    "system startup is complete" {
+        sleep 2
+        send "\r"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout waiting for boot"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+
+expect {
+    "Job number to attach to?" { send "\r" }
+    -re {\$} { }
+}
+
+expect -re {\$}
+puts "\n>>> Logged in"
+
+# Mount BP2 tape on MU0:
+puts "\n>>> Mounting BP2 tape on MU0:..."
+send "MOUNT MU0: BP2\r"
+expect -re {\$}
+
+# Directory of BP2 tape
+puts "\n>>> Contents of BP2 tape:"
+send "DIR MU0:\r"
+expect -re {\$}
+
+# Dismount
+send "DISMOUNT MU0:\r"
+expect -re {\$}
+
+send "BYE\r"
+expect eof

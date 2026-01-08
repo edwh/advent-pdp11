@@ -1,0 +1,187 @@
+#!/usr/bin/expect -f
+#
+# 59_diagnose_sys.exp - Diagnose "Illegal SYS() usage" error
+#
+# Try to get more information about what's failing:
+# 1. Check the TSK file attributes
+# 2. Try running with CCL (if available)
+# 3. Check ERRTXT for error details
+# 4. Try RUN with different options
+#
+
+set timeout 180
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 10
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        sleep 5
+        expect "User:"
+    }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# First, check if ADVENT.TSK exists from previous test
+puts "\n>>> Checking for existing ADVENT.TSK..."
+send "DIR/FULL SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# Look at error text information
+puts "\n>>> Checking ERRTXT for 'Illegal SYS' error..."
+send "HELP ERRTXT\r"
+sleep 2
+expect {
+    "Topic?" {
+        send "SYS\r"
+        sleep 2
+    }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+# Check what RTS the TSK is built for
+puts "\n>>> Checking task RTS..."
+send "DIR/FULL SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# Try to see what happens with SET NOVERIFY before running
+puts "\n>>> Trying RUN with error trapping..."
+send "SET NOVERIFY\r"
+sleep 1
+expect -re {\$ }
+
+# Run and capture more context
+puts "\n>>> Running ADVENT.TSK..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 3
+
+expect {
+    "Illegal SYS" {
+        puts "\n>>> Got Illegal SYS error"
+    }
+    "Name" {
+        puts "\n>>> Got Name prompt - success!"
+        send "Test\r"
+        sleep 2
+    }
+    "Memory" {
+        puts "\n>>> Memory error"
+    }
+    "Reserved" {
+        puts "\n>>> Reserved instruction"
+    }
+    "does not exist" {
+        puts "\n>>> File not found"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+sleep 2
+
+# Check if there's a way to see extended error info
+puts "\n>>> Checking for extended error info..."
+send "PRINT ERR\r"
+sleep 1
+expect -re {\$ }
+
+send "PRINT ERL\r"
+sleep 1
+expect -re {\$ }
+
+# Try examining the ODL that was generated
+puts "\n>>> Checking generated ODL file..."
+send "TYPE SY:ADVENT.ODL\r"
+sleep 2
+expect -re {\$ }
+
+# Try examining the CMD file
+puts "\n>>> Checking CMD file..."
+send "TYPE SY:ADVENT.CMD\r"
+sleep 2
+expect -re {\$ }
+
+# Check what runtime systems are available
+puts "\n>>> Checking available RTS..."
+send "DIR SY:[0,1]*.RTS\r"
+sleep 2
+expect -re {\$ }
+
+# Try running under BP2 interpreter instead
+puts "\n>>> Trying interpreted mode in BP2..."
+send "BP2\r"
+sleep 2
+expect "BASIC2"
+
+send "OLD SY:ADVENT.B2S\r"
+sleep 2
+expect "BASIC2"
+
+# Try RUN (interpreted, not compiled)
+puts "\n>>> Running interpreted (this may show where it fails)..."
+send "RUN\r"
+sleep 5
+
+expect {
+    "Undefined" {
+        puts "\n>>> Undefined subroutine in interpreted mode"
+        exp_continue
+    }
+    "Error" {
+        puts "\n>>> Error in interpreted mode"
+        exp_continue
+    }
+    "Name" {
+        puts "\n>>> Got to Name prompt in interpreted mode!"
+        send "Test\r"
+        sleep 2
+    }
+    "BASIC2" {
+        puts "\n>>> Back to BASIC2"
+    }
+    timeout {
+        puts "\n>>> Timeout in interpreter"
+    }
+}
+
+sleep 2
+send "\003"
+sleep 1
+send "EXIT\r"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Diagnostic complete"

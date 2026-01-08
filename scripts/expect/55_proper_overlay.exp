@@ -1,0 +1,186 @@
+#!/usr/bin/expect -f
+#
+# 55_proper_overlay.exp - Proper overlay structure based on dependencies
+#
+# ROOT: ADVENT + commonly-used subroutines (ADVOUT, ADVSHT, ADVDSP, ADVFND, ADVTDY)
+# OVERLAYS: Larger subroutines that call the common ones
+#
+# Dependencies found:
+#   ADVNOR -> ADVDSP, ADVFND, ADVOUT, ADVSHT
+#   ADVCMD -> ADVDSP, ADVFND, ADVOUT, ADVSHT
+#   ADVODD -> ADVDSP, ADVFND, ADVOUT, ADVSHT, ADVTDY
+#   ADVMSG -> ADVDSP, ADVTDY
+#   ADVPUZ -> ADVSHT
+#
+
+set timeout 180
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 10
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        puts "\n>>> System needs date..."
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        sleep 5
+        expect "User:"
+    }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+puts "\n>>> Logging in..."
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in! Cleaning up..."
+send "DELETE SY:ADVENT.TSK\r"
+sleep 1
+expect -re {\$ }
+
+# Start LINK/BASIC/STRUCTURE
+puts "\n>>> Starting LINK/BASIC/STRUCTURE..."
+send "LINK/BASIC/STRUCTURE\r"
+
+# ROOT files: ONLY files in root segment (main + common dependencies)
+# These won't be in overlays
+expect "ROOT files:"
+puts "\n>>> ROOT: main + common subroutines (ADVOUT,ADVSHT,ADVDSP,ADVFND,ADVTDY)"
+send "SY:ADVENT,SY:ADVOUT,SY:ADVSHT,SY:ADVDSP,SY:ADVFND,SY:ADVTDY\r"
+sleep 1
+
+expect "COMMON"
+puts "\n>>> Root COMMON: blank"
+send "\r"
+sleep 1
+
+# Overlays for the larger, less-frequently-called modules
+# Each overlay is a sibling (no +)
+expect "Overlay:"
+puts "\n>>> Overlay 1: ADVINI (initialization)"
+send "SY:ADVINI\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 2: ADVNOR (normal commands)"
+send "SY:ADVNOR\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 3: ADVCMD (other commands)"
+send "SY:ADVCMD\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 4: ADVODD (odd commands)"
+send "SY:ADVODD\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 5: ADVMSG (messages)"
+send "SY:ADVMSG\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 6: ADVBYE (exit)"
+send "SY:ADVBYE\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 7: ADVNPC (NPCs)"
+send "SY:ADVNPC\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> Overlay 8: ADVPUZ (puzzles)"
+send "SY:ADVPUZ\r"
+sleep 1
+
+expect "Overlay:"
+puts "\n>>> End overlays with blank"
+send "\r"
+sleep 3
+
+# Wait for result
+expect {
+    "Libraries:" {
+        puts "\n>>> Got Libraries prompt"
+        send "\r"
+        sleep 5
+    }
+    "undefined" {
+        puts "\n>>> Undefined symbols"
+        exp_continue
+    }
+    "overflow" {
+        puts "\n>>> Address overflow!"
+    }
+    "multiply defines" {
+        puts "\n>>> Duplicate symbol!"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout waiting for completion"
+    }
+}
+
+sleep 2
+puts "\n>>> Checking for TSK..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+expect {
+    "Name" {
+        puts "\n>>> SUCCESS! Got name prompt!"
+        send "TestPlayer\r"
+        sleep 3
+    }
+    "Memory" {
+        puts "\n>>> Memory management error"
+    }
+    "Reserved" {
+        puts "\n>>> Reserved instruction trap"
+    }
+    "File does not exist" {
+        puts "\n>>> No TSK created"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+sleep 2
+send "\003"
+sleep 1
+
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

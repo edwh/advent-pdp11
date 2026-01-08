@@ -1,0 +1,103 @@
+#!/usr/bin/expect -f
+#
+# 25_compare_odl.exp - Compare FEDTKB.ODL vs ADVENT.ODL byte-by-byte
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Use DUMP utility to see actual bytes
+puts "\n>>> Dumping first block of FEDTKB.ODL..."
+send "DUMP SY:\[0,200\]FEDTKB.ODL/BLOCKS:0:0\r"
+expect -re {\$ }
+
+puts "\n>>> Dumping first block of ADVENT.ODL..."
+send "DUMP SY:ADVENT.ODL/BLOCKS:0:0\r"
+expect -re {\$ }
+
+# Try copying FEDTKB.ODL to test if copy preserves format
+puts "\n>>> Copying FEDTKB.ODL and testing..."
+send "COPY SY:\[0,200\]FEDTKB.ODL SY:TESTFED.ODL\r"
+expect -re {\$ }
+
+send "DIR/FULL SY:TESTFED.ODL\r"
+expect -re {\$ }
+
+# Test TKB with the copy
+puts "\n>>> Testing TKB with TESTFED.ODL..."
+send "TKB\r"
+expect "TKB>"
+
+send "SY:TESTCOPY=SY:TESTFED.ODL\r"
+expect {
+    "TKB>" {
+        puts ">>> TESTFED.ODL command accepted"
+        send "/\r"
+    }
+    "TKB -- *" {
+        puts ">>> TKB error"
+        exp_continue
+    }
+}
+
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode - trying to build..."
+        send "//\r"
+    }
+    "TKB>" {
+        send "//\r"
+    }
+}
+
+expect {
+    -re {\$ } { puts ">>> Back to DCL" }
+    "TKB -- *FATAL*" {
+        puts ">>> FATAL error on copied file too!"
+        exp_continue
+    }
+    "TKB -- *" { exp_continue }
+}
+
+expect -re {\$ }
+
+# Check if the copy actually worked to build something
+send "DIR SY:TESTCOPY.TSK\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Comparison complete"

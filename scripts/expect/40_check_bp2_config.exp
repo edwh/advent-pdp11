@@ -1,0 +1,106 @@
+#!/usr/bin/expect -f
+#
+# 40_check_bp2_config.exp - Check BP2 configuration and documentation
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Check BP2$ directory contents
+puts "\n>>> Checking BP2\$ directory..."
+send "DIR BP2\$:*.*\r"
+expect -re {\$ }
+
+# Check for any documentation
+puts "\n>>> Looking for BP2 documentation..."
+send "DIR BP2\$:*.DOC\r"
+expect -re {\$ }
+
+send "DIR BP2\$:*.TXT\r"
+expect -re {\$ }
+
+send "DIR BP2\$:*.HLP\r"
+expect -re {\$ }
+
+# Check LB: for BP2-related files
+puts "\n>>> Checking LB: for BP2 files..."
+send "DIR LB:BP2*.*\r"
+expect -re {\$ }
+
+# Check what BP2OTS library contains
+puts "\n>>> Checking BP2OTS library..."
+send "DIR LB:BP2OTS.*\r"
+expect -re {\$ }
+
+# Check DIALOG.TSK which is in BP2$
+puts "\n>>> Checking DIALOG.TSK..."
+send "DIR/FULL BP2\$:DIALOG.TSK\r"
+expect -re {\$ }
+
+# Try running the DIALOG program to see what it is
+puts "\n>>> Trying DIALOG..."
+send "RUN BP2\$:DIALOG\r"
+expect {
+    "?" {
+        puts ">>> DIALOG prompted"
+        send "\r"
+    }
+    "BASIC2" {
+        puts ">>> Got BASIC2 prompt"
+    }
+    -re {\$ } {
+        puts ">>> Back to DCL"
+    }
+    timeout { puts ">>> Timeout" }
+}
+expect -re {\$ }
+
+# Check if there's a BP2 help file
+puts "\n>>> Looking for BP2 HELP..."
+send "DIR SY:\[0,2\]*BP2*.*\r"
+expect -re {\$ }
+
+# Check the actual account number for BP2
+puts "\n>>> Checking logical BP2\$..."
+send "SHOW LOGICAL BP2\$\r"
+expect -re {\$ }
+
+send "DIR SY:\[0,53\]*.*\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Check complete"

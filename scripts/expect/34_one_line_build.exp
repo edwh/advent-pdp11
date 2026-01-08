@@ -1,0 +1,160 @@
+#!/usr/bin/expect -f
+#
+# 34_one_line_build.exp - Build ADVENT with all files on ONE line
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Start TKB
+puts "\n>>> Starting TKB..."
+send "TKB\r"
+expect "TKB>"
+
+# Send ALL 14 files on one line (very long!)
+puts "\n>>> Sending all files on one line..."
+send "SY:ADVENT/FP=SY:ADVENT,SY:ADVINI,SY:ADVOUT,SY:ADVNOR,SY:ADVCMD,SY:ADVODD,SY:ADVMSG,SY:ADVBYE,SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY,LB:BP2OTS/LB\r"
+
+expect {
+    "TKB>" {
+        puts ">>> Command accepted!"
+    }
+    "TKB -- *FATAL*" {
+        puts ">>> FATAL error"
+        expect -re {.*\n}
+    }
+    "TKB -- *DIAG*" {
+        puts ">>> Diagnostic"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+# Enter options
+send "/\r"
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode"
+    }
+    "TKB>" {
+        send "/\r"
+        exp_continue
+    }
+}
+
+send "UNITS=13\r"
+expect "TKB>"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+send "EXTTSK=512\r"
+expect "TKB>"
+send "//\r"
+
+expect {
+    -re {\$ } {
+        puts "\n>>> TKB completed - back to DCL"
+    }
+    "overflow" {
+        puts "\n>>> ADDRESS OVERFLOW"
+        expect -re {\$ }
+    }
+    "TKB -- *DIAG*-Segment ADVENT has address overflow" {
+        puts "\n>>> ADDRESS OVERFLOW for segment ADVENT"
+        expect -re {\$ }
+    }
+    "undefined symbol" {
+        puts "\n>>> Undefined symbols"
+        exp_continue
+    }
+    "TKB -- *DIAG*" {
+        puts "\n>>> Diagnostic"
+        exp_continue
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    "TKB>" {
+        send "//\r"
+        exp_continue
+    }
+    timeout { puts "\n>>> Timeout" }
+}
+
+# Check results
+puts "\n>>> Checking results..."
+send "DIR SY:ADVENT.TSK\r"
+expect {
+    "ADVENT.TSK" {
+        puts "\n>>> SUCCESS! ADVENT.TSK was created!"
+        # Show details
+        expect -re {\$ }
+        send "DIR/FULL SY:ADVENT.TSK\r"
+    }
+    "Can't find" {
+        puts "\n>>> ADVENT.TSK not found"
+    }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+# Try to run it if it exists
+puts "\n>>> Attempting to run ADVENT..."
+send "RUN SY:ADVENT\r"
+expect {
+    "Welcome" {
+        puts "\n>>> ADVENT is running!"
+        send "quit\r"
+    }
+    "ADVENT" {
+        puts "\n>>> ADVENT started!"
+        send "quit\r"
+    }
+    "?Insufficient" {
+        puts "\n>>> Insufficient memory/resources"
+    }
+    "?Can't find" {
+        puts "\n>>> Task not found"
+    }
+    -re {\$ } { puts "\n>>> Back to DCL" }
+    timeout { puts "\n>>> Timeout" }
+}
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n=========================================="
+puts ">>> BUILD COMPLETE"
+puts "=========================================="

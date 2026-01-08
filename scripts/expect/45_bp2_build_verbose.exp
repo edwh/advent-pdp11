@@ -1,0 +1,144 @@
+#!/usr/bin/expect -f
+#
+# 45_bp2_build_verbose.exp - BP2 BUILD with verbose output
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# First check current ADVENT files
+puts "\n>>> Current ADVENT files..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+# Delete any old TSK
+send "DELETE SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+# Check what subroutine OBJs we have
+puts "\n>>> Checking for subroutine OBJs..."
+send "DIR SY:ADV*.OBJ\r"
+expect -re {\$ }
+
+# Start BP2
+puts "\n>>> Starting BP2..."
+send "BP2\r"
+expect "BASIC2"
+
+sleep 1
+
+# Load the main ADVENT source
+puts "\n>>> Loading ADVENT.B2S..."
+send "OLD SY:ADVENT.B2S\r"
+expect "BASIC2"
+
+sleep 1
+
+# Try BUILD command - this should create the TSK
+puts "\n>>> Running BUILD..."
+send "BUILD SY:ADVENT\r"
+
+# Watch for various outcomes
+expect {
+    "TKB" {
+        puts ">>> TKB invoked by BUILD"
+        exp_continue
+    }
+    "TKB>" {
+        puts ">>> TKB prompt"
+        exp_continue
+    }
+    "overflow" {
+        puts ">>> Address overflow"
+        exp_continue
+    }
+    "undefined" {
+        puts ">>> Undefined symbols"
+        exp_continue
+    }
+    "BASIC2" {
+        puts ">>> BUILD completed - back to BASIC2"
+    }
+    "error" {
+        puts ">>> Error"
+        exp_continue
+    }
+    timeout {
+        puts ">>> Timeout"
+    }
+}
+
+sleep 1
+
+# Exit BP2
+puts "\n>>> Exiting BP2..."
+send "EXIT\r"
+expect -re {\$ }
+
+# Check what files exist now
+puts "\n>>> Checking results..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+# Check if TSK was created
+send "DIR/FULL SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+# If TSK exists, try to run it
+puts "\n>>> Trying to run ADVENT.TSK..."
+send "RUN SY:ADVENT.TSK\r"
+expect {
+    "Memory management" {
+        puts ">>> Memory violation - subroutines not linked"
+    }
+    "ADVENT" {
+        puts ">>> Game started!"
+        # Try to quit
+        send "QUIT\r"
+    }
+    "Welcome" {
+        puts ">>> Welcome message"
+    }
+    "?" {
+        send "\r"
+    }
+    timeout { puts ">>> Timeout" }
+}
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

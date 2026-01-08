@@ -1,0 +1,126 @@
+#!/usr/bin/expect -f
+#
+# 84_fix_common_alignment.exp - Fix COMMON variable alignment
+#
+# The PDP-11 requires word (16-bit) access at even addresses.
+# The current COMMON block has integers at odd byte offsets.
+#
+# FIX: Reorder COMMON to put all integers FIRST, then strings.
+#
+# Original order starts with strings (ACC$, AR$) then C% at odd offset.
+# New order: integers first, then floats, then strings.
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r" }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+puts "\n>>> Logged in - Fixing COMMON alignment"
+
+# The aligned COMMON block (integers first, then floats, then strings):
+# This will be used for all 14 source files
+#
+# COMMON C%,NO.OF.USERS%,SENT.KB%,SENT.PROG%,SENT.PROJ%,USER%,USER1%,SINGLE.USER%, &
+# FLAG%(8%),HP%(8%),LEVEL%(8%),KB%(8%),ROOM%(8%),WEAPON%(8%), &
+# ATT.LEVEL%(10%),DEF.LEVEL%(10%),MON.HP%(10%),MON.DAM%(10%), &
+# MON.ROOM%(10%),MON.XP%(10%),BLIND%(8%),SPY%(10%),FATIGUE%(10%), &
+# XP.(8%),STUN(8%), &
+# AR$=80%,C$=10%,CRLF$=2%,SENT.MESS$=80%,CI$=1%,RUN.ACC$=9%,MMM$=128%, &
+# ACC$(8%)=7%,NAM$(8%)=30%,NPCMESS$(8%)=40%,OB$(8%,9%)=30%,PASS$(8%)=10%, &
+# WEAPON$(8%)=20%,SPEC$(10%)=6%
+
+# For now, let's test with a simpler approach - add a padding byte before C%
+# by inserting a 1-byte dummy string variable
+
+# Actually, the cleanest fix is to start with an even-length string.
+# AR$=80% (80 bytes) at start would put C% at offset 80 (even).
+
+# Let's test moving AR$ to the front:
+# COMMON AR$=80%,ACC$(8%)=7%,C%,...
+
+# But changing COMMON order requires updating ALL source files identically.
+# Let's create a test build with the fixed COMMON in just ADVENT.B2S first.
+
+puts "\n>>> Creating backup of ADVENT.B2S..."
+send "COPY SY:ADVENT.B2S SY:ADVENT.BAK\r"
+expect -re {\$ }
+
+# Read current file to understand line structure
+puts "\n>>> Examining ADVENT.B2S..."
+send "TYPE SY:ADVENT.B2S\r"
+expect -re {\$ }
+
+# The fix: We need to edit line 1 (which has the COMMON declaration)
+# In RSTS/E, we can use the EDIT command or create a new file
+
+# For simplicity, let's try using BASIC to create a modified version
+puts "\n>>> Starting BP2 to modify source..."
+send "BP2\r"
+expect "BASIC2"
+expect "Ready"
+
+# Open the file
+send "OLD SY:ADVENT.B2S\r"
+expect "Ready"
+
+# List the first few lines to see the structure
+send "LIST 1-10\r"
+expect "Ready"
+
+# The COMMON is on physical lines 2-10 (continuing with & )
+# We need to delete these lines and replace with aligned version
+
+# Delete lines 2-10 (the old COMMON continuation)
+# Actually, in BP2, line numbers in the source are different from physical lines
+# Line 1 is: ON ERROR GOTO 25000 & \ COMMON ... (all one logical line)
+
+# Let's try a different approach - just note that we'd need to edit the file
+# For now, let's see if we can use CREATE to write a new first line
+
+puts "\n>>> Cannot easily edit multi-line COMMON in BP2 interactive mode"
+puts "\n>>> Need to create modified source files externally"
+
+send "BYE\r"
+expect -re {\$ }
+
+# Alternative: Check if the working TSK from tape has the same COMMON layout
+# The pre-compiled ADVENT.TSK works, so either:
+# 1. It was compiled with a different BP2 version that didn't warn
+# 2. The original COMMON was already aligned
+# 3. The old system tolerated misalignment somehow
+
+puts "\n>>> Testing if pre-compiled TSK from tape works..."
+# First, let's check if ADVENT.TSK from tape exists
+send "DIR DM1:ADVENT.TSK\r"
+expect -re {\$ }
+
+puts "\n>>> COMMON alignment fix requires external source file editing"
+puts "\n>>> Options:"
+puts ">>> 1. Edit source files on Linux host, re-transfer via tape"
+puts ">>> 2. Use the pre-compiled ADVENT.TSK from tape (if available)"
+puts ">>> 3. Create RSTS/E script to rewrite source files"
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> COMMON alignment analysis complete"

@@ -1,0 +1,146 @@
+#!/usr/bin/expect -f
+#
+# 37_main_only_build.exp - Build only main program, subroutines load dynamically
+#
+# BP2 subroutines can be loaded at runtime when CALL is executed
+# This matches how the program structure seems designed
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Build ONLY the main program
+puts "\n>>> Building ONLY ADVENT.B2S (no subroutines)..."
+send "TKB\r"
+expect "TKB>"
+
+# Just main program + library
+send "SY:ADVENT/FP\r"
+expect "TKB>"
+send "SY:ADVENT\r"
+expect "TKB>"
+send "LB:BP2OTS/LB\r"
+expect "TKB>"
+send "/\r"
+expect "Enter Options:"
+
+send "EXTTSK=512\r"
+expect "TKB>"
+send "UNITS=13\r"
+expect "TKB>"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+send "//\r"
+
+expect {
+    -re {\$ } {
+        puts "\n>>> TKB completed"
+    }
+    "overflow" {
+        puts "\n>>> Still overflow even with just main!"
+    }
+    "undefined symbol" {
+        puts "\n>>> Undefined symbols (expected - subroutines not linked)"
+        exp_continue
+    }
+    "TKB -- *DIAG*" {
+        puts "\n>>> Diagnostic"
+        exp_continue
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    "TKB>" {
+        send "//\r"
+        exp_continue
+    }
+}
+
+expect -re {\$ }
+
+# Check for TSK
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+# Now build EACH subroutine as a separate task
+puts "\n>>> Building subroutines as separate tasks..."
+
+foreach sub {ADVINI ADVOUT ADVNOR ADVCMD ADVODD ADVMSG ADVBYE ADVSHT ADVNPC ADVPUZ ADVDSP ADVFND ADVTDY} {
+    puts "\n>>> Building $sub.TSK..."
+    send "TKB\r"
+    expect "TKB>"
+    send "SY:$sub/FP\r"
+    expect "TKB>"
+    send "SY:$sub\r"
+    expect "TKB>"
+    send "LB:BP2OTS/LB\r"
+    expect "TKB>"
+    send "/\r"
+    expect {
+        "Enter Options:" { }
+        "TKB>" { send "/\r"; exp_continue }
+    }
+    send "//\r"
+    expect {
+        -re {\$ } { puts ">>> $sub completed" }
+        "TKB -- *" { exp_continue }
+        "TKB>" { send "//\r"; exp_continue }
+        timeout { puts ">>> Timeout" }
+    }
+    expect -re {\$ }
+}
+
+# Check all TSK files
+puts "\n>>> Checking all TSK files..."
+send "DIR SY:*.TSK\r"
+expect -re {\$ }
+
+# Try running ADVENT
+puts "\n>>> Trying to run ADVENT..."
+send "RUN SY:ADVENT\r"
+expect {
+    "Welcome" { puts "\n>>> ADVENT started!" }
+    "?Insufficient" { puts "\n>>> Insufficient resources" }
+    "Can't find" { puts "\n>>> Task not found" }
+    -re {\$ } { puts "\n>>> Back to DCL" }
+    timeout { puts "\n>>> Timeout" }
+}
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Build complete"

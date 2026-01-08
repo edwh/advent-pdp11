@@ -1,0 +1,92 @@
+#!/usr/bin/expect -f
+#
+# 49_check_and_run.exp - Simple check and run
+#
+
+set timeout 120
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout waiting for prompt"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in successfully"
+sleep 1
+
+# Check TSK files
+puts "\n>>> Checking all TSK files in account..."
+send "DIR SY:*.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# Check OBJ files
+puts "\n>>> Checking OBJ files..."
+send "DIR SY:ADV*.OBJ\r"
+sleep 2
+expect -re {\$ }
+
+# Try building just main with LINK
+puts "\n>>> Building ADVENT.TSK..."
+send "LINK/BASIC SY:ADVENT\r"
+sleep 3
+expect -re {\$ }
+
+# Check if it was created
+puts "\n>>> Checking ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# Try running it
+puts "\n>>> Running ADVENT.TSK..."
+send "RUN SY:ADVENT\r"
+sleep 3
+expect {
+    "Memory" { puts "\n>>> Memory management error" }
+    "Name" {
+        puts "\n>>> Got name prompt!"
+        send "TestUser\r"
+        sleep 2
+    }
+    "Welcome" { puts "\n>>> Welcome message!" }
+    "error" { puts "\n>>> Error occurred" }
+    -re {\$ } { puts "\n>>> Returned to prompt" }
+    timeout { puts "\n>>> Timeout - may be waiting for input" }
+}
+
+sleep 2
+send "\003"
+sleep 1
+
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Done"

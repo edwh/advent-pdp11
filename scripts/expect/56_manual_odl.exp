@@ -1,0 +1,109 @@
+#!/usr/bin/expect -f
+#
+# 56_manual_odl.exp - Examine ODL structure and TKB options
+#
+
+set timeout 180
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 10
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        sleep 5
+        expect "User:"
+    }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Look at existing ODL files to understand structure
+puts "\n>>> Examining BP2.LNK skeleton..."
+send "TYPE LB:BP2.LNK\r"
+sleep 2
+expect -re {\$ }
+
+puts "\n>>> Examining RMS11X.ODL..."
+send "TYPE LB:RMS11X.ODL\r"
+sleep 2
+expect -re {\$ }
+
+puts "\n>>> Examining existing ADVENT.ODL..."
+send "TYPE SY:ADVENT.ODL\r"
+sleep 1
+expect -re {\$ }
+
+puts "\n>>> Looking at LINK/MAP output..."
+send "DELETE SY:ADVENT.MAP\r"
+sleep 1
+expect -re {\$ }
+
+# Try LINK with /MAP to see memory layout
+send "LINK/BASIC/MAP SY:ADVENT\r"
+sleep 5
+expect -re {\$ }
+
+send "TYPE SY:ADVENT.MAP\r"
+sleep 3
+expect -re {\$ }
+
+# Try TKB directly to see what options it has
+puts "\n>>> TKB directly..."
+send "TKB\r"
+sleep 1
+expect "TKB>"
+send "?\r"
+sleep 1
+expect "TKB>"
+send "/\r"
+sleep 1
+expect "Options:"
+send "?\r"
+sleep 1
+expect -re "TKB>|Options:"
+
+send "\003"
+sleep 1
+expect -re {\$ }
+
+puts "\n>>> Looking at LINK/BASIC help for OTS option..."
+send "HELP LINK OTS\r"
+sleep 2
+expect "Topic?"
+send "\r"
+sleep 1
+expect -re {\$ }
+
+send "HELP LINK STACK\r"
+sleep 2
+expect "Topic?"
+send "\r"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Done"

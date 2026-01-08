@@ -1,0 +1,163 @@
+#!/usr/bin/expect -f
+#
+# 17_diagnose_tkb.exp - Diagnose TKB issues by running it manually
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Check files exist
+puts "\n>>> Checking if compiled .OBJ files exist..."
+send "DIR SY:*.OBJ\r"
+expect -re {\$ }
+
+# Check ODL file
+puts "\n>>> Checking ADVENT.ODL..."
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Check CMD file
+puts "\n>>> Checking ADVENT.CMD..."
+send "TYPE SY:ADVENT.CMD\r"
+expect -re {\$ }
+
+# Try running TKB manually from DCL (not through BP2 BUILD)
+puts "\n>>> Running TKB manually..."
+puts ">>> Command: TKB @SY:ADVENT.CMD"
+send "TKB @SY:ADVENT.CMD\r"
+
+expect {
+    "TKB -- *" {
+        puts "\n>>> TKB asking for input line"
+        send "\r"
+        exp_continue
+    }
+    "TKB>" {
+        puts "\n>>> TKB> prompt"
+        send "\r"
+        exp_continue
+    }
+    -re {\?.*\n} {
+        puts "\n>>> TKB Error: $expect_out(0,string)"
+        exp_continue
+    }
+    "Enter" {
+        puts "\n>>> Enter prompt"
+        send "\r"
+        exp_continue
+    }
+    "address overflow" {
+        puts "\n>>> ADDRESS OVERFLOW - program too large!"
+    }
+    "overflow" {
+        puts "\n>>> Overflow detected"
+    }
+    "Undefined symbols" {
+        puts "\n>>> Undefined symbols detected"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> TKB exited to DCL"
+    }
+    timeout {
+        puts "\n>>> TKB timeout"
+    }
+}
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK after TKB..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+# Try direct TKB with command file content
+puts "\n>>> Trying TKB interactively..."
+send "TKB\r"
+expect {
+    "TKB>" { }
+    "TKB -- *" { }
+    timeout { puts "TKB start timeout"; exit 1 }
+}
+
+# Build task file command
+puts ">>> Sending TKB command..."
+send "SY:ADVENT=SY:ADVENT,SY:ADVINI,SY:ADVOUT,SY:ADVNOR,SY:ADVCMD,SY:ADVODD,SY:ADVMSG,SY:ADVBYE,SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY\r"
+
+expect {
+    "TKB -- *" {
+        puts "\n>>> TKB asking for continuation"
+        send "\r"
+        exp_continue
+    }
+    "TKB>" {
+        puts "\n>>> TKB> prompt - sending ODL option"
+        send "/-OD=SY:ADVENT\r"
+        expect {
+            "TKB>" { send "/\r" }
+            "TKB -- *" { send "\r" }
+        }
+        exp_continue
+    }
+    "Enter Options" {
+        puts "\n>>> Enter Options - sending ODL"
+        send "/-OD=SY:ADVENT\r"
+        exp_continue
+    }
+    -re {\?.*\n} {
+        puts "\n>>> TKB Error: $expect_out(0,string)"
+        exp_continue
+    }
+    "address overflow" {
+        puts "\n>>> ADDRESS OVERFLOW!"
+    }
+    "PSECT" {
+        puts "\n>>> PSECT message:"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> Back to DCL"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+puts "\n>>> Final check..."
+send "DIR SY:ADVENT.*\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Diagnostic complete"

@@ -1,0 +1,176 @@
+#!/usr/bin/expect -f
+#
+# 31_tkb_direct_overlay.exp - Try TKB with overlay definitions inline
+#
+# Since ODL files fail, try entering overlay structure directly at TKB prompt
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" { }
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "User:"
+    }
+    timeout { puts ">>> Timeout"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number to attach to?" { send "\r"; expect -re {\$ } }
+    -re {\$ } { }
+}
+
+puts "\n>>> Logged in"
+
+# Make sure we have the OBJ files
+puts "\n>>> Verifying OBJ files..."
+send "DIR SY:*.OBJ\r"
+expect -re {\$ }
+
+# Start TKB
+puts "\n>>> Starting TKB for inline overlay build..."
+send "TKB\r"
+expect "TKB>"
+
+# Method 1: Try the output=input format with multiple inputs
+# This creates a simple linear link, not overlays
+puts "\n>>> Method 1: Simple linear link (expecting overflow)..."
+send "SY:ADVTEST/FP=SY:ADVENT,SY:ADVINI,SY:ADVOUT,SY:ADVNOR,LB:BP2OTS/LB\r"
+
+expect {
+    "TKB>" {
+        puts ">>> Accepted, entering options..."
+        send "/\r"
+    }
+    "TKB -- *" {
+        puts ">>> TKB message"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+expect {
+    "Enter Options:" {
+        puts ">>> Options mode"
+    }
+    "TKB>" {
+        send "/\r"
+        exp_continue
+    }
+}
+
+send "UNITS=13\r"
+expect "TKB>"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+send "EXTTSK=512\r"
+expect "TKB>"
+send "//\r"
+
+expect {
+    -re {\$ } {
+        puts ">>> Back to DCL"
+    }
+    "overflow" {
+        puts ">>> Overflow as expected"
+        expect -re {\$ }
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+    "TKB>" {
+        send "//\r"
+        exp_continue
+    }
+    timeout { puts ">>> Timeout" }
+}
+
+# Method 2: Try the ODL syntax directly at TKB prompt
+puts "\n>>> Method 2: ODL syntax at TKB prompt..."
+send "TKB\r"
+expect "TKB>"
+
+# Try .ROOT directive at TKB prompt
+send ".ROOT MAIN-*(OV1)\r"
+expect {
+    "TKB>" {
+        puts ">>> .ROOT accepted!"
+    }
+    "TKB -- *" {
+        puts ">>> .ROOT rejected"
+        exp_continue
+    }
+}
+
+# Try .NAME
+send ".NAME ADVENT\r"
+expect "TKB>"
+
+# Define segments
+send "MAIN: .FCTR SY:ADVENT\r"
+expect "TKB>"
+
+send "OV1: .FCTR SY:ADVINI\r"
+expect "TKB>"
+
+send ".END\r"
+expect {
+    "TKB>" {
+        puts ">>> .END accepted"
+    }
+    "TKB -- *" {
+        exp_continue
+    }
+}
+
+# Specify output
+send "SY:ADVTEST2/FP\r"
+expect "TKB>"
+
+# Options
+send "/\r"
+expect {
+    "Enter Options:" { }
+    "TKB>" { send "/\r"; exp_continue }
+}
+
+send "UNITS=13\r"
+expect "TKB>"
+send "LIBR=LB:BP2OTS/LB\r"
+expect "TKB>"
+send "//\r"
+
+expect {
+    -re {\$ } { puts ">>> Back to DCL" }
+    "TKB -- *" { exp_continue }
+    "TKB>" { send "//\r"; exp_continue }
+    timeout { puts ">>> Timeout" }
+}
+
+# Check results
+puts "\n>>> Checking results..."
+send "DIR SY:ADVTEST*.TSK\r"
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Test complete"

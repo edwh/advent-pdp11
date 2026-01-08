@@ -1,0 +1,331 @@
+#!/usr/bin/expect -f
+#
+# 76_full_tkb_build.exp - Complete build with TKB and ODL
+#
+# Steps:
+# 1. Copy source files from tape
+# 2. Compile each to .OBJ
+# 3. Create ODL with RT11 format
+# 4. Run TKB with /MP
+# 5. Test resulting TSK
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+proc wait_prompt {} {
+    expect {
+        -re {\$ } { return 1 }
+        timeout { return 0 }
+    }
+}
+
+spawn telnet localhost $port
+
+sleep 5
+send "\r"
+
+expect {
+    "Today's date?" {
+        send "1-JAN-92\r"
+        expect "Current time?"
+        send "12:00\r"
+        expect "Start timesharing?"
+        send "Y\r"
+        expect "Proceed with system startup?"
+        send "\r"
+        expect "system startup is complete"
+        sleep 3
+        send "\r"
+        expect "User:"
+    }
+    "User:" { }
+    timeout { puts "\n>>> Timeout at boot"; exit 1 }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r" }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+puts "\n>>> Logged in - Starting full TKB build"
+
+# Clean up
+send "DELETE SY:ADVENT.TSK,ADVENT.MAP,ADVENT.ODL,*.OBJ\r"
+expect -re {\$ }
+
+#
+# STEP 1: Copy source files from tape
+#
+puts "\n>>> Step 1: Copying source files from tape..."
+
+# Mount tape
+send "MOUNT MU0: ADVENT\r"
+expect -re {\$ }
+
+# Copy all source files
+set source_files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB}
+
+foreach f $source_files {
+    puts "\n>>> Copying $f..."
+    send "COPY MU0:$f SY:\r"
+    expect {
+        "copied" { }
+        "Can't find" { puts "\n>>> Warning: $f not found on tape" }
+        -re {\$ } { }
+    }
+    expect -re {\$ }
+}
+
+# Copy data files
+puts "\n>>> Copying data files..."
+set data_files {ADVENT.DTA ADVENT.MON ADVENT.CHR BOARD.NTC}
+
+foreach f $data_files {
+    puts "\n>>> Copying $f..."
+    send "COPY MU0:$f SY:\r"
+    expect {
+        "copied" { }
+        "Can't find" { puts "\n>>> Warning: $f not found on tape" }
+        -re {\$ } { }
+    }
+    expect -re {\$ }
+}
+
+# Dismount tape
+send "DISMOUNT MU0:\r"
+expect -re {\$ }
+
+# Verify files
+puts "\n>>> Verifying source files..."
+send "DIR SY:*.B2S,*.SUB\r"
+expect -re {\$ }
+
+#
+# STEP 2: Compile each source file
+#
+puts "\n>>> Step 2: Compiling source files to .OBJ..."
+
+send "BP2\r"
+expect {
+    "BASIC2" { }
+    timeout { puts "\n>>> BP2 failed to start"; exit 1 }
+}
+sleep 1
+
+# Compile each file - BP2 prompt is "BASIC2" not "Ready"
+set compile_files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB}
+
+foreach f $compile_files {
+    puts "\n>>> Compiling $f..."
+    send "OLD SY:$f\r"
+    sleep 2
+    expect {
+        "BASIC2" { }
+        "Cannot" { puts "\n>>> Cannot open $f"; continue }
+        timeout { puts "\n>>> Timeout opening $f"; continue }
+    }
+
+    send "COMPILE\r"
+    # Compilation can take a while - wait for BASIC2 prompt
+    set timeout 180
+    expect {
+        "BASIC2" { puts "\n>>> $f compiled" }
+        "Error" { exp_continue }
+        "declining" { exp_continue }
+        "Unaligned" { exp_continue }
+        timeout { puts "\n>>> Timeout compiling $f" }
+    }
+    set timeout 300
+}
+
+# Exit BP2
+send "EXIT\r"
+sleep 2
+expect -re {\$ }
+
+# Verify OBJ files
+puts "\n>>> Verifying .OBJ files..."
+send "DIR SY:*.OBJ\r"
+expect -re {\$ }
+
+#
+# STEP 3: Create ODL file with RT11 format
+#
+puts "\n>>> Step 3: Creating ADVENT.ODL..."
+
+send "CREATE SY:ADVENT.ODL\r"
+expect "CTRL/Z"
+sleep 1
+
+# Send ODL content
+send "; ADVENT.ODL - BP2 overlay structure for TKB\r"
+sleep 0.2
+send ";\r"
+sleep 0.2
+send "        .ROOT ROOTWL-*(OV1,OV2,OV3,OV4,OV5,OV6,OV7,OV8)\r"
+sleep 0.2
+send "ROOTWL: .FCTR SY:ADVENT-LIBR\r"
+sleep 0.2
+send "OV1:    .FCTR SY:ADVINI-LIBR\r"
+sleep 0.2
+send "OV2:    .FCTR SY:ADVOUT-LIBR\r"
+sleep 0.2
+send "OV3:    .FCTR SY:ADVNOR-LIBR\r"
+sleep 0.2
+send "OV4:    .FCTR SY:ADVCMD-LIBR\r"
+sleep 0.2
+send "OV5:    .FCTR SY:ADVODD-LIBR\r"
+sleep 0.2
+send "OV6:    .FCTR SY:ADVMSG-LIBR\r"
+sleep 0.2
+send "OV7:    .FCTR SY:ADVBYE-LIBR\r"
+sleep 0.2
+send "OV8:    .FCTR SY:ADVSHT,SY:ADVNPC,SY:ADVPUZ,SY:ADVDSP,SY:ADVFND,SY:ADVTDY-LIBR\r"
+sleep 0.2
+send "LIBR:   .FCTR LB:BP2OTS/LB\r"
+sleep 0.2
+send "        .END\r"
+sleep 0.5
+send "\032"
+sleep 1
+expect -re {\$ }
+
+# Verify ODL
+puts "\n>>> Verifying ODL file..."
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+send "DIR/FULL SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+#
+# STEP 4: Run TKB with ODL
+#
+puts "\n>>> Step 4: Running TKB with ODL..."
+
+send "RUN \$TKB\r"
+expect "TKB>"
+
+# Command: output,map=input/MP
+send "SY:ADVENT,SY:ADVENT=SY:ADVENT/MP\r"
+
+expect {
+    "FATAL" {
+        puts "\n>>> TKB FATAL error"
+        exp_continue
+    }
+    -nocase "enter options" {
+        puts "\n>>> TKB accepted ODL, now in options mode"
+    }
+    timeout {
+        puts "\n>>> Timeout at TKB"
+    }
+}
+
+# Wait for TKB> prompt before sending options
+expect "TKB>"
+puts "\n>>> Entering TKB options..."
+
+# Enter options - use correct RSTS/E syntax
+send "LIBR=BP2RES:RO\r"
+expect "TKB>"
+send "UNITS=12\r"
+expect "TKB>"
+send "ASG=SY:5:6:7:8:9:10:11:12\r"
+expect "TKB>"
+send "EXTTSK=512\r"
+expect "TKB>"
+
+# End with //
+send "//\r"
+
+# Wait for completion
+set timeout 120
+expect {
+    "DIAG" {
+        puts "\n>>> TKB diagnostic"
+        exp_continue
+    }
+    "FATAL" {
+        puts "\n>>> TKB fatal error"
+        exp_continue
+    }
+    "undefined" {
+        puts "\n>>> Undefined symbols"
+        exp_continue
+    }
+    "address overflow" {
+        puts "\n>>> Address overflow"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> TKB completed"
+    }
+    timeout {
+        puts "\n>>> TKB timeout"
+        send "\003"
+        expect -re {\$ }
+    }
+}
+set timeout 300
+
+# Check results
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+puts "\n>>> Checking MAP file..."
+send "TYPE SY:ADVENT.MAP\r"
+expect -re {\$ }
+
+#
+# STEP 5: Test the TSK
+#
+puts "\n>>> Step 5: Testing ADVENT.TSK..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    "Name" {
+        puts "\n>>> SUCCESS! Got Name prompt!"
+        send "TestUser\r"
+        sleep 3
+        expect {
+            ">" { puts "\n>>> Got game prompt!" }
+            timeout { }
+        }
+    }
+    "?Illegal SYS" {
+        puts "\n>>> FAILED: Illegal SYS() usage"
+    }
+    "?Reserved instruction" {
+        puts "\n>>> FAILED: Reserved instruction trap"
+    }
+    "?Task" {
+        puts "\n>>> FAILED: Task error"
+    }
+    "?File does not exist" {
+        puts "\n>>> FAILED: TSK not created"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt - program ended"
+    }
+    timeout {
+        puts "\n>>> Timeout running TSK"
+    }
+}
+
+# Clean exit
+send "\003"
+sleep 1
+send "BYE\r"
+expect eof
+
+puts "\n>>> Full TKB build test complete"

@@ -1,0 +1,120 @@
+#!/usr/bin/expect -f
+#
+# 67_dynamic_load.exp - Build like working TSK: main only, dynamic subprograms
+#
+# The working ADVENT.TSK on disk only links ADVENT.OBJ - subroutines
+# are loaded dynamically at runtime by BP2.
+#
+# This script:
+# 1. Links ONLY ADVENT.OBJ (no subroutines)
+# 2. Tests if it works like the original
+#
+
+set timeout 300
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+sleep 3
+send "\r"
+
+expect {
+    "User:" {
+        send "1,2\r"
+        expect "Password:"
+        send "SYSTEM\r"
+        expect {
+            "Job number" { send "\r"; expect -re {\$ } }
+            -re {\$ } { }
+        }
+    }
+    -re {\$ } { }
+    timeout { puts "\n>>> Timeout"; exit 1 }
+}
+
+puts "\n>>> Logged in!"
+
+# Delete old TSK
+send "DELETE SY:ADVENT.TSK\r"
+sleep 1
+expect -re {\$ }
+
+# Link ONLY the main program - like the working TSK
+puts "\n>>> Linking ONLY ADVENT.OBJ (no subroutines)..."
+send "LINK/BASIC SY:ADVENT\r"
+sleep 10
+
+expect {
+    "Undefined" {
+        puts "\n>>> Got undefined symbol - subroutines not found"
+        exp_continue
+    }
+    "Address overflow" {
+        puts "\n>>> Address overflow"
+    }
+    "illegal memory" {
+        puts "\n>>> Illegal memory limits"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> Link completed"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+expect -re {\$ }
+
+# Check if TSK was created
+puts "\n>>> Checking for TSK..."
+send "DIR SY:ADVENT.TSK\r"
+sleep 2
+expect -re {\$ }
+
+# Try running it
+puts "\n>>> Running main-only TSK..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    ">>> ADVENT main starting" {
+        puts "\n>>> Got debug output - program started!"
+        exp_continue
+    }
+    ">>> Calling ADVINI" {
+        puts "\n>>> About to call ADVINI..."
+        exp_continue
+    }
+    "Undefined" {
+        puts "\n>>> Undefined subprogram at runtime"
+    }
+    "Name" {
+        puts "\n>>> SUCCESS - Got Name prompt!"
+        send "Test\r"
+        sleep 2
+    }
+    "Illegal SYS" {
+        puts "\n>>> Illegal SYS error"
+    }
+    "does not exist" {
+        puts "\n>>> TSK not created"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout"
+    }
+}
+
+send "\003"
+sleep 1
+expect -re {\$ }
+
+send "BYE\r"
+expect eof
+
+puts "\n>>> Dynamic load test complete"
