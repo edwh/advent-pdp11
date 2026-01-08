@@ -70,15 +70,14 @@ RUN mkdir -p disks disks-backup scripts data src web tapes
 #
 # Source: simh/Disks/rsts_backup.dsk and rsts1_backup.dsk are the known-good images.
 
-# Backup disks (pristine, never modified at runtime)
-# Note: rsts0.dsk and rsts1.dsk are the actual bootable RK07 images
-# (rsts_backup.dsk is a different, non-bootable image)
-COPY simh/Disks/rsts0.dsk /opt/advent/disks-backup/rsts0.dsk
-COPY simh/Disks/rsts1.dsk /opt/advent/disks-backup/rsts1.dsk
+# Backup disks (pristine base OS, ADVENT will be built from source)
+# Using base-os images so setup_advent.py can build fresh each time
+COPY build/disks/rsts0-base-os.dsk /opt/advent/disks-backup/rsts0.dsk
+COPY build/disks/rsts1-base-os.dsk /opt/advent/disks-backup/rsts1.dsk
 
 # Working disks (restored from backup on each start by entrypoint.sh)
-COPY simh/Disks/rsts0.dsk /opt/advent/disks/rsts0.dsk
-COPY simh/Disks/rsts1.dsk /opt/advent/disks/rsts1.dsk
+COPY build/disks/rsts0-base-os.dsk /opt/advent/disks/rsts0.dsk
+COPY build/disks/rsts1-base-os.dsk /opt/advent/disks/rsts1.dsk
 
 
 # Copy data files (includes game data and generated dungeon map)
@@ -87,11 +86,17 @@ COPY build/data/ /opt/advent/data/
 # Copy source files for building from source
 COPY src/*.SUB src/*.B2S /opt/advent/src/
 
-# Copy tape creation scripts and rebuild tape from current source
-# The tape script expects generated_data/ directory - create symlink
+# Copy tape creation and room reconstruction scripts
 COPY scripts/create_tape.py scripts/create_advent_tape.py /opt/advent/scripts/
+COPY scripts/reconstruct_rooms.py scripts/analyze_rooms.py /opt/advent/scripts/
+
+# Reconstruct room exits (connects all 1590 rooms) and rebuild tape
+# The tape script expects generated_data/ directory - create symlink
 RUN mkdir -p /opt/advent/tapes && \
     ln -s /opt/advent/data /opt/advent/generated_data && \
+    python3 /opt/advent/scripts/reconstruct_rooms.py \
+        --input /opt/advent/data/ADVENT.DTA \
+        --map-json /opt/advent/data/dungeon_map.json && \
     python3 /opt/advent/scripts/create_advent_tape.py -o /opt/advent/tapes/advent_source.tap
 
 # Copy build scripts
@@ -126,8 +131,8 @@ RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py && \
 # Expose ports
 EXPOSE 8080 7681 7682 2322 2323
 
-# Default: skip setup (using pre-built disk images with ADVENT)
-# Set SKIP_SETUP=0 to build from source (requires base-os disk images)
-ENV SKIP_SETUP=1
+# Build ADVENT from source on each container start
+# This ensures source code and data changes are always compiled fresh
+ENV SKIP_SETUP=0
 
 ENTRYPOINT ["/opt/advent/entrypoint.sh"]
