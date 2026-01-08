@@ -326,10 +326,11 @@ expect {
     }
 }
 
-# Try to exit cleanly
-send "\003"
-sleep 1
-send "BYE\r"
-expect eof
+# Exit cleanly - close spawn and exit script
+# Don't wait for eof as telnet may not close properly
+puts "\n>>> Build complete - closing connection"
+catch {close}
+catch {wait}
 
 puts "\n>>> Rebuild with aligned COMMON complete"
+exit 0
