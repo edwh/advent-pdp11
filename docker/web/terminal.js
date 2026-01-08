@@ -299,7 +299,32 @@
 
                 const overlayTitle = connectionOverlay?.querySelector('h2');
 
-                if (status.status === 'booting') {
+                if (status.status === 'building') {
+                    // Build in progress - show detailed build message
+                    if (overlayTitle) {
+                        overlayTitle.textContent = 'Building ADVENT...';
+                        overlayTitle.style.color = '#ffaa00';
+                    }
+                    if (waitMessage) {
+                        let msg = status.message || 'Building from source...';
+                        if (status.detail) {
+                            msg += '<br><br><small style="color: #888;">' + status.detail + '</small>';
+                        }
+                        waitMessage.innerHTML = msg;
+                        waitMessage.style.color = '#ffaa00';
+                    }
+                    // Show build as active
+                    updateStep('connect', 'complete');
+                    updateStep('boot', 'active');
+                    updateStep('login', 'pending');
+                    updateStep('game', 'pending');
+                    updateStep('ready', 'pending');
+                    // Update boot step text to show build status
+                    const bootStep = steps.boot?.querySelector('.step-text');
+                    if (bootStep) {
+                        bootStep.textContent = 'Building from source...';
+                    }
+                } else if (status.status === 'booting') {
                     // System still booting - show holding message
                     if (overlayTitle) {
                         overlayTitle.textContent = 'System Starting...';
@@ -308,6 +333,11 @@
                     if (waitMessage) {
                         waitMessage.textContent = status.message || 'Please wait...';
                         waitMessage.style.color = '#ffaa00';
+                    }
+                    // Reset boot step text
+                    const bootStep = steps.boot?.querySelector('.step-text');
+                    if (bootStep) {
+                        bootStep.textContent = 'Waiting for RSTS/E...';
                     }
                     // Show only boot step as active
                     updateStep('connect', 'pending');

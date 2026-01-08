@@ -143,34 +143,17 @@ if [ $READY_WAIT -ge $MAX_READY_WAIT ]; then
     echo "Continuing anyway..."
 fi
 
-# Start web terminals BEFORE marking system ready
-# This ensures ttyd is running when users try to connect
-if command -v ttyd &> /dev/null; then
-    # Game interface (port 7681) - auto-login and run ADVENT (proxied via nginx)
-    # -b /terminal tells ttyd it's being proxied at /terminal/ path
-    ttyd -p 7681 -b /terminal -W "$ADVENT_DIR/game_session.sh" &
-    GAME_PID=$!
-    echo "Game web terminal started on port 7681"
-
-    # Admin interface (port 7682) - direct console access
-    ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
-    ADMIN_PID=$!
-    echo "Admin web terminal started on port 7682"
-
-    # Give ttyd a moment to start
-    sleep 2
-fi
-
-# Mark system as ready
-echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
-
-# Run setup if not skipped
+# Run setup (build from source) BEFORE starting web terminals
+# This prevents users from connecting while build is in progress
 if [ "${SKIP_SETUP:-0}" != "1" ]; then
     echo ""
     echo "=============================================="
     echo "  Running ADVENT Setup"
     echo "=============================================="
     echo ""
+
+    # Update boot status to show build is in progress
+    echo '{"status": "building", "message": "Building ADVENT from source...", "detail": "Copying files from tape and compiling. This takes 10-15 minutes.", "progress": "Started"}' > /tmp/boot_status.json
 
     # Run build_advent.exp to copy from tape and compile
     # This uses TMSCP tape (MU0:) at 18KB/sec - much faster than TECO
@@ -181,6 +164,9 @@ if [ "${SKIP_SETUP:-0}" != "1" ]; then
         echo "Check /tmp/setup.log for details."
         echo ""
     }
+
+    # Update status after build completes
+    echo '{"status": "booting", "message": "Build complete, starting web terminals..."}' > /tmp/boot_status.json
 fi
 
 echo ""
@@ -203,7 +189,19 @@ echo "  RUN ADVENT"
 echo ""
 
 # Note: nginx started at beginning of boot for health checks
-# Note: ttyd started before marking system ready
+
+# Start ttyd web terminals AFTER build completes
+# This prevents users from connecting while build is in progress
+ttyd -p 7681 -b /terminal -W "$ADVENT_DIR/game_session.sh" &
+GAME_PID=$!
+echo "Game web terminal started on port 7681"
+
+ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
+ADMIN_PID=$!
+echo "Admin web terminal started on port 7682"
+
+# Mark system as ready
+echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
 
 # Run SIMH in a loop - if it exits (or is killed for restart), restart it
 while true; do
