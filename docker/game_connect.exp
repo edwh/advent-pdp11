@@ -107,7 +107,7 @@ expect {
 set timeout 30
 expect {
     -re "\[Pp\]assword" {
-        send "Digital1977\r"
+        send "SYSTEM\r"
     }
     "Ready" {
         # No password needed, continue

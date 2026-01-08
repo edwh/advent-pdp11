@@ -41,24 +41,18 @@ DATA_DIR="$ADVENT_DIR/data"
 SRC_DIR="$ADVENT_DIR/src"
 SCRIPTS_DIR="$ADVENT_DIR/scripts"
 
-# Restore disk images from backup on each start
+# Restore disk image from backup on each start
 # This prevents corruption from improper shutdowns
 BACKUP_DIR="$ADVENT_DIR/disks-backup"
-if [ -f "$BACKUP_DIR/rsts0.dsk" ] && [ -f "$BACKUP_DIR/rsts1.dsk" ]; then
-    echo "Restoring fresh disk images from backup..."
-    cp "$BACKUP_DIR/rsts0.dsk" "$DISKS_DIR/rsts0.dsk"
-    cp "$BACKUP_DIR/rsts1.dsk" "$DISKS_DIR/rsts1.dsk"
-    echo "Disk images restored."
+if [ -f "$BACKUP_DIR/rstse_10_ra72.dsk" ]; then
+    echo "Restoring fresh RA72 disk image from backup..."
+    cp "$BACKUP_DIR/rstse_10_ra72.dsk" "$DISKS_DIR/rstse_10_ra72.dsk"
+    echo "Disk image restored."
 fi
 
-# Check for required disk images
-if [ ! -f "$DISKS_DIR/rsts0.dsk" ]; then
-    echo "ERROR: Boot disk not found at $DISKS_DIR/rsts0.dsk"
-    exit 1
-fi
-
-if [ ! -f "$DISKS_DIR/rsts1.dsk" ]; then
-    echo "ERROR: Game disk not found at $DISKS_DIR/rsts1.dsk"
+# Check for required disk image
+if [ ! -f "$DISKS_DIR/rstse_10_ra72.dsk" ]; then
+    echo "ERROR: RA72 disk not found at $DISKS_DIR/rstse_10_ra72.dsk"
     exit 1
 fi
 
@@ -178,19 +172,12 @@ if [ "${SKIP_SETUP:-0}" != "1" ]; then
     echo "=============================================="
     echo ""
 
-    SETUP_ARGS=""
-    [ "${SKIP_DATA:-0}" = "1" ] && SETUP_ARGS="$SETUP_ARGS --skip-data"
-    [ "${SKIP_SOURCE:-0}" = "1" ] && SETUP_ARGS="$SETUP_ARGS --skip-source"
-    [ "${SKIP_COMPILE:-0}" = "1" ] && SETUP_ARGS="$SETUP_ARGS --skip-compile"
-
-    # Run setup with timeout
+    # Run build_advent.exp to copy from tape and compile
+    # This uses TMSCP tape (MU0:) at 18KB/sec - much faster than TECO
     TIMEOUT="${SETUP_TIMEOUT:-7200}"
-    timeout $TIMEOUT python3 "$SCRIPTS_DIR/setup_advent.py" \
-        --data-dir "$DATA_DIR" \
-        --source-dir "$SRC_DIR" \
-        $SETUP_ARGS 2>&1 | tee /tmp/setup.log || {
+    timeout $TIMEOUT "$ADVENT_DIR/build_advent.exp" 2>&1 | tee /tmp/setup.log || {
         echo ""
-        echo "WARNING: Setup completed with errors or timed out."
+        echo "WARNING: Build completed with errors or timed out."
         echo "Check /tmp/setup.log for details."
         echo ""
     }
@@ -209,7 +196,7 @@ echo "  Telnet (Terminal):    telnet localhost 2323"
 echo ""
 echo "To login via telnet:"
 echo "  User: [1,2]"
-echo "  Password: Digital1977"
+echo "  Password: SYSTEM"
 echo ""
 echo "To run the game after login:"
 echo "  RUN ADVENT"

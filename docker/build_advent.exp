@@ -1,0 +1,335 @@
+#!/usr/bin/expect -f
+#
+# 85_rebuild_with_aligned_common.exp - Rebuild ADVENT with aligned COMMON
+#
+# The source files have been modified to put integers first in COMMON block.
+# This script:
+# 1. Copies fixed source files from tape to RSTS/E
+# 2. Compiles all source files
+# 3. Creates ODL with hybrid structure
+# 4. Runs TKB to create ADVENT.TSK
+# 5. Tests the result
+#
+# NOTE: SIMH's pdp11_ra72.ini auto-answers boot prompts. This script
+# must wait for boot to complete before logging in.
+#
+
+set timeout 600
+set port 2322
+
+log_user 1
+
+spawn telnet localhost $port
+
+puts "\n>>> Waiting for RSTS/E boot to complete..."
+
+# Robust boot detection - handles both connecting during boot AND after boot
+# The buffered console may have already sent boot messages before we connect
+set boot_timeout 120
+
+expect {
+    "on the air" {
+        puts "\n>>> System boot complete"
+        sleep 3
+        send "\r"
+        expect "User:"
+    }
+    "startup is complete" {
+        puts "\n>>> System startup complete"
+        sleep 3
+        send "\r"
+        expect "User:"
+    }
+    "User:" {
+        puts "\n>>> System already at login prompt"
+    }
+    timeout {
+        # System may be booted but idle - try sending CR to wake it up
+        puts "\n>>> No boot messages received - checking if system is ready..."
+        send "\r"
+        expect {
+            "User:" {
+                puts "\n>>> System responded to CR - already booted"
+            }
+            "on the air" {
+                puts "\n>>> System still booting..."
+                sleep 3
+                send "\r"
+                expect "User:"
+            }
+            timeout {
+                puts "\n>>> System not responding after CR - may need more boot time"
+                # Wait longer and try again
+                sleep 30
+                send "\r"
+                expect {
+                    "User:" { puts "\n>>> System now ready" }
+                    timeout { puts "\n>>> Timeout waiting for system"; exit 1 }
+                }
+            }
+        }
+    }
+}
+
+send "1,2\r"
+expect "Password:"
+send "SYSTEM\r"
+expect {
+    "Job number" { send "\r" }
+    -re {\$ } { }
+}
+expect -re {\$ }
+
+puts "\n>>> Logged in - Rebuilding ADVENT with aligned COMMON"
+
+# Clean up old ADVENT files only (don't delete system TSK files like TKB.TSK!)
+puts "\n>>> Cleaning up old ADVENT files..."
+send "DELETE SY:ADVENT.OBJ,ADVENT.TSK,ADVENT.MAP,ADVENT.ODL\r"
+expect -re {\$ }
+send "DELETE SY:ADV*.OBJ\r"
+expect -re {\$ }
+
+# Mount the tape with fixed sources (TMSCP tape = MU0:)
+puts "\n>>> Mounting tape..."
+send "MOUNT MU0: ADVENT\r"
+expect {
+    "mounted" { expect -re {\$ } }
+    "DOS format" { expect -re {\$ } }
+    -re {\$ } { }
+}
+
+# Copy all source files from tape
+puts "\n>>> Copying source files from tape..."
+set source_files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB}
+
+foreach f $source_files {
+    send "COPY MU0:$f SY:\r"
+    expect {
+        "OK to replace" {
+            send "Y\r"
+            expect "copied"
+        }
+        "copied" { }
+        "?File not found" { puts "\n>>> Warning: $f not found on tape" }
+        "Can't find" { puts "\n>>> Warning: $f not found on tape" }
+        timeout { puts "\n>>> Timeout copying $f" }
+    }
+    expect -re {\$ }
+}
+
+# Copy data files from tape
+puts "\n>>> Copying data files from tape..."
+set data_files {ADVENT.DTA ADVENT.MON ADVENT.CHR BOARD.NTC}
+
+foreach f $data_files {
+    puts "\n>>> Copying $f..."
+    send "COPY MU0:$f SY:\r"
+    set timeout 180
+    expect {
+        "OK to replace" {
+            send "Y\r"
+            expect "copied"
+        }
+        "copied" { puts ">>> $f copied" }
+        "?File not found" { puts "\n>>> Warning: $f not found on tape" }
+        "Can't find" { puts "\n>>> Warning: $f not found on tape" }
+        timeout { puts "\n>>> Timeout copying $f (large file)" }
+    }
+    expect -re {\$ }
+    set timeout 600
+}
+
+# Dismount tape
+send "DISMOUNT MU0:\r"
+expect -re {\$ }
+
+# Compile all source files
+puts "\n>>> Starting BP2 compiler..."
+send "BP2\r"
+expect "BASIC-PLUS-2"
+# Wait for the BASIC2 prompt
+expect -re {BASIC2\s*$}
+
+# Compile each file
+foreach f $source_files {
+    puts "\n>>> Compiling $f..."
+    send "OLD SY:$f\r"
+    # Wait for BASIC2 prompt after OLD command
+    expect -re {BASIC2\s*$}
+    send "COMPILE\r"
+    # Wait for compilation (can take a while) - ends with BASIC2 prompt
+    set timeout 180
+    expect {
+        -re {BASIC2\s*$} { puts ">>> $f compiled" }
+        "declining" { exp_continue }
+        timeout { puts ">>> Timeout compiling $f" }
+    }
+    set timeout 600
+}
+
+# Exit BP2: CTRL+C to interrupt, then CTRL+Z to exit
+send "\003"
+sleep 1
+send "\032"
+sleep 1
+expect -re {\$ }
+
+# Verify OBJ files exist
+puts "\n>>> Verifying compiled files..."
+send "DIR SY:*.OBJ\r"
+expect -re {\$ }
+
+# Create ODL file with hybrid structure
+puts "\n>>> Creating ODL file..."
+send "CREATE SY:ADVENT.ODL\r"
+expect "CTRL/Z"
+sleep 1
+
+# Modified ODL: Put ADVOUT in ROOT to eliminate cross-overlay calls
+# ADVOUT is called from almost every overlay segment (7 callers), so putting
+# it in ROOT means those calls won't require overlay swaps.
+send "; ADVENT.ODL - ADVOUT in ROOT for stability\r"
+sleep 0.2
+send ".ROOT SY:ADVENT-SY:ADVOUT-LIBR-*(OVLY)\r"
+sleep 0.2
+send "LIBR:   .FCTR LB:BP2OTS/LB\r"
+sleep 0.2
+send "OVLY:   .FCTR *(A,B,C,D,E)\r"
+sleep 0.2
+send "A:      .FCTR SY:ADVINI,SY:ADVNOR\r"
+sleep 0.2
+send "B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG\r"
+sleep 0.2
+send "C:      .FCTR SY:ADVBYE,SY:ADVSHT,SY:ADVNPC\r"
+sleep 0.2
+send "D:      .FCTR SY:ADVPUZ,SY:ADVDSP,SY:ADVFND\r"
+sleep 0.2
+send "E:      .FCTR SY:ADVTDY\r"
+sleep 0.2
+send "        .END\r"
+sleep 0.5
+send "\032"
+sleep 1
+expect -re {\$ }
+
+# Verify ODL
+puts "\n>>> Verifying ODL file..."
+send "TYPE SY:ADVENT.ODL\r"
+expect -re {\$ }
+
+# Run TKB
+puts "\n>>> Running TKB..."
+send "RUN \$TKB\r"
+expect "TKB>"
+
+send "SY:ADVENT,SY:ADVENT=SY:ADVENT/MP\r"
+
+expect {
+    "FATAL" {
+        puts "\n>>> TKB FATAL error"
+        exp_continue
+    }
+    -nocase "enter options" {
+        puts "\n>>> Got Enter Options prompt"
+    }
+    timeout {
+        puts "\n>>> Timeout waiting for TKB"
+    }
+}
+
+expect "TKB>"
+puts "\n>>> Entering TKB options..."
+
+send "LIBR=BP2RES:RO\r"
+expect "TKB>"
+send "UNITS=12\r"
+expect "TKB>"
+send "EXTTSK=1024\r"
+expect "TKB>"
+
+send "//\r"
+
+set timeout 180
+expect {
+    "DIAG" {
+        puts "\n>>> TKB diagnostic message"
+        exp_continue
+    }
+    "FATAL" {
+        puts "\n>>> TKB fatal error"
+        exp_continue
+    }
+    "undefined" {
+        puts "\n>>> Undefined symbols warning"
+        exp_continue
+    }
+    -re {\$ } {
+        puts "\n>>> TKB completed"
+    }
+    timeout {
+        puts "\n>>> Timeout waiting for TKB"
+        send "\003"
+        expect -re {\$ }
+    }
+}
+set timeout 600
+
+# Check for TSK file
+puts "\n>>> Checking for ADVENT.TSK..."
+send "DIR SY:ADVENT.TSK\r"
+expect -re {\$ }
+
+# Test the TSK
+puts "\n>>> Testing ADVENT.TSK..."
+send "RUN SY:ADVENT.TSK\r"
+sleep 5
+
+expect {
+    ">>>" {
+        puts "\n>>> Got debug output"
+        exp_continue
+    }
+    "Name" {
+        puts "\n>>> SUCCESS! Got Name prompt - game is starting!"
+        send "TestPlayer\r"
+        sleep 3
+    }
+    "Exits" {
+        puts "\n>>> SUCCESS! Game started and showing room exits!"
+    }
+    "You are standing" {
+        puts "\n>>> SUCCESS! Game started with room description!"
+        exp_continue
+    }
+    "No character loaded" {
+        puts "\n>>> Game creating temporary character..."
+        exp_continue
+    }
+    "ADVENT ERROR" {
+        puts "\n>>> Got ADVENT ERROR"
+        exp_continue
+    }
+    "?Illegal SYS" {
+        puts "\n>>> ERROR: Illegal SYS() usage"
+    }
+    "Odd address" {
+        puts "\n>>> ERROR: Odd address trap (alignment still wrong)"
+    }
+    "Reserved instruction" {
+        puts "\n>>> ERROR: Reserved instruction trap"
+    }
+    -re {\$ } {
+        puts "\n>>> Back to prompt (program exited)"
+    }
+    timeout {
+        puts "\n>>> Timeout waiting for game"
+    }
+}
+
+# Try to exit cleanly
+send "\003"
+sleep 1
+send "BYE\r"
+expect eof
+
+puts "\n>>> Rebuild with aligned COMMON complete"

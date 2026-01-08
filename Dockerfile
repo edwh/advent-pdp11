@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     procps \
+    telnet \
     && rm -rf /var/lib/apt/lists/*
 
 # Install ttyd (not in Debian repos, download binary)
@@ -70,14 +71,12 @@ RUN mkdir -p disks disks-backup scripts data src web tapes
 #
 # Source: simh/Disks/rsts_backup.dsk and rsts1_backup.dsk are the known-good images.
 
-# Backup disks (pristine base OS, ADVENT will be built from source)
-# Using base-os images so setup_advent.py can build fresh each time
-COPY build/disks/rsts0-base-os.dsk /opt/advent/disks-backup/rsts0.dsk
-COPY build/disks/rsts1-base-os.dsk /opt/advent/disks-backup/rsts1.dsk
+# RA72 disk image (pristine base OS, ADVENT will be built from source)
+# Using RA72 with MSCP controller and TMSCP tape (MU0:)
+COPY simh/Disks/ra72/rstse_10_ra72.dsk /opt/advent/disks-backup/rstse_10_ra72.dsk
 
-# Working disks (restored from backup on each start by entrypoint.sh)
-COPY build/disks/rsts0-base-os.dsk /opt/advent/disks/rsts0.dsk
-COPY build/disks/rsts1-base-os.dsk /opt/advent/disks/rsts1.dsk
+# Working disk (restored from backup on each start by entrypoint.sh)
+COPY simh/Disks/ra72/rstse_10_ra72.dsk /opt/advent/disks/rstse_10_ra72.dsk
 
 
 # Copy data files (includes game data and generated dungeon map)
@@ -104,11 +103,12 @@ COPY scripts/setup_advent.py /opt/advent/scripts/
 COPY scripts/migrate_data.py /opt/advent/scripts/
 
 # Copy configuration
-COPY docker/pdp11.ini /opt/advent/
+COPY simh/pdp11_ra72.ini /opt/advent/pdp11.ini
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 # Copy startup scripts
 COPY docker/entrypoint.sh /opt/advent/
+COPY docker/build_advent.exp /opt/advent/
 COPY docker/game_connect.exp /opt/advent/
 COPY docker/game_session.sh /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
