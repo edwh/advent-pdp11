@@ -85,7 +85,7 @@ This can corrupt system files causing "Odd address trap" errors.
 
 The git-committed working copies have ADVENT.TSK and all data files pre-installed.
 
-## Current State (January 3, 2026)
+## Current State (January 8, 2026)
 
 ### What Works
 - Full ADVENT game running in single-user mode
@@ -93,6 +93,7 @@ The git-committed working copies have ADVENT.TSK and all data files pre-installe
 - Navigation, inventory, combat commands
 - 1,587 rooms with descriptions
 - 402 monsters, 417 objects
+- Fly.io deployment: https://advent-pdp11.fly.dev
 
 ### Known Issues
 1. **^B character in exit display** - appears after "West"
@@ -101,7 +102,7 @@ The git-committed working copies have ADVENT.TSK and all data files pre-installe
 
 ## Console vs DZ Terminals
 
-We switched from DZ terminals to console because:
+We use console (port 2322) instead of DZ terminals (port 2323) because:
 - DZ terminals are flaky - sometimes don't respond with User: prompt
 - Console is special in RSTS/E - always available and reliable
 - Single-user mode only needs one terminal anyway
@@ -110,9 +111,17 @@ We switched from DZ terminals to console because:
 - Console: localhost:2324 -> container:2322
 - DZ terminals: localhost:2325 -> container:2323
 
-Files changed:
-- `docker/game_connect.exp` - connects to port 2322 instead of 2323
-- `docker/verify_ready.exp` - checks console, handles multiple prompt types
+**Console Port Contention Fix (January 8, 2026):**
+Both `verify_ready.exp` and `game_connect.exp` use port 2322 (console). SIMH console only allows ONE connection. During RSTS/E restarts, `entrypoint.sh` now:
+1. Kills ttyd processes before running verify_ready.exp
+2. Restarts ttyd after RSTS/E is verified ready
+
+This prevents "All connections busy" errors on fly.io.
+
+Files:
+- `docker/game_connect.exp` - connects to port 2322 for game sessions
+- `docker/verify_ready.exp` - checks console for system readiness
+- `docker/entrypoint.sh` - manages ttyd lifecycle during restarts
 
 ## Key Source Files
 
@@ -169,6 +178,7 @@ source /home/edward/.env
 | Port conflict | Check `docker ps` for existing containers using ports. Run `docker compose down` first |
 | SIMH port conflicts | Container restarted while old sockets still bound. Wait 30s or restart Docker |
 | "Address already in use" | Run `docker compose down`, wait for port release, then `docker compose up -d` |
+| "All connections busy" | Console port contention. Fixed in Jan 2026 - entrypoint.sh now manages ttyd lifecycle |
 
 ## Tape Drive File Transfer (January 2026) - WORKING!
 
