@@ -220,6 +220,12 @@ while true; do
     echo "SIMH exited. Restarting in 3 seconds..."
     echo '{"status": "booting", "message": "Restarting PDP-11..."}' > /tmp/boot_status.json
     rm -f /tmp/login_status.json
+
+    # Kill ttyd processes to free the console port
+    # verify_ready.exp uses console (2322) which conflicts with game_connect.exp
+    pkill -f 'ttyd.*game_session' || true
+    pkill -f 'ttyd.*admin_connect' || true
+
     sleep 3
 
     echo "Starting SIMH emulator..."
@@ -238,12 +244,22 @@ while true; do
     while [ $READY_WAIT -lt $MAX_READY_WAIT ]; do
         if "$ADVENT_DIR/verify_ready.exp" 2>/dev/null; then
             echo "RSTS/E is ready!"
-            echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
             break
         fi
         sleep 10
         READY_WAIT=$((READY_WAIT + 10))
     done
+
+    # Restart ttyd processes
+    ttyd -p 7681 -b /terminal -W "$ADVENT_DIR/game_session.sh" &
+    GAME_PID=$!
+    echo "Game web terminal restarted on port 7681"
+
+    ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
+    ADMIN_PID=$!
+    echo "Admin web terminal restarted on port 7682"
+
+    echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
 
     # Wait for SIMH to exit
     wait $SIMH_PID

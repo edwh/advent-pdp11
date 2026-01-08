@@ -5,8 +5,9 @@
 set timeout 10
 log_user 0
 
-# Try to connect to console and get User: prompt
-# Console (port 2322) is more reliable than DZ terminals (port 2323)
+# Use console port 2322 which always shows User: prompt when RSTS/E is ready.
+# Note: game_connect.exp also uses console. To avoid contention during restarts,
+# entrypoint.sh should kill ttyd processes before running this verification loop.
 spawn nc localhost 2322
 sleep 2
 send "\r"

@@ -29,19 +29,17 @@ write_status "connect" "Connecting to PDP-11..."
 # Use catch in case stty fails (no controlling terminal in some environments)
 catch {exec stty -icrnl -onlcr}
 
-# Connect to RSTS/E via console (KB0) - more reliable than DZ terminals
-# The console is special in RSTS/E and always available
-# Note: SIMH sends "Connected to the PDP-11 simulator CON-TEL device"
+# Connect to RSTS/E via console (KB0) on port 2322
+# Console is more reliable than DZ terminals for game sessions.
+# verify_ready.exp now uses DZ terminals (2323) to avoid contention.
 spawn nc localhost 2322
 
 # The console banner should arrive immediately
 expect {
     -re "Connected to the PDP-11 simulator CON-TEL device" {
-        puts "DEBUG: Connected to console (KB0)"
         write_status "boot" "Connected to PDP-11 console..."
     }
     timeout {
-        puts "ERROR: No console banner received - SIMH may not be running"
         write_status "error" "No response from PDP-11 simulator"
         exit 1
     }
@@ -53,7 +51,7 @@ sleep 2
 send "\r"
 
 # Wait for User: prompt from RSTS/E
-# Note: Console may have OMS broadcast messages - be patient
+# Note: Terminal may have OMS broadcast messages - be patient
 set timeout 30
 expect {
     "User:" {
