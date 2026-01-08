@@ -99,7 +99,6 @@ RUN mkdir -p /opt/advent/tapes && \
     python3 /opt/advent/scripts/create_advent_tape.py -o /opt/advent/tapes/advent_source.tap
 
 # Copy build scripts
-COPY scripts/setup_advent.py /opt/advent/scripts/
 COPY scripts/migrate_data.py /opt/advent/scripts/
 
 # Copy configuration
