@@ -83,11 +83,15 @@ COPY simh/Disks/rsts1.dsk /opt/advent/disks/rsts1.dsk
 # Copy data files for building from source
 COPY build/data/ /opt/advent/data/
 
-# Copy tape images for file transfer
-COPY build/tapes/ /opt/advent/tapes/
-
 # Copy source files for building from source
 COPY src/*.SUB src/*.B2S /opt/advent/src/
+
+# Copy tape creation scripts and rebuild tape from current source
+# The tape script expects generated_data/ directory - create symlink
+COPY scripts/create_tape.py scripts/create_advent_tape.py /opt/advent/scripts/
+RUN mkdir -p /opt/advent/tapes && \
+    ln -s /opt/advent/data /opt/advent/generated_data && \
+    python3 /opt/advent/scripts/create_advent_tape.py -o /opt/advent/tapes/advent_source.tap
 
 # Copy build scripts
 COPY scripts/setup_advent.py /opt/advent/scripts/
