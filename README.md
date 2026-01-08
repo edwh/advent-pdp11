@@ -49,6 +49,16 @@ For telnet access:
 - 402 monsters placed in their rooms
 - 417 objects available
 
+### Demigod Privileges (For Exploration)
+
+New players start at **level 11 (demigod)** so you can explore the dungeon freely. This is just for fun - in the original 1987 game, you had to earn these abilities!
+
+- `/TELEPORT <player>` - Teleport to another player
+- `/LIST` - See all players online and their locations
+- `/ROOM <number>` - Teleport directly to a room number (level 16+)
+- `/INVISIBLE` - Toggle invisibility (level 16+)
+- `/ANNOUNCE <message>` - Broadcast to all players (level 30+)
+
 See [STATUS.md](STATUS.md) for detailed feature status.
 
 ## Architecture

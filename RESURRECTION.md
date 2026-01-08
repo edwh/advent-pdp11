@@ -418,74 +418,35 @@ Lessons learned during automation:
 - Exit BP2 with CTRL+C then CTRL+Z (not BYE or SYSTEM commands)
 - Never DELETE *.TSK - it deletes TKB.TSK itself! Only delete ADVENT.* files
 
-**PROGRESS UPDATE (January 7, 2026):**
+**THE BREAKTHROUGH (January 8, 2026):**
 
-The original 1987 ODL structure has been tested with data files. Current status:
+After weeks of wrestling with overlay structures, COMMON alignment, and undefined symbols, we had a revelation: **just use the pre-compiled ADVENT.TSK from the original tape**.
 
-- ✅ All 14 .OBJ files compile successfully
-- ✅ Original 1987 ODL structure from `src/ADVENT.ODL` implemented
-- ✅ TKB creates ADVENT.TSK (162 blocks)
-- ✅ Data files copied to disk (ADVENT.DTA, ADVENT.MON, ADVENT.CHR, BOARD.NTC)
-- ❌ "Odd address trap at line 15001 in ADVDSP" - crashes when displaying room
+The 1987 executable was sitting there all along, preserved perfectly on the magnetic tape. It worked in 1987, it works in 2026. Sometimes the best code archaeology is knowing when to stop digging.
 
-The game starts and prints "No character loaded. Creating temporary character..." but then
-crashes in ADVDSP when trying to display the room. This suggests the issue is related to:
-- Cross-overlay calls (ADVDSP in overlay D calls ADVOUT in overlay A)
-- Undefined symbols in overlays (TKB reports 1 undefined symbol in ADVDSP segment)
-- Buffer allocation when loading overlays
+**Final Status: IT WORKS! 🎉**
 
-**The ODL structure being used:**
-```
-.ROOT SY:ADVENT-LIBR-*(OVLY)
-LIBR:   .FCTR LB:BP2OTS/LB
-OVLY:   .FCTR *(A,B,C,D,E)
-A:      .FCTR SY:ADVINI,SY:ADVOUT,SY:ADVNOR
-B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG
-C:      .FCTR SY:ADVBYE,SY:ADVSHT,SY:ADVNPC
-D:      .FCTR SY:ADVPUZ,SY:ADVDSP,SY:ADVFND
-E:      .FCTR SY:ADVTDY
-        .END
-```
+- ✅ ADVENT.TSK from original tape loaded successfully
+- ✅ All data files in place (ADVENT.DTA, ADVENT.MON, ADVENT.CHR, BOARD.NTC)
+- ✅ Room descriptions display correctly
+- ✅ Navigation works (N/S/E/W, UP/DOWN)
+- ✅ Objects can be picked up and dropped
+- ✅ Combat system functional
+- ✅ 1,587 rooms explorable
+- ✅ 402 monsters lurking
+- ✅ 417 objects scattered throughout
 
-Our custom "hybrid" ODL structures caused the odd address trap. The original structure
-with properly nested overlay groups (A, B, C, D, E) works correctly with the BP2 runtime.
+**The key insight:** The original developers knew what they were doing. Their ODL structure, their COMMON block layout, their overlay organization - it all worked because they tested it. We spent weeks trying to rebuild something that was already built.
 
-**Current Blocker: Data Files Missing**
+**For Modern Explorers:**
 
-The game now starts but immediately errors because these data files don't exist:
-- `ADVENT.DTA` - Main world data (rooms, objects, descriptions)
-- `ADVENT.MON` - Monster definitions
-- `BOARD.NTC` - Notice board data
-- `ADVENT.CHR` - Character/player data
-
-**SIMH Console Note:**
-
-Always use port 2322 (console) for all telnet sessions and automation.
-Never use port 2323 (DZ terminals) - they are unreliable and may not respond.
-
-**Remaining Steps:**
-1. ✅ ~~Run full rebuild on fresh container~~ DONE
-2. ✅ ~~Investigate undefined symbols~~ DONE (warnings only, not fatal)
-3. ✅ ~~Try different overlay structures~~ DONE (using original 1987 structure)
-4. ✅ ~~Populate data files~~ DONE (added to tape, copied to disk)
-5. ❌ Debug odd address trap in ADVDSP - **CURRENT BLOCKER**
-6. Test full game functionality once trap is resolved
-
-**Technical Notes:**
-- The original `src/ADVENT.ODL` structure is being used
-- Each overlay group (A-E) contains related modules that call each other
-- Cross-overlay calls (e.g., ADVDSP->ADVOUT) may need the overlay manager to load overlays
-- The undefined symbols reported by TKB might be the root cause of the crash
-
-See [TKB_BUILD_RESEARCH.md](TKB_BUILD_RESEARCH.md) for complete technical details.
-
-The odyssey continues...
+New players now start at **level 11 (demigod)** so you can explore freely with teleport abilities. This is just for fun - in 1987, you had to *earn* these powers!
 
 ## Final Notes
 
-If something doesn't work - which is likely - see [Technical Details](TECHNICAL.md) for the gory details.
+If you're reading this and playing the game, then we've succeeded. 38 years after it was created, a multi-user dungeon written by teenagers on a minicomputer is running again - in a Docker container, accessible via web browser, from anywhere in the world.
 
-If you're reading this and the game is actually running, then we've succeeded beyond our expectations. If not, well, we did warn you that life is never simple.
+The game is live at [advent-pdp11.fly.dev](https://advent-pdp11.fly.dev). Go explore Santa's Grotto, visit THOMAS COVENANT's retreate (sic), and discover Room 1999 that "invites death."
 
 Well, that's about all we've got time for this week. Next week we'll be looking at the Papua New Guinea economy, and building a thermonuclear bomb out of yoghourt cartons.
 

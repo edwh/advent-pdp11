@@ -94,6 +94,7 @@ The git-committed working copies have ADVENT.TSK and all data files pre-installe
 - 1,587 rooms with descriptions
 - 402 monsters, 417 objects
 - Fly.io deployment: https://advent-pdp11.fly.dev
+- **Demigod privileges** - New players start at level 11 for exploration (not how original worked)
 
 ### Known Issues
 1. **^B character in exit display** - appears after "West"
