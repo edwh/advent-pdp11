@@ -1,5 +1,0 @@
-10	OPEN 'MSG:LOGOUT.MES' AS FILE #1% &
-\	DIM #1%, NO%(0%),MESS$(32767%)=256% &
-\	PRINT I%,MESS$(I%) FOR I%=0% UNTIL 0% &
-\	END &
-
