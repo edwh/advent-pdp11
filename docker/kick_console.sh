@@ -17,6 +17,13 @@ touch /tmp/kick_console
 pkill -f 'nc localhost 2322' || true
 pkill -f 'nc 127.0.0.1 2322' || true
 
+# Kill existing telnet connections to console port (used by build_advent.exp)
+pkill -f 'telnet localhost 2322' || true
+pkill -f 'telnet 127.0.0.1 2322' || true
+
+# Kill build_advent.exp processes that may still be holding console
+pkill -f 'expect.*build_advent' || true
+
 # Kill game_connect.exp processes (but not this caller's session)
 # Find expect processes running game_connect
 for pid in $(pgrep -f 'expect.*game_connect'); do
