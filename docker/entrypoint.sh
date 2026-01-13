@@ -203,6 +203,10 @@ echo "Admin web terminal started on port 7682"
 # Mark system as ready
 echo '{"status": "ready", "message": "System ready"}' > /tmp/boot_status.json
 
+# Wait for the initial SIMH to exit, then restart in a loop
+# This keeps the container running and allows restarts
+wait $SIMH_PID
+
 # Run SIMH in a loop - if it exits (or is killed for restart), restart it
 while true; do
     echo ""

@@ -188,29 +188,29 @@ sleep 1
 # Modified ODL: Put ADVOUT in ROOT to eliminate cross-overlay calls
 # ADVOUT is called from almost every overlay segment (7 callers), so putting
 # it in ROOT means those calls won't require overlay swaps.
-# NOTE: Use longer sleep times to ensure lines are fully received before next send
+# NOTE: Use 1 second sleep times to ensure lines are fully received before next send
 send "; ADVENT.ODL - ADVOUT in ROOT for stability\r"
-sleep 0.5
-send ".ROOT SY:ADVENT-SY:ADVOUT-LIBR-*(OVLY)\r"
-sleep 0.5
-send "LIBR:   .FCTR LB:BP2OTS/LB\r"
-sleep 0.5
-send "OVLY:   .FCTR *(A,B,C,D,E)\r"
-sleep 0.5
-send "A:      .FCTR SY:ADVINI,SY:ADVNOR\r"
-sleep 0.5
-send "B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG\r"
-sleep 0.5
-send "C:      .FCTR SY:ADVBYE,SY:ADVSHT,SY:ADVNPC\r"
-sleep 0.5
-send "D:      .FCTR SY:ADVPUZ,SY:ADVDSP,SY:ADVFND\r"
-sleep 0.5
-send "E:      .FCTR SY:ADVTDY\r"
-sleep 0.5
-send "        .END\r"
 sleep 1
-send "\032"
+send ".ROOT SY:ADVENT-SY:ADVOUT-LIBR-*(OVLY)\r"
+sleep 1
+send "LIBR:   .FCTR LB:BP2OTS/LB\r"
+sleep 1
+send "OVLY:   .FCTR *(A,B,C,D,E)\r"
+sleep 1
+send "A:      .FCTR SY:ADVINI,SY:ADVNOR\r"
+sleep 1
+send "B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG\r"
+sleep 1
+send "C:      .FCTR SY:ADVBYE,SY:ADVSHT,SY:ADVNPC\r"
+sleep 1
+send "D:      .FCTR SY:ADVPUZ,SY:ADVDSP,SY:ADVFND\r"
+sleep 1
+send "E:      .FCTR SY:ADVTDY\r"
+sleep 1
+send "        .END\r"
 sleep 2
+send "\032"
+sleep 3
 expect -re {\$ }
 
 # Verify ODL
