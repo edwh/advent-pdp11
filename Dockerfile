@@ -46,6 +46,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     procps \
     telnet \
+    screen \
+    tmux \
     && rm -rf /var/lib/apt/lists/*
 
 # Install ttyd (not in Debian repos, download binary)
@@ -110,11 +112,14 @@ COPY docker/entrypoint.sh /opt/advent/
 COPY docker/build_advent.exp /opt/advent/
 COPY docker/game_connect.exp /opt/advent/
 COPY docker/game_session.sh /opt/advent/
+COPY docker/start_game_session.exp /opt/advent/
+COPY docker/attach_game.sh /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
 COPY docker/verify_ready.exp /opt/advent/
 COPY docker/restart_service.sh /opt/advent/
 COPY docker/kick_service.sh /opt/advent/
 COPY docker/kick_console.sh /opt/advent/
+COPY docker/tcp_connect.py /opt/advent/
 
 # Copy web interface
 COPY docker/web/ /opt/advent/web/
@@ -123,7 +128,7 @@ COPY docker/web/ /opt/advent/web/
 COPY STATUS.md RESURRECTION.md PROVENANCE.md TECHNICAL.md CONTINUATION.md NEWADV.md /opt/advent/
 
 # Set permissions
-RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/scripts/*.py && \
+RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/*.py /opt/advent/scripts/*.py && \
     chmod 644 /opt/advent/*.md && \
     chmod 644 /opt/advent/web/*
 

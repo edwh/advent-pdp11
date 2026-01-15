@@ -1,7 +1,11 @@
 #!/usr/bin/expect -f
 # Auto-login to RSTS/E and run Advent MUD
-# Connects to DZ11 terminal and handles login sequence
+# Connects to console via buffered telnet and handles login sequence
 # Writes status to /tmp/login_status.json for web UI
+#
+# NOTE: Uses console (2322) because DZ terminals (2323) require additional
+# RSTS/E configuration to produce login prompts. Console allows only 1
+# connection but works immediately after boot.
 
 set timeout 60
 log_user 1
@@ -24,142 +28,155 @@ catch {file delete $status_file}
 write_status "connect" "Connecting to PDP-11..."
 
 # Configure terminal: RSTS/E expects CR only, not LF
-# The key issue is that xterm.js sends CR+LF on Enter, but RSTS/E
-# treats LF as a separate empty command, producing "?" prompts
-# Use catch in case stty fails (no controlling terminal in some environments)
 catch {exec stty -icrnl -onlcr}
 
-# Connect to RSTS/E via console (KB0) on port 2322
-# Console is more reliable than DZ terminals for game sessions.
-# verify_ready.exp now uses DZ terminals (2323) to avoid contention.
-spawn nc localhost 2322
+# Connect to RSTS/E console via buffered telnet (port 2322)
+# The buffered console sends all boot output when we connect
+spawn telnet localhost 2322
 
-# The console banner should arrive immediately
-# Also check for "All connections busy" which means another session is active
+# Wait for buffered console output - consume all boot messages
+# The boot messages end with "on the air" and "startup is complete"
+# After that, sending CR will produce User: prompt
+set timeout 30
 expect {
+    "Connection refused" {
+        write_status "error" "Connection refused - SIMH not running"
+        exit 1
+    }
     "All connections busy" {
-        write_status "busy" "Another session is active"
-        # Wait for kick signal or timeout
-        set kick_file "/tmp/kick_console"
-        set wait_count 0
-        while {$wait_count < 60} {
-            if {[file exists $kick_file]} {
-                catch {file delete $kick_file}
-                # Exit so ttyd can restart us after kick completes
-                exit 2
-            }
-            sleep 1
-            incr wait_count
-        }
-        write_status "error" "Connection timed out - no takeover confirmed"
+        write_status "busy" "Console busy - another player is connected. Try again later."
         exit 1
     }
-    -re "Connected to the PDP-11 simulator CON-TEL device" {
-        write_status "boot" "Connected to PDP-11 console..."
-    }
-    timeout {
-        write_status "error" "No response from PDP-11 simulator"
+    "Connection closed" {
+        write_status "error" "Connection closed - console may be busy"
         exit 1
     }
-}
-
-# Console may already have User: prompt or OMS messages
-# Wait briefly then send CR to wake up or confirm the login prompt
-sleep 2
-send "\r"
-
-# Wait for User: prompt from RSTS/E
-# Note: Terminal may have OMS broadcast messages - be patient
-set timeout 30
-expect {
     "User:" {
-        write_status "login" "Logging in as \[1,2\]..."
-        send "\[1,2\]\r"
+        # Already at login prompt (system fully booted)
+        write_status "login" "Logging in..."
+        send "1,2\r"
+        set already_logged_in 1
     }
-    "Ready" {
-        # Already logged in from previous session
-        write_status "game" "Starting ADVENT..."
-        send "RUN ADVENT\r"
+    "startup is complete" {
+        # Boot complete - send CR to get User: prompt
+        write_status "boot" "System ready, logging in..."
+        sleep 1
+        send "\r"
+        exp_continue
+    }
+    "on the air" {
+        # Boot complete marker - wait for startup complete or User:
+        write_status "boot" "System starting up..."
         exp_continue
     }
     -re "OMS V" {
-        # OMS broadcast message - wait for it to finish then try again
+        # OMS message during boot
+        exp_continue
+    }
+    -re "01-Jan" {
+        # Boot timestamp
+        exp_continue
+    }
+    "CON-TEL" {
+        # Just connected - wait for boot messages
+        write_status "boot" "Connected, waiting for boot..."
         exp_continue
     }
     timeout {
-        # Try sending another CR
-        puts "DEBUG: No User: prompt, sending another CR..."
+        # Timed out waiting for boot - send CR to check
+        write_status "boot" "Checking system status..."
         send "\r"
-        expect {
-            "User:" {
-                write_status "login" "Logging in..."
-                send "\[1,2\]\r"
-            }
-            timeout {
-                write_status "error" "RSTS/E not responding to terminal"
-                exit 1
+    }
+}
+
+# If we didn't already log in, wait for User: and login
+if {![info exists already_logged_in]} {
+    set timeout 15
+    expect {
+        "User:" {
+            write_status "login" "Logging in..."
+            send "1,2\r"
+        }
+        "Ready" {
+            # Already logged in
+            write_status "game" "Starting ADVENT..."
+            send "RUN ADVENT\r"
+            set skip_login 1
+        }
+        -re {\$} {
+            # DCL prompt - already logged in
+            write_status "game" "Starting ADVENT..."
+            send "RUN ADVENT\r"
+            set skip_login 1
+        }
+        timeout {
+            # Try another CR
+            send "\r"
+            set timeout 10
+            expect {
+                "User:" {
+                    write_status "login" "Logging in..."
+                    send "1,2\r"
+                }
+                timeout {
+                    write_status "error" "RSTS/E not responding"
+                    interact
+                }
             }
         }
     }
 }
 
-# Wait for password prompt
-set timeout 30
-expect {
-    -re "\[Pp\]assword" {
-        send "SYSTEM\r"
+# Wait for password prompt (unless we skipped login)
+if {![info exists skip_login]} {
+    set timeout 30
+    expect {
+        -re "\[Pp\]assword" {
+            send "SYSTEM\r"
+        }
+        "Ready" {
+            # No password needed, continue
+        }
+        -re "OMS V" {
+            exp_continue
+        }
+        timeout {
+            write_status "error" "Timeout waiting for password"
+            exit 1
+        }
     }
-    "Ready" {
-        # No password needed, continue
+
+    # Handle job attachment prompt, ready prompt, or command prompt
+    set timeout 30
+    expect {
+        "Job number to attach to?" {
+            send "\r"
+            exp_continue
+        }
+        -re "Please change it" {
+            exp_continue
+        }
+        -re {\$} {
+            write_status "game" "Starting ADVENT..."
+        }
+        "Ready" {
+            write_status "game" "Starting ADVENT..."
+        }
+        -re "Sorry" {
+            write_status "error" "Login failed - wrong password"
+            exit 1
+        }
+        -re "OMS V" {
+            exp_continue
+        }
+        timeout {
+            write_status "game" "Starting ADVENT..."
+        }
     }
-    -re "OMS V" {
-        # Ignore OMS messages
-        exp_continue
-    }
-    timeout {
-        write_status "error" "Timeout waiting for password"
-        exit 1
-    }
+
+    write_status "game" "Starting ADVENT..."
+    send "RUN ADVENT\r"
 }
-
-# Handle job attachment prompt, ready prompt, or command prompt
-# The console may show detached jobs, password warnings, etc.
-set timeout 30
-expect {
-    "Job number to attach to?" {
-        send "\r"
-        exp_continue
-    }
-    -re "Please change it" {
-        # Password warning - ignore and continue
-        exp_continue
-    }
-    -re {\$} {
-        # Got DCL prompt
-        write_status "game" "Starting ADVENT..."
-    }
-    "Ready" {
-        # Got RSTS ready prompt
-        write_status "game" "Starting ADVENT..."
-    }
-    -re "Sorry" {
-        write_status "error" "Login failed - wrong password"
-        exit 1
-    }
-    -re "OMS V" {
-        # Ignore OMS messages
-        exp_continue
-    }
-    timeout {
-        # If timeout, assume we're at prompt and try anyway
-        write_status "game" "Starting ADVENT..."
-    }
-}
-
-write_status "game" "Starting ADVENT..."
-
-# Run ADVENT - don't add any extra sleeps that could cause issues
-send "RUN ADVENT\r"
 
 # Wait for game to start - look for the game prompt ">"
 # ADVENT shows room description then "> " prompt

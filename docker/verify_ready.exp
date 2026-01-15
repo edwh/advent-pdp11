@@ -1,47 +1,58 @@
 #!/usr/bin/expect -f
+#
 # Verify RSTS/E is ready for terminal logins
-# Returns 0 if ready, 1 if not
+# Returns 0 if ready (boot complete messages in buffered console), 1 if not
+#
+# Uses the console port (2322) with buffered console mode.
+# SIMH's buffered console replays all boot messages when we connect,
+# so we can check for "on the air" without needing to send any commands.
+# The brief CLOSE_WAIT from normal close is acceptable since verify_ready
+# is only called during startup before user connections begin.
+#
 
 set timeout 10
 log_user 0
 
-# Use console port 2322 which always shows User: prompt when RSTS/E is ready.
-# Note: game_connect.exp also uses console. To avoid contention during restarts,
-# entrypoint.sh should kill ttyd processes before running this verification loop.
-spawn nc localhost 2322
-sleep 2
-send "\r"
+# Connect to console port - buffered console will send boot messages
+spawn telnet localhost 2322
 
+# Check buffered console output for boot completion markers
+# The buffered console immediately sends all previous output
 expect {
+    "on the air" {
+        # Boot complete - system is ready
+        catch {close}
+        catch {wait}
+        exit 0
+    }
+    "startup is complete" {
+        # Startup complete - system is ready
+        catch {close}
+        catch {wait}
+        exit 0
+    }
     "User:" {
-        # Got login prompt - system is ready
-        close
-        exit 0
-    }
-    "Ready" {
-        # Already logged in - system is ready
-        close
-        exit 0
-    }
-    -re {\$} {
-        # DCL prompt - already logged in - system is ready
-        close
-        exit 0
-    }
-    -re {> $} {
-        # Game prompt - already in ADVENT - system is ready
-        close
+        # Already at login prompt - system is ready
+        catch {close}
+        catch {wait}
         exit 0
     }
     "CON-TEL" {
-        # Got SIMH banner - wait for RSTS/E
+        # Connected but no boot messages yet - keep waiting
+        exp_continue
+    }
+    -re "OMS V" {
+        # OMS message during boot - keep waiting
+        exp_continue
+    }
+    -re "01-Jan" {
+        # Boot messages in progress - keep waiting
         exp_continue
     }
     timeout {
-        close
-        exit 1
-    }
-    eof {
+        # No boot completion message - system not ready
+        catch {close}
+        catch {wait}
         exit 1
     }
 }

@@ -19,26 +19,45 @@ set port 2322
 
 log_user 1
 
+# Use telnet for build process - it handles terminal I/O better with expect.
+# The CLOSE_WAIT issue is handled by restarting SIMH after build completes.
 spawn telnet localhost $port
 
 puts "\n>>> Waiting for RSTS/E boot to complete..."
 
 # Robust boot detection - handles both connecting during boot AND after boot
 # The buffered console may have already sent boot messages before we connect
-set boot_timeout 120
+# Use shorter timeout for boot detection since we may have missed boot messages
+set timeout 30
 
 expect {
     "on the air" {
         puts "\n>>> System boot complete"
-        sleep 3
+        # Send CR to flush remaining buffer and get User: prompt
+        sleep 1
         send "\r"
-        expect "User:"
+        # Consume remaining boot messages until we see User:
+        set timeout 60
+        expect {
+            "User:" { puts "\n>>> Got login prompt" }
+            -re "startup is complete" { exp_continue }
+            -re "OMS V" { exp_continue }
+            -re "Message \[0-9\]" { exp_continue }
+            -re "01-Jan-92" { exp_continue }
+            timeout { puts "\n>>> Timeout waiting for User:"; exit 1 }
+        }
     }
     "startup is complete" {
         puts "\n>>> System startup complete"
-        sleep 3
+        sleep 1
         send "\r"
-        expect "User:"
+        set timeout 60
+        expect {
+            "User:" { puts "\n>>> Got login prompt" }
+            -re "OMS V" { exp_continue }
+            -re "Message \[0-9\]" { exp_continue }
+            timeout { puts "\n>>> Timeout waiting for User:"; exit 1 }
+        }
     }
     "User:" {
         puts "\n>>> System already at login prompt"
@@ -47,20 +66,21 @@ expect {
         # System may be booted but idle - try sending CR to wake it up
         puts "\n>>> No boot messages received - checking if system is ready..."
         send "\r"
+        set timeout 60
         expect {
             "User:" {
                 puts "\n>>> System responded to CR - already booted"
             }
             "on the air" {
-                puts "\n>>> System still booting..."
-                sleep 3
-                send "\r"
-                expect "User:"
+                puts "\n>>> System still booting - waiting for User:"
+                exp_continue
             }
+            "startup is complete" {
+                exp_continue
+            }
+            -re "OMS V" { exp_continue }
             timeout {
-                puts "\n>>> System not responding after CR - may need more boot time"
-                # Wait longer and try again
-                sleep 30
+                puts "\n>>> System not responding after CR - trying again..."
                 send "\r"
                 expect {
                     "User:" { puts "\n>>> System now ready" }
@@ -70,6 +90,9 @@ expect {
         }
     }
 }
+
+# Reset timeout for the rest of the script
+set timeout 600
 
 send "1,2\r"
 expect "Password:"

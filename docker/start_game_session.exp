@@ -1,0 +1,124 @@
+#!/usr/bin/expect -f
+#
+# Start persistent ADVENT game session
+# This script runs ONCE after boot/build to create a logged-in game session.
+# Users then attach to this session via screen.
+#
+
+set timeout 120
+log_user 1
+
+# Connect to RSTS/E console
+puts ">>> Starting persistent game session..."
+spawn telnet localhost 2322
+
+# Wait for boot messages and User: prompt
+# The buffered console sends all boot output when we connect
+expect {
+    "Connection refused" {
+        puts ">>> Connection refused - SIMH not running"
+        exit 1
+    }
+    "All connections busy" {
+        puts ">>> Console busy - another session exists"
+        exit 1
+    }
+    "User:" {
+        puts ">>> Got login prompt"
+    }
+    "startup is complete" {
+        puts ">>> Boot complete"
+        sleep 1
+        send "\r"
+        exp_continue
+    }
+    "on the air" {
+        puts ">>> System on the air"
+        exp_continue
+    }
+    -re "OMS V" {
+        exp_continue
+    }
+    "CON-TEL" {
+        puts ">>> Connected to console"
+        exp_continue
+    }
+    timeout {
+        puts ">>> Timeout waiting for boot - sending CR"
+        send "\r"
+        expect {
+            "User:" { puts ">>> Got login prompt" }
+            timeout {
+                puts ">>> RSTS/E not responding"
+                exit 1
+            }
+        }
+    }
+}
+
+# Login
+puts ">>> Logging in as 1,2..."
+send "1,2\r"
+
+expect {
+    -re "\[Pp\]assword" {
+        send "SYSTEM\r"
+    }
+    timeout {
+        puts ">>> Timeout waiting for password"
+        exit 1
+    }
+}
+
+# Handle job attachment and get to prompt
+expect {
+    "Job number to attach to?" {
+        send "\r"
+        exp_continue
+    }
+    -re "Please change it" {
+        exp_continue
+    }
+    -re {\$} {
+        puts ">>> Got command prompt"
+    }
+    "Ready" {
+        puts ">>> Got RSTS ready prompt"
+    }
+    timeout {
+        puts ">>> Timeout waiting for prompt"
+        exit 1
+    }
+}
+
+# Start ADVENT
+puts ">>> Starting ADVENT..."
+send "RUN ADVENT\r"
+
+# Wait for game to start
+expect {
+    "?Illegal file name" {
+        puts ">>> ADVENT.TSK not found!"
+        exit 1
+    }
+    -re "Exits" {
+        puts ">>> Game started!"
+    }
+    -re "You are" {
+        puts ">>> Game started!"
+    }
+    -re "> $" {
+        puts ">>> Game prompt received"
+    }
+    timeout {
+        puts ">>> Game may have started (timeout waiting for prompt)"
+    }
+}
+
+puts ">>> Persistent game session is ready"
+puts ">>> Users can now attach to this session"
+
+# Keep the session alive forever - this is the persistent connection
+# Simply use interact to pass control to the user
+set timeout -1
+interact
