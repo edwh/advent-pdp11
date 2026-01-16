@@ -287,11 +287,20 @@ echo ""
 # Note: nginx started at beginning of boot for health checks
 
 # Start ttyd web terminals - users attach to the persistent screen session
-ttyd -p 7681 -b /terminal -W "$ADVENT_DIR/attach_game.sh" &
+# Client options: disable resize overlay, leave alert, and set terminal title
+ttyd -p 7681 -b /terminal -W \
+    -t disableResizeOverlay=true \
+    -t disableLeaveAlert=true \
+    -t titleFixed="ADVENT MUD" \
+    "$ADVENT_DIR/attach_game.sh" &
 GAME_PID=$!
 echo "Game web terminal started on port 7681"
 
-ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
+ttyd -p 7682 -W \
+    -t disableResizeOverlay=true \
+    -t disableLeaveAlert=true \
+    -t titleFixed="ADVENT Admin" \
+    "$ADVENT_DIR/admin_connect.sh" &
 ADMIN_PID=$!
 echo "Admin web terminal started on port 7682"
 
@@ -366,11 +375,19 @@ while true; do
     echo "Game session restarted"
 
     # Restart ttyd processes
-    ttyd -p 7681 -b /terminal -W "$ADVENT_DIR/attach_game.sh" &
+    ttyd -p 7681 -b /terminal -W \
+        -t disableResizeOverlay=true \
+        -t disableLeaveAlert=true \
+        -t titleFixed="ADVENT MUD" \
+        "$ADVENT_DIR/attach_game.sh" &
     GAME_PID=$!
     echo "Game web terminal restarted on port 7681"
 
-    ttyd -p 7682 -W "$ADVENT_DIR/admin_connect.sh" &
+    ttyd -p 7682 -W \
+        -t disableResizeOverlay=true \
+        -t disableLeaveAlert=true \
+        -t titleFixed="ADVENT Admin" \
+        "$ADVENT_DIR/admin_connect.sh" &
     ADMIN_PID=$!
     echo "Admin web terminal restarted on port 7682"
 

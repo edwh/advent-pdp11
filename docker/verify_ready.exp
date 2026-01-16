@@ -6,15 +6,15 @@
 # Uses the console port (2322) with buffered console mode.
 # SIMH's buffered console replays all boot messages when we connect,
 # so we can check for "on the air" without needing to send any commands.
-# The brief CLOSE_WAIT from normal close is acceptable since verify_ready
-# is only called during startup before user connections begin.
+# Uses tcp_connect.py which sets SO_LINGER=0 to send RST on close,
+# preventing CLOSE_WAIT states that block SIMH's single-connection console.
 #
 
 set timeout 10
 log_user 0
 
-# Connect to console port - buffered console will send boot messages
-spawn telnet localhost 2322
+# Connect to console port using tcp_connect.py (sends RST on close, no CLOSE_WAIT)
+spawn python3 /opt/advent/tcp_connect.py localhost 2322
 
 # Check buffered console output for boot completion markers
 # The buffered console immediately sends all previous output

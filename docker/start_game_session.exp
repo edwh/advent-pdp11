@@ -118,6 +118,9 @@ expect {
 puts ">>> Persistent game session is ready"
 puts ">>> Users can now attach to this session"
 
+# Clear any pending input by waiting briefly
+sleep 0.5
+
 # Keep the session alive forever - this is the persistent connection
 set timeout -1
 interact
