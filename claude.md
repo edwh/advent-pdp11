@@ -243,3 +243,139 @@ SIMH tape format:
 - `build/tapes/transfer.tap` - Tape image included in container
 
 Reference: https://github.com/andreax79/xferx (xferx/pdp11/dos11magtapefs.py)
+
+---
+
+## Session Log (Date-Stamped)
+
+### January 15, 2026 - "Odd address trap" crashes after tmux changes
+
+**Problem:** Game commands (LOOK, N, S, E, W) cause "Odd address trap at line XX in ADVNOR" crashes.
+
+**Context:** Implemented persistent tmux session architecture so users don't need to log in each time they connect via web terminal. The game displays correctly but crashes when processing any command.
+
+**Key insight from RESURRECTION.md:** This exact error was previously fixed by moving ADVOUT to the ROOT segment in the ODL file. The error occurs when ADVOUT is called from overlay segments, causing memory corruption during overlay swaps.
+
+**Current ODL in build_advent.exp (lines 210-225):**
+```
+.ROOT SY:ADVENT-SY:ADVOUT-LIBR-*(OVLY)
+LIBR:   .FCTR LB:BP2OTS/LB
+OVLY:   .FCTR *(A,B,C,D,E)
+A:      .FCTR SY:ADVINI,SY:ADVNOR
+B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG
+C:      .FCTR SY:ADVBYE,SY:ADVSHT,SY:ADVNPC
+D:      .FCTR SY:ADVPUZ,SY:ADVDSP,SY:ADVFND
+E:      .FCTR SY:ADVTDY
+        .END
+```
+
+**Investigation needed:**
+1. Check if ODL file is being created correctly during build
+2. Verify the actual ODL content after creation (TYPE SY:ADVENT.ODL)
+3. Compare with known working ODL from before tmux changes
+4. Check git history for any ODL changes
+
+**Files changed in this session:**
+- docker/start_game_session.exp (new - persistent game session)
+- docker/attach_game.sh (new - user attachment)
+- docker/entrypoint.sh (modified - tmux session startup)
+- Dockerfile (modified - added tmux package)
+
+**REMINDER:** Always use `docker-compose up -d --build` not raw docker commands!
+
+### January 15, 2026 (continued) - ODL Investigation
+
+**Root Cause Analysis:**
+The "Odd address trap" occurs when subroutines in one overlay call subroutines in another overlay during the overlay swap. The original fix (ADVOUT in ROOT) only addressed one cross-overlay call pattern.
+
+**Investigation revealed additional cross-overlay calls:**
+- ADVNOR (overlay A) calls ADVDSP (overlay D) at line 20
+- ADVNOR (overlay A) calls ADVSHT (overlay C) multiple times
+- ADVNOR (overlay A) calls ADVFND (overlay D) multiple times
+
+**Fix attempted:**
+Modified ODL to put ADVOUT, ADVDSP, ADVSHT, and ADVFND all in ROOT:
+```
+.ROOT SY:ADVENT-SY:ADVOUT-SY:ADVDSP-SY:ADVSHT-SY:ADVFND-LIBR-*(OVLY)
+LIBR:   .FCTR LB:BP2OTS/LB
+OVLY:   .FCTR *(A,B,C,D)
+A:      .FCTR SY:ADVINI,SY:ADVNOR
+B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG
+C:      .FCTR SY:ADVBYE,SY:ADVNPC,SY:ADVPUZ
+D:      .FCTR SY:ADVTDY
+        .END
+```
+
+**Result:**
+- When ADVOUT alone is in ROOT: "Odd address trap" at line 20 (CALL ADVDSP)
+- When ADVOUT+ADVDSP+ADVSHT+ADVFND in ROOT: LOOK command works, but build may be unstable
+
+**Created ralph skill:**
+Added `.claude/skills/ralph/SKILL.md` - iterative development approach adapted for this codebase.
+
+**Final Result:**
+- **ODL fix SUCCESSFUL** - "Odd address trap" eliminated
+- **LOOK command works** - no more overlay crashes
+- **New issue discovered:** Error 11 (file I/O error) when moving (W, N, etc.)
+  - This is a data access issue, not an overlay issue
+  - Line 60 in ADVNOR tries to read room data that may not exist
+  - Likely caused by exit data pointing to invalid room numbers
+
+**Current working ODL (build_advent.exp):**
+```
+.ROOT SY:ADVENT-SY:ADVOUT-SY:ADVDSP-SY:ADVSHT-SY:ADVFND-LIBR-*(OVLY)
+LIBR:   .FCTR LB:BP2OTS/LB
+OVLY:   .FCTR *(A,B,C,D)
+A:      .FCTR SY:ADVINI,SY:ADVNOR
+B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG
+C:      .FCTR SY:ADVBYE,SY:ADVNPC,SY:ADVPUZ
+D:      .FCTR SY:ADVTDY
+        .END
+```
+
+**Next steps:**
+- Investigate Error 11 data access issue when moving
+- Check if room exit data points to valid rooms
+- Verify ADVENT.DTA file integrity and record access
+
+### January 15, 2026 (continued) - Data File Byte Order Fix
+
+**Root Cause Found - THREE issues in data file generation:**
+
+1. **Byte order mismatch:** `CVT$%` in BASIC-PLUS-2 interprets bytes as big-endian, but `migrate_data.py` and `reconstruct_rooms.py` were storing exits in little-endian format.
+
+2. **Record indexing mismatch:** BASIC-PLUS-2 uses 1-based record indexing (`GET #3%, RECORD N` reads file offset `(N-1)*512`), but `migrate_data.py` was using 0-based indexing.
+
+3. **Validation byte mismatch:** `reconstruct_rooms.py` expected `(room_num - 1) % 256` but BASIC's `CHR$(room_num)` returns `room_num % 256`.
+
+**Files fixed:**
+- `scripts/migrate_data.py`:
+  - Line 85-86: Changed exit bytes to big-endian (high byte first)
+  - Lines 235-245: Changed loop from `range(record_count)` to `range(1, record_count + 1)` for 1-based indexing
+
+- `scripts/reconstruct_rooms.py`:
+  - Line 51: Changed exit parsing to big-endian: `(byte1 << 8) + byte2`
+  - Lines 113-114: Changed exit writing to big-endian
+  - Line 37: Changed validation to `number & 0xFF` (was `(number - 1) % 256`)
+
+**Testing progress:**
+- After byte order fix: "Error 11" changed to "corrupt room" message
+- After record indexing fix: Pending test (WSL shutdown interrupted)
+
+**To resume:**
+1. Data files regenerated with `python3 scripts/migrate_data.py`
+2. Need to rebuild container: `docker-compose down && docker-compose up -d --build`
+3. Wait 10-15 minutes for ADVENT to build from source
+4. Test navigation: `docker exec advent-mud tmux send-keys -t advent W Enter`
+5. Verify with: `docker exec advent-mud tmux capture-pane -t advent -p`
+
+**Expected behavior after fix:**
+- Room numbers stored in big-endian format matching CVT$% interpretation
+- Room N's data at file offset (N-1)*512 matching BASIC's 1-based RECORD indexing
+- Validation byte `room_num & 0xFF` matching BASIC's `CHR$(room_num)`
+
+**CRITICAL TODO for next session:**
+- We have ~2000 rooms, so room numbers MUST be 16-bit (2 bytes)
+- If you see single-byte room number handling anywhere, that's a bug!
+- Room numbers range from 1 to ~2000, requiring full 16-bit storage
+- The validation byte only uses low byte (`room_num & 0xFF`) but exit destinations need full 16 bits
