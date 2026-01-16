@@ -13,10 +13,10 @@ Output files:
 - MESSAG.NPC: 1000 × 60 bytes (NPC messages - empty)
 
 Record structure for ADVENT.DTA (512 bytes per room):
-- Byte 0 (1 byte): Room number low byte (for verification)
+- Byte 0 (1 byte): Validation byte = room_num & 0xFF
 - Bytes 1-16 (16 bytes): Exits - 4 bytes each for N,S,E,W
   - Byte 0: Direction letter (N/S/E/W) or space if no exit
-  - Bytes 1-2: Room number as 16-bit little-endian integer
+  - Bytes 1-2: Room number as 16-bit big-endian (for CVT$% compatibility)
   - Byte 3: Padding (0)
 - Bytes 17-99 (83 bytes): Monsters/NPCs
 - Bytes 100-199 (100 bytes): Objects
@@ -67,7 +67,7 @@ def create_binary_exits(exits):
 
     Format: 4 bytes per direction (N, S, E, W)
     - Byte 0: Direction letter if exit exists, else space
-    - Bytes 1-2: Room number as 16-bit little-endian
+    - Bytes 1-2: Room number as 16-bit big-endian (for CVT$% compatibility)
     - Byte 3: Padding (0)
     """
     result = bytearray(16)
@@ -79,9 +79,11 @@ def create_binary_exits(exits):
 
         if room > 0:
             # Valid exit - direction letter and room number
+            # NOTE: CVT$% in BASIC-PLUS-2 interprets bytes as big-endian
+            # so we store high byte first, low byte second
             result[pos] = ord(d)
-            result[pos+1] = room & 0xFF        # Low byte
-            result[pos+2] = (room >> 8) & 0xFF # High byte
+            result[pos+1] = (room >> 8) & 0xFF # High byte (for CVT$%)
+            result[pos+2] = room & 0xFF        # Low byte
             result[pos+3] = 0                  # Padding
         else:
             # No exit - space character
@@ -183,7 +185,10 @@ def create_room_record(room_num, room_data):
     """
     record = bytearray(512)
 
-    # Byte 0: Room number verification (low byte only, as CHR$ in BASIC)
+    # Byte 0: Room number verification
+    # ADVNOR.SUB (navigation) checks: CHR$(ROOM%(USER%))=ROOM$ so validation byte = room_num & 0xFF
+    # Note: ADVENT.B2S uses room_num-1, but ADVNOR.SUB (and ADVTDY.SUB) use room_num
+    # We prioritize navigation working over avoiding cosmetic errors in main loop
     record[0] = room_num & 0xFF
 
     # Bytes 1-16: Exits
@@ -217,14 +222,24 @@ def create_room_record(room_num, room_data):
 
 
 def generate_advent_dta(rooms, output_path):
-    """Generate ADVENT.DTA file with 2000 room records."""
+    """Generate ADVENT.DTA file with 2000 room records.
+
+    IMPORTANT: BASIC-PLUS-2 uses 1-based record indexing:
+    - GET #3%, RECORD 1 reads file offset 0
+    - GET #3%, RECORD N reads file offset (N-1)*512
+
+    So room N must be written at file index N-1.
+    """
     print(f"Generating ADVENT.DTA...")
 
     record_count = 2000
     record_size = 512
 
     with open(output_path, 'wb') as f:
-        for room_num in range(record_count):
+        # Write records 1 through record_count (1-based room numbers)
+        # File index 0 = BASIC's RECORD 1 = room 1
+        # File index N-1 = BASIC's RECORD N = room N
+        for room_num in range(1, record_count + 1):
             if room_num in rooms:
                 record = create_room_record(room_num, rooms[room_num])
             else:
@@ -233,7 +248,7 @@ def generate_advent_dta(rooms, output_path):
             f.write(record)
 
     file_size = os.path.getsize(output_path)
-    populated = len([r for r in rooms.keys() if r < record_count])
+    populated = len([r for r in rooms.keys() if 1 <= r <= record_count])
     print(f"  Created ADVENT.DTA: {file_size:,} bytes")
     print(f"  Populated {populated} rooms out of {record_count}")
 

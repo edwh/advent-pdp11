@@ -62,7 +62,7 @@
 \	COM$=CVT$$(COM$,1%+4%+8%+32%+128%) &
 \	GOTO 36 IF COM$="" &
 \	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)-1%) &
+\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)) &
 \	GOSUB 21000 &
 \	GOTO 37 UNLESS C% &
 \	CALL ADVNOR IF C%>=1% AND C%<=19% &
@@ -88,7 +88,7 @@
 \	GOTO 30 UNLESS TIME(0%)>STUN(USER%) &
 	! Stunned. &
 \	GET #3%, RECORD ROOM%(USER%) &
-\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)-1%) &
+\	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)) &
 	! They're in a corrupt room. &
 \	CALL ADVOUT(KB%(USER%),CRLF$+'ADVENT is asleep - wait, or ^Z to exit.')&
 	IF C%=-1% &
@@ -117,7 +117,7 @@
 	! Call the right sub-program.  ADVNOR is intended to be the &
 	! sub-program normally in residence.  ADVCMD contains less often &
 	! used commands. &
-\	IF ROOM$<>CHR$(ROOM%(USER%)-1%) THEN &
+\	IF ROOM$<>CHR$(ROOM%(USER%)) THEN &
 	OPEN 'MSG:LOG1.95' AS FILE #4%, MODE 2% &
 \	PRINT #4%, 'Room';ROOM%(USER%);' corrupted by command number';C% &
 \	CLOSE #4% &

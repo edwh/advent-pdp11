@@ -32,8 +32,10 @@ class RoomData:
     def __init__(self, number, raw_bytes):
         self.number = number
         self.raw = bytearray(raw_bytes)
-        # Validation byte wraps at 256 (single byte storage)
-        expected_validation = (number - 1) % 256
+        # Validation byte: ADVNOR.SUB checks CHR$(ROOM%(USER%))=ROOM$
+        # So validation byte = room_num & 0xFF
+        # (Note: ADVENT.B2S uses room_num-1, but ADVNOR handles navigation)
+        expected_validation = number & 0xFF
         self.valid = (raw_bytes[0] == expected_validation) if number > 0 else False
         self.original_exits = {}
         self.reconstructed_exits = {}
@@ -47,8 +49,8 @@ class RoomData:
         for direction in DIRECTIONS:
             offset = DIR_OFFSETS[direction]
             dir_char = chr(self.raw[offset]) if self.raw[offset] else ''
-            # 16-bit little-endian destination at offset+1 and offset+2
-            dest = self.raw[offset + 1] + (self.raw[offset + 2] << 8)
+            # 16-bit big-endian destination (for CVT$% compatibility)
+            dest = (self.raw[offset + 1] << 8) + self.raw[offset + 2]
 
             if dir_char == direction:
                 self.original_exits[direction] = dest  # 0 = exit dungeon, >0 = room number
@@ -107,11 +109,11 @@ class RoomData:
                 return False
 
         self.reconstructed_exits[direction] = destination
-        # Write to raw bytes as 16-bit little-endian
+        # Write to raw bytes as 16-bit big-endian (for CVT$% compatibility)
         offset = DIR_OFFSETS[direction]
         self.raw[offset] = ord(direction)
-        self.raw[offset + 1] = destination & 0xFF          # Low byte
-        self.raw[offset + 2] = (destination >> 8) & 0xFF   # High byte
+        self.raw[offset + 1] = (destination >> 8) & 0xFF   # High byte (for CVT$%)
+        self.raw[offset + 2] = destination & 0xFF          # Low byte
         self.raw[offset + 3] = 0  # Padding byte
         return True
 
