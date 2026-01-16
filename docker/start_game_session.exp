@@ -119,6 +119,5 @@ puts ">>> Persistent game session is ready"
 puts ">>> Users can now attach to this session"
 
 # Keep the session alive forever - this is the persistent connection
-# Simply use interact to pass control to the user
 set timeout -1
 interact
