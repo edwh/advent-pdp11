@@ -2,58 +2,82 @@
 #
 # Start persistent ADVENT game session
 # This script runs ONCE after boot/build to create a logged-in game session.
-# Users then attach to this session via screen.
+# Users then attach to this session via tmux.
 #
 
 set timeout 120
 log_user 1
 
-# Connect to RSTS/E console
-puts ">>> Starting persistent game session..."
-spawn telnet localhost 2322
+# Retry loop for connection - console may be busy or have stale connections
+set max_retries 5
+set retry_count 0
+set connected 0
 
-# Wait for boot messages and User: prompt
-# The buffered console sends all boot output when we connect
-expect {
-    "Connection refused" {
-        puts ">>> Connection refused - SIMH not running"
-        exit 1
-    }
-    "All connections busy" {
-        puts ">>> Console busy - another session exists"
-        exit 1
-    }
-    "User:" {
-        puts ">>> Got login prompt"
-    }
-    "startup is complete" {
-        puts ">>> Boot complete"
-        sleep 1
-        send "\r"
-        exp_continue
-    }
-    "on the air" {
-        puts ">>> System on the air"
-        exp_continue
-    }
-    -re "OMS V" {
-        exp_continue
-    }
-    "CON-TEL" {
-        puts ">>> Connected to console"
-        exp_continue
-    }
-    timeout {
-        puts ">>> Timeout waiting for boot - sending CR"
-        send "\r"
-        expect {
-            "User:" { puts ">>> Got login prompt" }
-            timeout {
-                puts ">>> RSTS/E not responding"
-                exit 1
+while {$retry_count < $max_retries && !$connected} {
+    puts ">>> Starting persistent game session (attempt [expr $retry_count + 1]/$max_retries)..."
+    spawn telnet localhost 2322
+
+    # Wait for boot messages and User: prompt
+    # The buffered console sends all boot output when we connect
+    expect {
+        "Connection refused" {
+            puts ">>> Connection refused - SIMH not running"
+            incr retry_count
+            catch {close}
+            catch {wait}
+            sleep 5
+        }
+        "All connections busy" {
+            puts ">>> Console busy - waiting for connections to clear..."
+            catch {close}
+            catch {wait}
+            incr retry_count
+            sleep 10
+        }
+        "User:" {
+            puts ">>> Got login prompt"
+            set connected 1
+        }
+        "startup is complete" {
+            puts ">>> Boot complete"
+            sleep 1
+            send "\r"
+            exp_continue
+        }
+        "on the air" {
+            puts ">>> System on the air"
+            exp_continue
+        }
+        -re "OMS V" {
+            exp_continue
+        }
+        "CON-TEL" {
+            puts ">>> Connected to console"
+            exp_continue
+        }
+        timeout {
+            puts ">>> Timeout waiting for boot - sending CR"
+            send "\r"
+            expect {
+                "User:" {
+                    puts ">>> Got login prompt"
+                    set connected 1
+                }
+                timeout {
+                    puts ">>> RSTS/E not responding - will retry"
+                    incr retry_count
+                    catch {close}
+                    catch {wait}
+                    sleep 5
+                }
             }
         }
     }
+}
+
+if {!$connected} {
+    puts ">>> Failed to connect after $max_retries attempts"
+    exit 1
 }
 
 # Login

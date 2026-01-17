@@ -25,6 +25,7 @@ echo '{"step": "ready", "message": "Game ready!"}' > /tmp/login_status.json
 echo "Connecting to ADVENT..."
 echo ""
 
-# Attach to the tmux session
+# Attach to the tmux session with status bar hidden
 # Multiple users can attach to the same session (multi-user MUD!)
-exec /usr/bin/tmux attach-session -t advent
+# The -r flag makes it read-only for additional viewers (prevents conflicts)
+exec /usr/bin/tmux set-option -t advent status off \; attach-session -t advent

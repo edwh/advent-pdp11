@@ -151,13 +151,17 @@ def parse_roomfil(filepath):
             description = '\n'.join(desc_lines).strip()
 
             # Extract special codes from description if present
+            # Special codes start with / and can span multiple lines
+            # Find the FIRST line that starts with / and treat everything
+            # from there as special codes
             special = ''
-            if description.endswith('/'):
-                # Find the last block of special codes
-                parts = description.rsplit('\n', 1)
-                if len(parts) > 1 and parts[-1].startswith('/'):
-                    special = parts[-1]
-                    description = parts[0]
+            desc_split_lines = description.split('\n')
+            for idx, line in enumerate(desc_split_lines):
+                if line.startswith('/'):
+                    # Everything from this line onwards is special codes
+                    special = '\n'.join(desc_split_lines[idx:])
+                    description = '\n'.join(desc_split_lines[:idx]).strip()
+                    break
 
             rooms[room_num] = {
                 'exits': exits,

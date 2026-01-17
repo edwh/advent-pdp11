@@ -26,9 +26,9 @@
 \	DES$=LEFT(DES$,INSTR(1%,DES$,"$")-1%) IF INSTR(1%,DES$,"$") &
 \	CALL ADVOUT(KB%(USER%),CHR$(24%)+DES$+CRLF$+CRLF$+'Exits :'+CRLF$) &
 \	J$="" &
-\	J$=J$+CI$+MID('NorthEastSouthWest',INSTR(1%, &
-	'NorthEastSouthWest',MID(EX$,I%,1%)),5%)+CRLF$ &
-	IF INSTR(1%,'NESW',MID(EX$,I%,1%)) FOR &
+\	J$=J$+CI$+MID('NorthEast SouthWest ',INSTR(1%, &
+	'NorthEast SouthWest ',MID(EX$,I%,1%)),5%)+CRLF$ &
+	IF INSTR(1%,'NESW',MID(EX$,I%,1%)) FOR &
 	I%=1% TO 16% STEP 4% &
 \	CALL ADVOUT(KB%(USER%),J$+CRLF$+'You see:') &
 

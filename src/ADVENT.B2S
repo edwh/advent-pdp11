@@ -57,8 +57,7 @@
 \	GET #3%, RECORD ROOM%(1%) &
 \	CALL ADVDSP &
 
-36	PRINT "> "; &
-\	INPUT LINE COM$ &
+36	INPUT ">"; COM$ &
 \	COM$=CVT$$(COM$,1%+4%+8%+32%+128%) &
 \	GOTO 36 IF COM$="" &
 \	GET #3%, RECORD ROOM%(USER%) &

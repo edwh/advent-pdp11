@@ -210,11 +210,17 @@ sleep 1
 
 # Modified ODL: Put ADVOUT, ADVDSP, ADVSHT, ADVFND in ROOT to eliminate cross-overlay calls
 # These are called from multiple overlays causing memory corruption during overlay swaps.
-# NOTE: Use 1 second sleep times to ensure lines are fully received before next send
+# NOTE: Use slow character send for .ROOT line to prevent character loss on CREATE command
 send "; ADVENT.ODL - ADVOUT/ADVDSP/ADVSHT/ADVFND in ROOT for stability\r"
 sleep 1
-send ".ROOT SY:ADVENT-SY:ADVOUT-SY:ADVDSP-SY:ADVSHT-SY:ADVFND-LIBR-*(OVLY)\r"
-sleep 1
+
+# Send ROOT line character by character to prevent lost characters
+set root_line ".ROOT SY:ADVENT-SY:ADVOUT-SY:ADVDSP-SY:ADVSHT-SY:ADVFND-LIBR-*(OVLY)\r"
+foreach char [split $root_line ""] {
+    send -- $char
+    after 20
+}
+sleep 2
 send "LIBR:   .FCTR LB:BP2OTS/LB\r"
 sleep 1
 send "OVLY:   .FCTR *(A,B,C,D)\r"

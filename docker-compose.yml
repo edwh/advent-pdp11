@@ -35,8 +35,10 @@ services:
     # Disk is restored from backup on each start to prevent corruption
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2322"]
+      # Use boot_status.json instead of connecting to console port
+      # TCP connections to port 2322 create CLOSE-WAIT states that block SIMH
+      test: ["CMD", "sh", "-c", "grep -q '\"status\": \"ready\"' /tmp/boot_status.json 2>/dev/null"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      start_period: 600s  # Build takes 10-15 minutes
