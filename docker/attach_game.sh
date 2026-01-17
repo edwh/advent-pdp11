@@ -26,6 +26,6 @@ echo "Connecting to ADVENT..."
 echo ""
 
 # Attach to the tmux session with status bar hidden
-# Multiple users can attach to the same session (multi-user MUD!)
-# The -r flag makes it read-only for additional viewers (prevents conflicts)
-exec /usr/bin/tmux set-option -t advent status off \; attach-session -t advent
+# Use -d to detach any existing clients first - prevents stale connections
+# from blocking keyboard input when previous session didn't disconnect cleanly
+exec /usr/bin/tmux set-option -t advent status off \; attach-session -d -t advent
