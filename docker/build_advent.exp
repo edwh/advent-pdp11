@@ -210,30 +210,29 @@ sleep 1
 
 # Modified ODL: Put ADVOUT, ADVDSP, ADVSHT, ADVFND in ROOT to eliminate cross-overlay calls
 # These are called from multiple overlays causing memory corruption during overlay swaps.
-# NOTE: Use slow character send for .ROOT line to prevent character loss on CREATE command
-send "; ADVENT.ODL - ADVOUT/ADVDSP/ADVSHT/ADVFND in ROOT for stability\r"
-sleep 1
+# NOTE: RSTS/E CREATE command drops characters with fast sends - ALL lines must be sent slowly
 
-# Send ROOT line character by character to prevent lost characters
-set root_line ".ROOT SY:ADVENT-SY:ADVOUT-SY:ADVDSP-SY:ADVSHT-SY:ADVFND-LIBR-*(OVLY)\r"
-foreach char [split $root_line ""] {
-    send -- $char
-    after 20
+# Send each ODL line character by character to prevent character loss
+set odl_lines {
+    "; ADVENT.ODL - ADVOUT/ADVDSP/ADVSHT/ADVFND in ROOT for stability"
+    ".ROOT SY:ADVENT-SY:ADVOUT-SY:ADVDSP-SY:ADVSHT-SY:ADVFND-LIBR-*(OVLY)"
+    "LIBR:   .FCTR LB:BP2OTS/LB"
+    "OVLY:   .FCTR *(A,B,C,D)"
+    "A:      .FCTR SY:ADVINI,SY:ADVNOR"
+    "B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG"
+    "C:      .FCTR SY:ADVBYE,SY:ADVNPC,SY:ADVPUZ"
+    "D:      .FCTR SY:ADVTDY"
+    "        .END"
 }
-sleep 2
-send "LIBR:   .FCTR LB:BP2OTS/LB\r"
-sleep 1
-send "OVLY:   .FCTR *(A,B,C,D)\r"
-sleep 1
-send "A:      .FCTR SY:ADVINI,SY:ADVNOR\r"
-sleep 1
-send "B:      .FCTR SY:ADVCMD,SY:ADVODD,SY:ADVMSG\r"
-sleep 1
-send "C:      .FCTR SY:ADVBYE,SY:ADVNPC,SY:ADVPUZ\r"
-sleep 1
-send "D:      .FCTR SY:ADVTDY\r"
-sleep 1
-send "        .END\r"
+
+foreach line $odl_lines {
+    foreach char [split $line ""] {
+        send -- $char
+        after 25
+    }
+    send "\r"
+    sleep 1
+}
 sleep 2
 send "\032"
 sleep 3

@@ -145,6 +145,8 @@ puts ">>> Users can now attach to this session"
 # Clear any pending input by waiting briefly
 sleep 0.5
 
-# Keep the session alive forever - this is the persistent connection
+# Get the spawn_id's file descriptor and exec cat on it to keep session alive
+# This bypasses expect's interact which doesn't work in detached tmux
+# The telnet process continues running and handles I/O directly
 set timeout -1
 interact
