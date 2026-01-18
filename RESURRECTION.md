@@ -165,6 +165,21 @@ Character dropping was another joy. RSTS/E's CREATE command apparently can't han
 
 The fix: send every character individually with a 25ms delay. Like typing with boxing gloves on. But it works!
 
+### The SIMH Character Dropping Bug
+
+After all the terminal multiplexer wrestling, we discovered another culprit lurking deeper in the stack: **SIMH v4.0-Beta-1 has a known bug** ([GitHub issue #246](https://github.com/simh/simh/issues/246)) where console input characters get dropped.
+
+The root cause: SIMH precisely emulates XON/XOFF flow control by inserting these characters into the TCP telnet stream. But:
+- Data arrives faster than the emulated FIFO can handle
+- Telnet binary mode doesn't interpret XON/XOFF
+- Characters get lost in the void
+
+The kicker? This bug was reported in November 2015 and fixed shortly after. But v4.0-Beta-1 is from November 2014. We were running a version with a year-old bug that was fixed a decade ago.
+
+The solution: use SIMH's master branch instead of the ancient beta tag. A one-line Dockerfile change, after weeks of chasing phantom bugs through seven layers of terminal abstraction.
+
+*Sometimes the bug is in the emulator, not the terminal multiplexer. Check GitHub issues before assuming you're crazy.*
+
 ## Reconnecting the Dungeon
 
 When we first analyzed the room data, we discovered something curious: of the 1,590 valid rooms in ADVENT.DTA, only 33 were reachable from the starting room (room 2, an Arabian desert village).
