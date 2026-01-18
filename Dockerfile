@@ -22,9 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Build SIMH using makefile (use v4.0-Beta-1 for expect support)
+# Build SIMH using makefile (use latest master for expect support + character dropping fix)
+# Note: v4.0-Beta-1 had known issues with dropped input characters (GitHub issue #246)
 WORKDIR /src
-RUN git clone --branch v4.0-Beta-1 --depth 1 https://github.com/simh/simh.git && \
+RUN git clone --depth 1 https://github.com/simh/simh.git && \
     cd simh && \
     yes n | make pdp11
 
