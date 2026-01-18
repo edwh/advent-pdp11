@@ -113,6 +113,7 @@ COPY docker/build_advent.exp /opt/advent/
 COPY docker/game_connect.exp /opt/advent/
 COPY docker/game_session.sh /opt/advent/
 COPY docker/start_game_session.exp /opt/advent/
+COPY docker/start_game_session.sh /opt/advent/
 COPY docker/attach_game.sh /opt/advent/
 COPY docker/admin_connect.sh /opt/advent/
 COPY docker/verify_ready.exp /opt/advent/

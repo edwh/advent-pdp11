@@ -242,24 +242,26 @@ if [ "${SKIP_SETUP:-0}" != "1" ]; then
     echo '{"status": "booting", "message": "Build complete, starting game session..."}' > /tmp/boot_status.json
 fi
 
-# Start persistent game session in tmux
-# This logs in once and keeps ADVENT running - users attach to this session
+# Start persistent game session using screen
+# This logs in once and keeps ADVENT running - users attach with screen -x
 echo "Starting persistent ADVENT game session..."
 echo '{"status": "booting", "message": "Starting ADVENT game session..."}' > /tmp/boot_status.json
 
-# Kill any existing tmux sessions
-tmux kill-session -t advent 2>/dev/null || true
+# Kill any existing screen sessions
+screen -S advent -X quit 2>/dev/null || true
+sleep 1
 
-# Start game session in detached tmux
-tmux new-session -d -s advent "expect -f $ADVENT_DIR/start_game_session.exp"
+# Start game session script in background
+"$ADVENT_DIR/start_game_session.sh" &
+GAME_SCRIPT_PID=$!
 
-# Wait for game session to be ready
+# Wait for screen session to be ready
 echo "Waiting for game session to start..."
 GAME_WAIT=0
 MAX_GAME_WAIT=60
 while [ $GAME_WAIT -lt $MAX_GAME_WAIT ]; do
-    if tmux has-session -t advent 2>/dev/null; then
-        sleep 3
+    if screen -list | grep -q "\.advent"; then
+        sleep 5
         echo "Game session started!"
         break
     fi
@@ -366,12 +368,13 @@ while true; do
         echo "WARNING: RSTS/E may not be fully ready"
     fi
 
-    # Restart persistent game session in tmux
+    # Restart persistent game session using screen
     echo "Starting persistent ADVENT game session..."
     echo '{"status": "booting", "message": "Starting ADVENT game session..."}' > /tmp/boot_status.json
-    tmux kill-session -t advent 2>/dev/null || true
-    tmux new-session -d -s advent "expect -f $ADVENT_DIR/start_game_session.exp"
-    sleep 5
+    screen -S advent -X quit 2>/dev/null || true
+    sleep 1
+    "$ADVENT_DIR/start_game_session.sh" &
+    sleep 8
     echo "Game session restarted"
 
     # Restart ttyd processes

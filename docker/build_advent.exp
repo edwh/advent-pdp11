@@ -126,7 +126,13 @@ puts "\n>>> Copying source files from tape..."
 set source_files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB}
 
 foreach f $source_files {
-    send "COPY MU0:$f SY:\r"
+    # Slow-send to prevent character dropping
+    set cmd "COPY MU0:$f SY:"
+    foreach char [split $cmd ""] {
+        send -- $char
+        after 15
+    }
+    send "\r"
     expect {
         "OK to replace" {
             send "Y\r"
@@ -146,7 +152,13 @@ set data_files {ADVENT.DTA ADVENT.MON ADVENT.CHR BOARD.NTC}
 
 foreach f $data_files {
     puts "\n>>> Copying $f..."
-    send "COPY MU0:$f SY:\r"
+    # Slow-send to prevent character dropping
+    set cmd "COPY MU0:$f SY:"
+    foreach char [split $cmd ""] {
+        send -- $char
+        after 15
+    }
+    send "\r"
     set timeout 180
     expect {
         "OK to replace" {
@@ -176,7 +188,13 @@ expect -re {BASIC2\s*$}
 # Compile each file
 foreach f $source_files {
     puts "\n>>> Compiling $f..."
-    send "OLD SY:$f\r"
+    # Slow-send OLD command to prevent character dropping
+    set cmd "OLD SY:$f"
+    foreach char [split $cmd ""] {
+        send -- $char
+        after 15
+    }
+    send "\r"
     # Wait for BASIC2 prompt after OLD command
     expect -re {BASIC2\s*$}
     send "COMPILE\r"
@@ -205,7 +223,14 @@ expect -re {\$ }
 # Create ODL file with hybrid structure
 puts "\n>>> Creating ODL file..."
 send "CREATE SY:ADVENT.ODL\r"
-expect "CTRL/Z"
+# Wait for CREATE prompt (shows "Input CTRL/Z to exit" or similar)
+# Use short timeout - CREATE responds quickly or not at all
+set timeout 30
+expect {
+    -re "CTRL|Input|exit" { puts ">>> Got CREATE prompt" }
+    timeout { puts ">>> CREATE timeout - continuing anyway" }
+}
+set timeout 600
 sleep 1
 
 # Modified ODL: Put ADVOUT, ADVDSP, ADVSHT, ADVFND in ROOT to eliminate cross-overlay calls

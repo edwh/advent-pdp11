@@ -123,6 +123,48 @@ After weeks of wrestling with overlay structures, COMMON alignment, undefined sy
 
 We built from source. On an emulated 1970s computer. In 2026. Take that, teenage Edward.
 
+## The Terminal Tango
+
+Getting keyboard input to actually reach the game was... an adventure in itself.
+
+The path from your fingers to ADVENT looks like this:
+
+```
+Your Browser (xterm.js)
+    ↓ WebSocket
+ttyd (web terminal server)
+    ↓ pseudo-terminal
+screen/tmux (terminal multiplexer)
+    ↓ pseudo-terminal
+expect (login automation)
+    ↓ spawned process
+telnet
+    ↓ TCP socket
+SIMH (PDP-11 emulator)
+    ↓ virtual console
+RSTS/E
+    ↓ terminal handler
+ADVENT
+```
+
+Every one of these layers can eat keystrokes if it's feeling peckish.
+
+We tried:
+- **expect's `interact`** - Works beautifully... unless you're in a detached terminal multiplexer, in which case it sits there ignoring input like a sulking teenager
+- **tmux send-keys** - Fine for scripted input, useless for real-time typing
+- **Writing directly to the pseudo-terminal** - Characters appeared on screen but vanished into the void before reaching the game
+- **JavaScript injection into xterm.js** - Same result
+
+The culprit? expect's `interact` command is designed for *interactive* use - sitting at a real terminal, not a daisy chain of pseudo-terminals. When running in a detached tmux session, it simply doesn't forward input properly.
+
+The solution: **screen** (not tmux), with its `stuff` command for login automation and `-x` for multi-user attachment. screen's terminal handling is subtly different - and crucially, it actually works for our bizarre seven-layer terminal parfait.
+
+Character dropping was another joy. RSTS/E's CREATE command apparently can't handle characters arriving faster than about 40 per second. Paste a file at modern speeds? Random characters go missing:
+- "COPY MU0:ADVINI.SUB SY:" becomes "COPY MU0:ADVINI.SUB S:"
+- "SY:ADVINI,SY:ADVNOR" becomes "SY:ADVINI,SY:ADVNO"
+
+The fix: send every character individually with a 25ms delay. Like typing with boxing gloves on. But it works!
+
 ## Reconnecting the Dungeon
 
 When we first analyzed the room data, we discovered something curious: of the 1,590 valid rooms in ADVENT.DTA, only 33 were reachable from the starting room (room 2, an Arabian desert village).
