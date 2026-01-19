@@ -24,6 +24,10 @@
 
 15001	DES$=DESC$ &
 \	DES$=LEFT(DES$,INSTR(1%,DES$,"$")-1%) IF INSTR(1%,DES$,"$") &
+\	WHILE INSTR(1%,DES$,CHR$(10%)) &
+\	I%=INSTR(1%,DES$,CHR$(10%)) &
+\	DES$=LEFT(DES$,I%-1%)+" "+RIGHT(DES$,I%+1%) &
+\	NEXT &
 \	CALL ADVOUT(KB%(USER%),CHR$(24%)+DES$+CRLF$+CRLF$+'Exits :'+CRLF$) &
 \	J$="" &
 \	J$=J$+"    "+MID('NorthEast SouthWest ',INSTR(1%, &
