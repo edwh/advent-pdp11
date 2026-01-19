@@ -31,7 +31,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $CONNECTED -eq 0 ]; do
     echo ">>> Connection attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
 
     # Create detached screen session with telnet
-    # Set terminal size to 80x24 before starting telnet
+    # Set terminal size to 80x24 (authentic VT100 dimensions)
     screen -dmS advent bash -c "stty cols 80 rows 24; exec telnet localhost 2322"
 
     # Wait for connection

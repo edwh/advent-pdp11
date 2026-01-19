@@ -270,6 +270,43 @@
     }
 
     /**
+     * Scale the terminal to fill the CRT screen
+     * VT100 was 80x24 characters - we scale to fill available space
+     */
+    function scaleTerminal() {
+        if (!terminalFrame) return;
+
+        const crtScreen = document.querySelector('.crt-screen');
+        if (!crtScreen) return;
+
+        // Get the container dimensions
+        const containerWidth = crtScreen.clientWidth;
+        const containerHeight = crtScreen.clientHeight;
+
+        // VT100 natural dimensions (80 cols x 24 rows)
+        // At ~9px per char width and ~18px per char height
+        const terminalWidth = 80 * 9;   // 720px
+        const terminalHeight = 24 * 18; // 432px
+
+        // Calculate scale to fit container while maintaining aspect ratio
+        const scaleX = containerWidth / terminalWidth;
+        const scaleY = containerHeight / terminalHeight;
+        const scale = Math.min(scaleX, scaleY);
+
+        // Apply transform to scale and center
+        terminalFrame.style.width = terminalWidth + 'px';
+        terminalFrame.style.height = terminalHeight + 'px';
+        terminalFrame.style.transform = `scale(${scale})`;
+        terminalFrame.style.transformOrigin = 'top left';
+
+        // Center the scaled terminal
+        const scaledWidth = terminalWidth * scale;
+        const scaledHeight = terminalHeight * scale;
+        terminalFrame.style.left = ((containerWidth - scaledWidth) / 2) + 'px';
+        terminalFrame.style.top = ((containerHeight - scaledHeight) / 2) + 'px';
+    }
+
+    /**
      * Enable user input
      */
     function enableInput() {
@@ -278,6 +315,12 @@
         connectionOverlay?.classList.remove('active');
         waitMessage?.classList.add('hidden');
         isReady = true;
+
+        // Scale terminal to fill screen
+        scaleTerminal();
+
+        // Also scale on window resize
+        window.addEventListener('resize', scaleTerminal);
 
         try {
             terminalFrame?.focus();
