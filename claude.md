@@ -379,3 +379,35 @@ D:      .FCTR SY:ADVTDY
 - If you see single-byte room number handling anywhere, that's a bug!
 - Room numbers range from 1 to ~2000, requiring full 16-bit storage
 - The validation byte only uses low byte (`room_num & 0xFF`) but exit destinations need full 16 bits
+
+### January 19, 2026 - SIMH Character Dropping Bug Fixed
+
+**Problem:** Keyboard input via web terminal was unreliable - characters dropped intermittently.
+
+**Root Cause:** SIMH v4.0-Beta-1 (November 2014) has a known bug ([GitHub issue #246](https://github.com/simh/simh/issues/246)) where console input characters get dropped. The bug is caused by XON/XOFF flow control being precisely emulated over telnet - data arrives faster than the emulated FIFO can handle.
+
+**Fix Applied:**
+- Updated Dockerfile to use latest SIMH master branch instead of v4.0-Beta-1
+- Changed from `git clone --branch v4.0-Beta-1` to `git clone --depth 1`
+- Also fixed terminal CSS width collapse in mobile media query
+
+**Files Modified:**
+- `Dockerfile` (lines 25-30) - Use latest SIMH master
+- `docker/web/style.css` (lines 623-639) - Fixed CSS terminal width
+
+**Testing Results (via Chrome MCP):**
+- ✅ LOOK command - received and processed correctly
+- ✅ NORTH command - movement worked, arrived at new room
+- ✅ INVENTORY command - showed "You are carrying: Nothing"
+- ✅ STATUS command - showed player stats (Level 16, HP 20, Fatigue 47)
+- ✅ SOUTH command - returned to starting room
+- ✅ 60-second stability test - no degradation
+
+**Commits:**
+- `a0adcd6` - Document the SIMH character dropping bug discovery
+- `47234ef` - Fix terminal CSS width in mobile media query
+- `1c23b0b` - Update SIMH to latest master to fix character dropping bug
+
+**Status:** Keyboard input now works reliably. Ready for fly.io deployment.
+
+**Next:** Deploy updated container to fly.io
