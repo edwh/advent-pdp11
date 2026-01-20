@@ -100,6 +100,13 @@ echo ">>> Handling prompts..."
 screen -S advent -X stuff "\r"
 sleep 2
 
+# Configure terminal for video display (VT100 style)
+# /SCOPE enables video terminal mode where rubout backspaces and erases
+# instead of echoing the deleted character
+echo ">>> Configuring terminal for video display..."
+send_line "SET TERMINAL /SCOPE"
+sleep 1
+
 # Start ADVENT
 echo ">>> Starting ADVENT..."
 send_line "RUN ADVENT"

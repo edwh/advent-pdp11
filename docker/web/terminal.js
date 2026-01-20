@@ -270,40 +270,19 @@
     }
 
     /**
-     * Scale the terminal to fill the CRT screen
-     * VT100 was 80x24 characters - we scale to fill available space
+     * Ensure terminal fills the CRT screen
+     * Font size is controlled via ttyd options (fontSize=20)
+     * This just ensures the iframe fills the container
      */
     function scaleTerminal() {
         if (!terminalFrame) return;
 
-        const crtScreen = document.querySelector('.crt-screen');
-        if (!crtScreen) return;
-
-        // Get the container dimensions
-        const containerWidth = crtScreen.clientWidth;
-        const containerHeight = crtScreen.clientHeight;
-
-        // VT100 natural dimensions (80 cols x 24 rows)
-        // At ~9px per char width and ~18px per char height
-        const terminalWidth = 80 * 9;   // 720px
-        const terminalHeight = 24 * 18; // 432px
-
-        // Calculate scale to fit container while maintaining aspect ratio
-        const scaleX = containerWidth / terminalWidth;
-        const scaleY = containerHeight / terminalHeight;
-        const scale = Math.min(scaleX, scaleY);
-
-        // Apply transform to scale and center
-        terminalFrame.style.width = terminalWidth + 'px';
-        terminalFrame.style.height = terminalHeight + 'px';
-        terminalFrame.style.transform = `scale(${scale})`;
-        terminalFrame.style.transformOrigin = 'top left';
-
-        // Center the scaled terminal
-        const scaledWidth = terminalWidth * scale;
-        const scaledHeight = terminalHeight * scale;
-        terminalFrame.style.left = ((containerWidth - scaledWidth) / 2) + 'px';
-        terminalFrame.style.top = ((containerHeight - scaledHeight) / 2) + 'px';
+        // Reset any previous transforms and let CSS handle sizing
+        terminalFrame.style.width = '100%';
+        terminalFrame.style.height = '100%';
+        terminalFrame.style.transform = '';
+        terminalFrame.style.left = '0';
+        terminalFrame.style.top = '0';
     }
 
     /**

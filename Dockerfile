@@ -76,10 +76,14 @@ RUN mkdir -p disks disks-backup scripts data src web tapes
 
 # RA72 disk image (pristine base OS, ADVENT will be built from source)
 # Using RA72 with MSCP controller and TMSCP tape (MU0:)
-COPY simh/Disks/ra72/rstse_10_ra72.dsk /opt/advent/disks-backup/rstse_10_ra72.dsk
+# Disk image is split into 50MB parts to stay under GitHub's file size limit
+# Assemble them during build
+COPY simh/Disks/ra72/rstse_10_ra72.dsk.part_* /tmp/disk_parts/
+RUN cat /tmp/disk_parts/rstse_10_ra72.dsk.part_* > /opt/advent/disks-backup/rstse_10_ra72.dsk && \
+    rm -rf /tmp/disk_parts
 
 # Working disk (restored from backup on each start by entrypoint.sh)
-COPY simh/Disks/ra72/rstse_10_ra72.dsk /opt/advent/disks/rstse_10_ra72.dsk
+RUN cp /opt/advent/disks-backup/rstse_10_ra72.dsk /opt/advent/disks/rstse_10_ra72.dsk
 
 
 # Copy data files (includes game data and generated dungeon map)
@@ -122,6 +126,7 @@ COPY docker/restart_service.sh /opt/advent/
 COPY docker/kick_service.sh /opt/advent/
 COPY docker/kick_console.sh /opt/advent/
 COPY docker/tcp_connect.py /opt/advent/
+COPY docker/screenrc /root/.screenrc
 
 # Copy web interface
 COPY docker/web/ /opt/advent/web/

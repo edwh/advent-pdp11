@@ -1,0 +1,13 @@
+# Screen configuration for ADVENT terminal
+# Map backspace/delete to send proper erase character
+bindkey -d -k kb stuff "\177"
+bindkey -d -k kD stuff "\177"
+
+# Enable alternate screen
+altscreen on
+
+# Disable startup message
+startup_message off
+
+# Set TERM
+term xterm

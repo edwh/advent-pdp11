@@ -294,6 +294,8 @@ ttyd -p 7681 -b /terminal -W \
     -t disableResizeOverlay=true \
     -t disableLeaveAlert=true \
     -t titleFixed="ADVENT MUD" \
+    -t fontSize=20 \
+    -t fontFamily="'Courier New', Courier, monospace" \
     "$ADVENT_DIR/attach_game.sh" &
 GAME_PID=$!
 echo "Game web terminal started on port 7681"
@@ -382,6 +384,8 @@ while true; do
         -t disableResizeOverlay=true \
         -t disableLeaveAlert=true \
         -t titleFixed="ADVENT MUD" \
+        -t fontSize=20 \
+        -t fontFamily="'Courier New', Courier, monospace" \
         "$ADVENT_DIR/attach_game.sh" &
     GAME_PID=$!
     echo "Game web terminal restarted on port 7681"

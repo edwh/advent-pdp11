@@ -25,6 +25,11 @@ echo '{"step": "ready", "message": "Game ready!"}' > /tmp/login_status.json
 echo "Connecting to ADVENT..."
 echo ""
 
+# Configure terminal settings for proper backspace handling
+# RSTS/E expects rubout (DEL/0x7f) for character deletion, but we need to
+# ensure the terminal is set up correctly
+stty erase '^?' 2>/dev/null || true
+
 # Attach to the screen session
 # -x allows multiple viewers to attach simultaneously
 # This provides proper terminal I/O handling unlike tmux+expect

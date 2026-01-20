@@ -15,3 +15,6 @@ __pycache__/
 *.tar
 *.tar.Z
 .archive/
+
+# Large disk image - assembled from parts at runtime
+simh/Disks/ra72/rstse_10_ra72.dsk
