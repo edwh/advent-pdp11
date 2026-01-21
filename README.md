@@ -147,6 +147,7 @@ The build process:
 - **[SimH](http://simh.trailing-edge.com/)** - The incredible PDP-11 emulator that makes this possible
 - **[Alec Lownes](https://aleclownes.com/2017/02/01/crt-display.html)** - CSS CRT display effects tutorial
 - **[Lucas Bebber](https://codepen.io/lbebber/pen/XJRdrV/)** - Original CSS CRT screen effect with scanlines and flicker
+- **[Edwin (ekeijl)](https://dev.to/ekeijl/retro-crt-terminal-screen-in-css-js-4afh)** - Retro CRT terminal screen tutorial
 - Everyone who has worked on preserving vintage hardware and software for future generations
 
 ## License
