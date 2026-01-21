@@ -64,7 +64,7 @@ Your Web Browser
         "Finally!"
 ```
 
-Yes, that's a web browser, pretending to be a terminal, connected to a container, running an emulator, pretending to be a minicomputer, running a 1970s operating system, running a 1987 game.
+Yes, that's a web browser, pretending to be a terminal, connected to a container, running an emulator, pretending to be a minicomputer, running a 1970s operating system, running a 1986-87 game.
 
 I never said this would be elegant.
 
@@ -73,7 +73,7 @@ I never said this would be elegant.
 ### The Enabler
 - **Alan Pickwick** - The member of staff at Manchester Grammar School who generously gave a bunch of bratty pupils access to proper computing environments. Without his support, none of this would have happened.
 
-### The Creators (1987)
+### The Creators (1986-87)
 - **Edward Hibbert** - Wrote most of the code. All 40-odd BASIC files, the assembly bits, the combat system, the magic system. As Gerbil notes in the documentation, his sections are "examples of how good Dungeon should be written."
 - **David 'Gerbil' Quest** - Co-designer, dungeon writer, author of magnificently sarcastic documentation.
 

@@ -1,6 +1,6 @@
-# ADVENT MUD - A 1987 Multi-User Dungeon
+# ADVENT MUD - A 1986-87 Multi-User Dungeon
 
-A multi-user dungeon game from 1987, originally written for PDP-11/RSTS-E, now running in Docker via SIMH emulation.
+A multi-user dungeon game from 1986-87, originally written for PDP-11/RSTS-E, now running in Docker via SIMH emulation.
 
 **Live Demo:** [https://advent-pdp11.fly.dev](https://advent-pdp11.fly.dev)
 
@@ -137,7 +137,7 @@ The build process:
 
 ## Credits
 
-### Original Creators (1987)
+### Original Creators (1986-87)
 - **Edward Hibbert** - Primary developer, wrote most of the code
 - **David 'Gerbil' Quest** - Co-designer, dungeon writer, documentation author
 

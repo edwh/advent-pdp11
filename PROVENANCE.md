@@ -12,7 +12,7 @@
 
 These files exist today because of a remarkable chain of preservation efforts spanning nearly 40 years:
 
-1. **1987**: Edward Hibbert at Manchester Grammar School, with David Quest writing most of the text and what passed for a storyline.
+1. **1986-87**: Edward Hibbert at Manchester Grammar School, with David Quest writing most of the text and what passed for a storyline.
 2. **~1987**: A backup tape was made of Edward's directory
 3. **Sometime before switch-off**: Nick Hoath copied data files off the school computer
 4. **2020-2025**: Email chains reconnected the original authors

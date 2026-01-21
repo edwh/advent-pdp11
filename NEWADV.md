@@ -1,6 +1,6 @@
 # Guidelines for Dungeon Writers
 
-*Written by David 'Gerbil' Quest and Edward Hibbert, 1987*
+*Written by David 'Gerbil' Quest and Edward Hibbert, 1986-87*
 
 ---
 
