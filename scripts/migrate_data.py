@@ -200,7 +200,13 @@ def create_room_record(room_num, room_data):
     record[1:17] = exits
 
     # Bytes 17-99: Monsters (83 bytes)
-    monsters = room_data.get('monsters', '')[:83]
+    # Monster entries require trailing '/' for display code to iterate
+    # Display code (ADVDSP.SUB:59): GOTO 15030 UNLESS INSTR(1%,PEO$,"/")
+    # Without '/', monsters block GET but are invisible to the player
+    monsters = room_data.get('monsters', '')
+    if monsters and not monsters.endswith('/'):
+        monsters = monsters + '/'
+    monsters = monsters[:83]
     monsters_bytes = monsters.encode('ascii', errors='replace')
     record[17:17+len(monsters_bytes)] = monsters_bytes
 
