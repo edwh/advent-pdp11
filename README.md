@@ -4,6 +4,8 @@ A multi-user dungeon game from 1987, originally written for PDP-11/RSTS-E, now r
 
 **Live Demo:** [https://advent-pdp11.fly.dev](https://advent-pdp11.fly.dev)
 
+![ADVENT MUD Screenshot](docs/screenshot.png)
+
 ## Quick Start
 
 ### Using Docker Compose (Recommended)
