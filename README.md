@@ -1,12 +1,12 @@
 # ADVENT MUD - A 1986-87 Multi-User Dungeon
 
-A multi-user dungeon game from 1986-87, originally written for PDP-11/RSTS-E, now running in Docker via SIMH emulation.
+A multi-user dungeon game from 1986-87, resurrected from the dead after 38 years in magnetic tape purgatory.
+
+Originally written for a PDP-11 minicomputer (ask your grandparents), now running in Docker because of course it is. We live in an age of wonders.
 
 ![ADVENT MUD Screenshot](docs/screenshot.png)
 
 ## Quick Start
-
-### Using Docker Compose (Recommended)
 
 ```bash
 # Build and start the container
@@ -16,135 +16,123 @@ docker compose up -d --build
 open http://localhost:8088
 ```
 
+That's it. You're now running a 1980s minicomputer in your browser. The future is weird.
+
 To stop:
 ```bash
 docker compose down
 ```
 
-### Access Methods
+## What Is This Thing?
 
-Once running, you can connect via:
+```
+Your Browser
+    | "I'd like to play a game from 1987 please"
+Docker Container
+    | "One vintage minicomputer, coming right up"
+SIMH (PDP-11 Emulator)
+    | "Pretending very hard to be 1980s hardware"
+RSTS/E V10.1
+    | "The actual operating system from the actual era"
+ADVENT
+    "Finally! Someone remembered I exist!"
+```
 
-| Method | Address | Description |
-|--------|---------|-------------|
-| Web Interface | http://localhost:8088 | CRT terminal with auto-login |
-| Admin Terminal | http://localhost:7682 | Web-based admin access |
-| Telnet (Console) | `telnet localhost 2324` | Operator console |
-| Telnet (Terminal) | `telnet localhost 2325` | User terminal (DZ11) |
+Yes, that's a web browser pretending to be a VT100 terminal, connected to a container, running an emulator, pretending to be a minicomputer that cost more than a house, running a 1980s timesharing OS, running a game written by teenagers.
 
-For telnet access:
-- User: `[1,2]`
-- Password: `SYSTEM`
-- Command: `RUN ADVENT`
+We never said this would be elegant.
 
 ## Current Status (January 2026)
 
-**Single-user mode is fully working!**
+**Single-user mode is fully working!** You can:
 
-- Navigation: NORTH/SOUTH/EAST/WEST, UP/DOWN
-- Exploration: LOOK, EXITS
-- Objects: GET/TAKE, DROP, INVENTORY
-- Character: STATUS, QUIT
-- 1,587 rooms with descriptions and exits
-- 402 monsters placed in their rooms
-- 417 objects available
+- Wander around: NORTH, SOUTH, EAST, WEST, UP, DOWN
+- Look at things: LOOK, EXITS, EXAMINE
+- Hoard treasure: GET, DROP, INVENTORY
+- Check your stats: STATUS
+- Give up: QUIT
 
-### Demigod Privileges (For Exploration)
+The dungeon contains 1,587 rooms, 402 monsters, and 417 objects. Some room descriptions are... let's say "period authentic." It was the 1980s. Teenagers were involved.
 
-New players start at **level 16** so you can explore the dungeon freely. This is just for fun - in the original 1987 game, you had to earn these abilities!
+### Demigod Privileges
 
+New players start at **level 16** because life's too short to grind. In the original 1987 game, you'd have to earn these abilities through blood, sweat, and creative monster slaughter. We're giving them away free:
+
+- `/ROOM <number>` - Teleport directly to any room
+- `/LIST` - See all players online
 - `/TELEPORT <player>` - Teleport to another player
-- `/LIST` - See all players online and their locations
-- `/ROOM <number>` - Teleport directly to a room number
 - `/INVISIBLE` - Toggle invisibility
-- `/ANNOUNCE <message>` - Broadcast to all players (level 30+)
+- `/ANNOUNCE <message>` - Broadcast to everyone (level 30+)
 
-See [STATUS.md](STATUS.md) for detailed feature status.
+See [STATUS.md](STATUS.md) for what works and what doesn't.
 
-## Architecture
+## Access Methods
 
-```
-Browser ---> nginx ---> ttyd ---> expect ---> SIMH ---> RSTS/E ---> ADVENT
-   |                      |                     |
-   |   CRT Terminal UI    |   Auto-login      PDP-11/70 emulator
-   |   with status overlay|   script           running 1980s OS
-```
+| Method | Address | What It Does |
+|--------|---------|--------------|
+| Web Interface | http://localhost:8088 | The pretty one with the fake CRT |
+| Admin Terminal | http://localhost:7682 | For when things go wrong |
+| Telnet (Console) | `telnet localhost 2324` | For purists |
+| Telnet (Terminal) | `telnet localhost 2325` | For extreme purists |
 
-- **Docker container** hosts all components
-- **nginx** serves web UI and proxies terminal connections
-- **ttyd** provides web-based terminal access
-- **expect scripts** handle automatic login and game startup
-- **SIMH** emulates a PDP-11/70 minicomputer
-- **RSTS/E V10.1** is the authentic 1980s timesharing OS
-- **ADVENT** is the BASIC-PLUS-2 compiled game
+For telnet access: User `[1,2]`, Password `SYSTEM`, then `RUN ADVENT`. Just like 1987, except without the 300 baud modem noises.
 
-## Files
+## The Files
 
 ### Source Code (`src/`)
-- `ADVENT.B2S` - Main program
-- `ADV*.SUB` - Subroutines (ADVINI, ADVNOR, ADVCMD, etc.)
-- `ADVENT.ODL` - Overlay descriptor for Task Builder
+Forty-odd BASIC-PLUS-2 files, written by teenagers who had better things to do than add comments. `ADVENT.B2S` is the main program; everything else is subroutines like `ADVNOR.SUB` (movement), `ADVCMD.SUB` (commands), and `ADVBYE.SUB` (death and logout - cheerful stuff).
 
 ### Recovered Data (`data/`)
-- `roomfil.fil` - 1,587 rooms from 1987
-- `monfil.fil` - Monster and object definitions
-- `BOARD.NTC` - Noticeboard with authentic 1987 player messages
+The actual 1987 dungeon, recovered from magnetic tape:
+- `roomfil.fil` - 1,587 rooms of questionable architectural planning
+- `monfil.fil` - Monsters and objects
+- `BOARD.NTC` - The original noticeboard, complete with "OZZY RULES" and playground insults
 
 ### Generated Binary Data (`build/data/`)
-- `ADVENT.DTA` - Room data (2000 x 512 bytes)
-- `ADVENT.MON` - Monster spawns (10000 x 20 bytes)
-- `ADVENT.CHR` - Character saves
-- `MESSAG.NPC` - NPC messages
-- `dungeon_map.json` - Room connectivity for web map viewer
-
-### Disk Images (`simh/Disks/ra72/`)
-- `rstse_10_ra72.dsk` - Base RSTS/E V10.1 RA72 image (1GB, no ADVENT)
+What the game actually reads at runtime. Created fresh each build because we don't trust 38-year-old binaries.
 
 ## Building from Source
 
-The game compiles from source on every container start (~10-15 minutes):
+The game compiles from source every time the container starts. This takes 10-15 minutes because we're compiling BASIC-PLUS-2 on an emulated PDP-11, and that's just how long it takes.
 
 ```bash
-# Build and run with Docker Compose
 docker-compose up -d --build
-
-# Watch the build progress
-docker-compose logs -f
+docker-compose logs -f  # Watch the magic happen
 ```
 
-The build process:
-1. Restores pristine RA72 disk image
-2. Boots RSTS/E V10.1
-3. Copies source files from TMSCP tape
-4. Compiles with BP2 (BASIC-PLUS-2)
+The build:
+1. Boots RSTS/E V10.1 (the OS)
+2. Mounts a virtual tape drive (because 1987)
+3. Copies source files from tape
+4. Compiles with BP2
 5. Links with TKB (Task Builder)
+6. Prays nothing crashes
 
 ## Documentation
 
-- [RESURRECTION.md](RESURRECTION.md) - The story of bringing this back to life
-- [TECHNICAL.md](TECHNICAL.md) - Technical details of the file formats and transfer
-- [CONTINUATION.md](CONTINUATION.md) - Guide for continuing development
-- [PROVENANCE.md](PROVENANCE.md) - How the files survived 37 years
-- [NEWADV.md](NEWADV.md) - Original 1987 dungeon writer's guide
-- [STATUS.md](STATUS.md) - Feature implementation status
+- [RESURRECTION.md](RESURRECTION.md) - The full saga of bringing this back to life
+- [TECHNICAL.md](TECHNICAL.md) - How the file formats work (riveting stuff)
+- [PROVENANCE.md](PROVENANCE.md) - How the files survived 38 years on magnetic tape
+- [NEWADV.md](NEWADV.md) - The original 1987 dungeon writer's guide (by Gerbil)
+- [STATUS.md](STATUS.md) - What works, what doesn't, what we haven't tested
 
 ## Credits
 
 ### Original Creators (1986-87)
 - **Edward Hibbert** - Primary developer, wrote most of the code
-- **David 'Gerbil' Quest** - Co-designer, dungeon writer, documentation author
+- **David 'Gerbil' Quest** - Co-designer, dungeon writer, magnificently sarcastic documentation author
 
 ### Preservation Team
-- **Nick Hoath** - Saved the data files to tape in 1987
-- **Delwyn Holroyd @ TNMOC** - Read the tape in 2025
+- **Nick Hoath** - Saved the data to tape in 1987, presumably thinking "someone might want this someday"
+- **Delwyn Holroyd @ TNMOC** - Read the tape in 2025 using actual vintage hardware at The National Museum of Computing
 
 ### Resurrection Team (2025-2026)
-- **Edward Hibbert** - Original author, returned to help resurrect the game
-- **Claude (AI)** - Digital archaeology, Docker containerization, documentation
+- **Edward Hibbert** - Original author, returned after 38 years to help piece together his teenage creation
+- **Claude (AI)** - Digital archaeology, Docker wrangling, documentation, crashing RSTS/E repeatedly
 
 ### Special Thanks
-- **Alan Pickwick** - MGS staff member who gave students access to the PDP-11
-- **[SimH](http://simh.trailing-edge.com/)** - The incredible PDP-11 emulator that makes this possible
+- **Alan Pickwick** - MGS staff member who gave students access to the PDP-11 in the first place
+- **[SimH](http://simh.trailing-edge.com/)** - The incredible PDP-11 emulator that makes this all possible
 - **[Alec Lownes](https://aleclownes.com/2017/02/01/crt-display.html)** - CSS CRT display effects tutorial
 - **[Lucas Bebber](https://codepen.io/lbebber/pen/XJRdrV/)** - Original CSS CRT screen effect with scanlines and flicker
 - **[Edwin (ekeijl)](https://dev.to/ekeijl/retro-crt-terminal-screen-in-css-js-4afh)** - Retro CRT terminal screen tutorial
@@ -152,4 +140,4 @@ The build process:
 
 ## License
 
-This is a preservation project for historical software from 1987. The original game was created by students at Manchester Grammar School.
+This is a preservation project for historical software from 1987. The original game was created by students at Manchester Grammar School. We're not sure what license applies to code written by teenagers on school equipment 38 years ago, but we're pretty confident nobody's going to sue.
