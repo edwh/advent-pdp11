@@ -71,7 +71,7 @@ I never said this would be elegant.
 ## The Cast of Characters
 
 ### The Enabler
-- **Alan Pickwick** - The member of staff at Manchester Grammar School who generously gave a bunch of bratty pupils access to proper computing environments. Without his support, none of this would have happened.
+- **Alan Pickwick** - The member of staff at Manchester Grammar School who generously gave a bunch of bratty pupils access to proper computing environments. Without his support, none of this would have happened. For more about computing at MGS, see the [school archive's history of their first computer](https://archivesmgs.wordpress.com/2020/11/20/item-from-the-archive-mgss-first-computer/).
 
 ### The Creators (1986-87)
 - **Edward Hibbert** - Wrote most of the code. All 40-odd BASIC files, the combat system, the magic system. As Gerbil notes in the documentation, his sections are "examples of how good Dungeon should be written."
