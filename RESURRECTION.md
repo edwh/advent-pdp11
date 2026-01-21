@@ -74,7 +74,7 @@ I never said this would be elegant.
 - **Alan Pickwick** - The member of staff at Manchester Grammar School who generously gave a bunch of bratty pupils access to proper computing environments. Without his support, none of this would have happened.
 
 ### The Creators (1986-87)
-- **Edward Hibbert** - Wrote most of the code. All 40-odd BASIC files, the assembly bits, the combat system, the magic system. As Gerbil notes in the documentation, his sections are "examples of how good Dungeon should be written."
+- **Edward Hibbert** - Wrote most of the code. All 40-odd BASIC files, the combat system, the magic system. As Gerbil notes in the documentation, his sections are "examples of how good Dungeon should be written."
 - **David 'Gerbil' Quest** - Co-designer, dungeon writer, author of magnificently sarcastic documentation.
 
 ### The Preservationists

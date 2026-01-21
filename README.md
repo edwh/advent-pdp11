@@ -2,8 +2,6 @@
 
 A multi-user dungeon game from 1986-87, originally written for PDP-11/RSTS-E, now running in Docker via SIMH emulation.
 
-**Live Demo:** [https://advent-pdp11.fly.dev](https://advent-pdp11.fly.dev)
-
 ![ADVENT MUD Screenshot](docs/screenshot.png)
 
 ## Quick Start
@@ -130,11 +128,6 @@ The build process:
 - [NEWADV.md](NEWADV.md) - Original 1987 dungeon writer's guide
 - [STATUS.md](STATUS.md) - Feature implementation status
 
-## Known Issues
-
-1. **Extra "?" prompts** - CR/LF handling causes occasional extra prompts
-2. **Multi-user mode** - File locking prevents concurrent access
-
 ## Credits
 
 ### Original Creators (1986-87)
@@ -151,6 +144,8 @@ The build process:
 
 ### Special Thanks
 - **Alan Pickwick** - MGS staff member who gave students access to the PDP-11
+- **[SimH](http://simh.trailing-edge.com/)** - The incredible PDP-11 emulator that makes this possible
+- Everyone who has worked on preserving vintage hardware and software for future generations
 
 ## License
 

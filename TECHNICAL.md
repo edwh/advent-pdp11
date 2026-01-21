@@ -7,7 +7,7 @@ This document covers the technical aspects of bringing a 1987 BASIC-PLUS-2 game 
 The game was written for:
 - **Hardware**: PDP-11 minicomputer
 - **OS**: RSTS/E (Resource Sharing Time Sharing / Extended)
-- **Language**: BASIC-PLUS-2 with MACRO-11 assembly routines
+- **Language**: BASIC-PLUS-2
 - **Data**: Binary files with 512-byte fixed-length records
 
 None of this runs on modern computers directly.

@@ -1,6 +1,6 @@
 # ADVENT Function Status
 
-*Last updated: January 3, 2026*
+*Last updated: January 21, 2026*
 
 This table shows the current implementation status of all ADVENT features.
 
@@ -108,11 +108,13 @@ This table shows the current implementation status of all ADVENT features.
 
 ---
 
-## Known Display Issues
+## Known Issues
 
-- Exit display shows "^B" control character after "West"
-- Tab alignment issues in exits display (first Tab stripped)
-- Occasional "?" prompts from CR/LF handling (stty fix deployed)
+### Display Issues
+- Occasional extra "?" prompts appear due to CR/LF handling between the terminal and RSTS/E - this is a limitation of the input layer
+
+### Multi-User Mode
+- File locking prevents concurrent access to ADVENT.MON
 
 ## Summary
 
