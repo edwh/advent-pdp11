@@ -83,7 +83,7 @@ For telnet access: User `[1,2]`, Password `SYSTEM`, then `RUN ADVENT`. Just like
 Forty-odd BASIC-PLUS-2 files, written by teenagers who had better things to do than add comments. `ADVENT.B2S` is the main program; everything else is subroutines like `ADVNOR.SUB` (movement), `ADVCMD.SUB` (commands), and `ADVBYE.SUB` (death and logout - cheerful stuff).
 
 ### Recovered Data (`data/`)
-The actual 1987 dungeon, recovered from magnetic tape:
+The actual 1987 dungeon. The source code came from magnetic tape, but the data files were rescued by Nick Hoath on the day of switch-off using two yoghurt cartons connected with string (a serial cable to an 80286 PC):
 - `roomfil.fil` - 1,587 rooms of questionable architectural planning
 - `monfil.fil` - Monsters and objects
 - `BOARD.NTC` - The original noticeboard, complete with "OZZY RULES" and playground insults
