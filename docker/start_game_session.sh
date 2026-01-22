@@ -107,9 +107,9 @@ echo ">>> Configuring terminal for video display..."
 send_line "SET TERMINAL /SCOPE"
 sleep 1
 
-# Start ADVENT
+# Start ADVENT via command file (loops on exit to prevent OS escape)
 echo ">>> Starting ADVENT..."
-send_line "RUN ADVENT"
+send_line "@ADVENT"
 sleep 3
 
 echo ">>> Persistent game session is ready"

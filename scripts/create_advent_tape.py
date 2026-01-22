@@ -17,6 +17,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # NOTE: ODL files removed - they're created in-place with RT11 format
 # (Tape transfer creates RSX format which TKB rejects as "illegal format")
 SOURCE_FILES = [
+    # Command file (game launcher with auto-restart)
+    ('src/ADVENT.COM', 'ADVENT', 'COM'),
+
     # Main program
     ('src/ADVENT.B2S', 'ADVENT', 'B2S'),
 
@@ -74,7 +77,7 @@ def create_advent_tape(output_path, include_data=True):
 
             # Convert line endings to RSTS format (CR/LF)
             # Only for text files (.B2S, .SUB, .ODL)
-            if ext in ('B2S', 'SUB', 'ODL'):
+            if ext in ('B2S', 'SUB', 'ODL', 'COM'):
                 # Convert to text, normalize line endings
                 try:
                     text = data.decode('ascii', errors='replace')

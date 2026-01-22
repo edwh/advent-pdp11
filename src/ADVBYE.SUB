@@ -29,9 +29,9 @@
 501	J$=FNCLEAR$ &
 \	SPY%(I%)=0% IF SPY%(I%)=KB%(USER%) FOR I%=1% TO 10% &
 \	CH%=0% &
-\	CH%=CH%+1% UNTIL CVT$$(LEFT(CHARACTER$(CH%),10%),255%)=CVT$$(LEFT(NAM$(USER%),10%), &
-	255%) &
-\	IF HP%(USER%)>0% THEN &
+\	CH%=CH%+1% UNTIL (CH%>100%) OR (CVT$$(LEFT(CHARACTER$(CH%),10%),255%)=CVT$$(LEFT(NAM$(USER%),10%), &
+	255%)) &
+\	IF HP%(USER%)>0% AND CH%<=100% THEN &
 	J$=NAM$(USER%) &
 \	J$=J$+CHR$(0%) WHILE LEN(J$)<10% &
 \	J$=J$+PASS$(USER%) &
@@ -56,7 +56,7 @@
 \	J$=CHARACTER$(0%) &
 \	J$=CHARACTER$(100%) &
 
-510	IF HP%(USER%)<=0% THEN &
+510	IF HP%(USER%)<=0% AND CH%<=100% THEN &
 	CHARACTER$(CH%)=STRING$(361%,0%) &
 \	J$=CHARACTER$(0%) &
 \	J$=CHARACTER$(100%) &

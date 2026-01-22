@@ -1,0 +1,4 @@
+$ SET NOON
+$ LOOP:
+$ RUN ADVENT
+$ GOTO LOOP

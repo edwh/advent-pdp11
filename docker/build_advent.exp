@@ -123,7 +123,7 @@ expect {
 
 # Copy all source files from tape
 puts "\n>>> Copying source files from tape..."
-set source_files {ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB}
+set source_files {ADVENT.COM ADVENT.B2S ADVINI.SUB ADVOUT.SUB ADVNOR.SUB ADVCMD.SUB ADVODD.SUB ADVMSG.SUB ADVBYE.SUB ADVSHT.SUB ADVNPC.SUB ADVPUZ.SUB ADVDSP.SUB ADVFND.SUB ADVTDY.SUB}
 
 foreach f $source_files {
     # Slow-send to prevent character dropping
@@ -185,8 +185,12 @@ expect "BASIC-PLUS-2"
 # Wait for the BASIC2 prompt
 expect -re {BASIC2\s*$}
 
-# Compile each file
+# Compile each file (skip .COM files - they're command files, not BASIC)
 foreach f $source_files {
+    if {[string match "*.COM" $f]} {
+        puts "\n>>> Skipping $f (command file)"
+        continue
+    }
     puts "\n>>> Compiling $f..."
     # Slow-send OLD command to prevent character dropping
     set cmd "OLD SY:$f"
