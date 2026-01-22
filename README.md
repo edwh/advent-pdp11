@@ -140,4 +140,8 @@ The build:
 
 ## License
 
-This is a preservation project for historical software from 1987. The original game was created by students at Manchester Grammar School. We're not sure what license applies to code written by teenagers on school equipment 38 years ago, but we're pretty confident nobody's going to sue.
+This is a preservation project for historical software from 1986-87. The original game was created by students at Manchester Grammar School. We're not sure what license applies to code written by teenagers on school equipment 38 years ago, but we're pretty confident nobody's going to sue.
+
+---
+
+`#PDP11` `#RSTS` `#RetroComputing` `#RetroGaming` `#MUD` `#TextAdventure` `#VintageComputing` `#DigitalPreservation` `#BASIC` `#1980s` `#EmulatedHardware` `#Docker`
