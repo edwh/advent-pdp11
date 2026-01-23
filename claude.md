@@ -450,3 +450,65 @@ D:      .FCTR SY:ADVTDY
 - ✅ Git push succeeded after history rewrite
 
 **Status:** All fixes complete and pushed to GitHub
+
+### January 23, 2026 - ADVENT Feature Testing Phase 1
+
+**Goal:** Test core single-player loop - explore, collect items, fight
+
+## Task Status
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1.1 | Test LOOK command | 🔄 In Progress | Room description display |
+| 1.2 | Test movement (N/S/E/W) | ⬜ Pending | Navigation between rooms |
+| 1.3 | Test GET/DROP | ⬜ Pending | Pick up/drop items |
+| 1.4 | Test INVENTORY | ⬜ Pending | List carried items |
+| 1.5 | Test STATUS | ⬜ Pending | Display HP, level, fatigue |
+| 1.6 | Test DRAW/SHEATH | ⬜ Pending | Equip/unequip weapon |
+| 1.7 | Test HIT (combat) | ⬜ Pending | Attack a monster |
+
+**Testing via:** Chrome DevTools MCP on http://localhost:7681
+
+**Results:**
+
+**Phase 1: Core Loop ✅**
+- LOOK: Works (crashes in some puzzle rooms)
+- Movement N/S/E/W: All working
+- GET/DROP: Working (monster blocking as expected)
+- INVENTORY: Working
+- STATUS: Working (shows level 16 demigod)
+- DRAW/SHEATH: Working
+- HIT combat: Working! ("You did X damage and killed the [monster]")
+
+**Bonus Features Found:**
+- HEAL: Works ("You now have X hit points")
+- INVISIBLE: Works ("You are now invisible")
+- ROOM [n]: Teleport works (demigod)
+- RING: Works ("[Player] rings the bell")
+- VALUE: Works ("worth about X XP")
+- REST: Works ("sit down and close your eyes")
+- SHOUT: Works
+- EAT: Works
+
+**Bugs Found:**
+1. **CRITICAL**: MSG: device crash at line 29000 (READ, LOOK in puzzle rooms)
+2. **CRITICAL**: Fatigue=0 blocks ALL commands including QUIT
+3. "You can't" messages need reasons
+4. HELP refers to "Beta" system
+
+**Files Created:**
+- STATUS.md - Full feature status with test results
+- SCRIPT.md - Video script with Claude thought bubbles
+- ENHANCEMENTS.md - Code improvements needed
+
+**Interesting Rooms Found:**
+- Santa's Grotto (740) with Santa Claus
+- Fortune teller (777) - schoolboy humor
+- Dojo with ninja (north from start)
+- Weapons shop (north from dojo)
+- Bell rooms (56, 83, 249, 351, 527)
+
+**Next:**
+- Fix MSG: device issue (create MSG: or disable logging)
+- Test shrine treasure drops for XP
+- Continue Phase 2 testing

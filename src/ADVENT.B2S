@@ -116,10 +116,9 @@
 	! Call the right sub-program.  ADVNOR is intended to be the &
 	! sub-program normally in residence.  ADVCMD contains less often &
 	! used commands. &
+! === 2026 Resurrection: Disable MSG: logging for single-user mode ===
 \	IF ROOM$<>CHR$(ROOM%(USER%)) THEN &
-	OPEN 'MSG:LOG1.95' AS FILE #4%, MODE 2% &
-\	PRINT #4%, 'Room';ROOM%(USER%);' corrupted by command number';C% &
-\	CLOSE #4% &
+	PRINT 'Room';ROOM%(USER%);' corrupted by command number';C% &
 
 50	GOTO 500 IF HP%(USER%)<=0% &
 \	J$="> " &
@@ -420,7 +419,9 @@
 21010	J$=LEFT(COM$,J%-1%) &
 \	AR$=RIGHT(COM$,J%+1%) &
 
-21020	IF FATIGUE%(USER%)<=0% AND CVT$$(J$,255%)<>'' THEN &
+! === 2026 Resurrection: Allow QUIT and HEAL to bypass fatigue check ===
+! A demigod should always be able to heal themselves, and QUIT must always work
+21020	IF FATIGUE%(USER%)<=0% AND CVT$$(J$,255%)<>'' AND J$<>"QUIT" AND J$<>"HEAL" THEN &
 	CALL ADVOUT(KB%(USER%),CRLF$+"You're too tired.") &
 \	C%=0% &
 \	RETURN &

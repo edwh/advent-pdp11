@@ -122,12 +122,8 @@
 	&
 	&
 
-29000	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
-\	PRINT #4%, "ADVNPC : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
-	" at line";ERL;" at ";TIME$(0%) &
-\	PRINT #4%, "User was ";NAM$(USER%);" in room";ROOM%(USER%) IF &
-	(USER%>0% AND USER%<=8%) &
-\	CLOSE #4% &
+! === 2026 Resurrection: Disable MSG: logging for single-user mode ===
+29000	PRINT "ADVNPC ERROR: ";ERR;" at line";ERL &
 \	RESUME 32767 &
 
 32767	SUBEND &

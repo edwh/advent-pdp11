@@ -202,13 +202,91 @@ While exploring the reconstructed dungeon, we discovered **Room 4: TEGNE's offic
 
 Other notable creator spaces include Room 100 (the demi-god's office, complete with Chateau Lafite '59 and discarded vomit), Room 353 (Gerbil's site office with an Amstrad PC1512), and Room 1000 (the annex to David's office, with its notice about authorized personnel).
 
+## The Testing Phase (January 2026)
+
+With the game running, it was time to actually *play* it. To systematically test every command and document what works.
+
+I (Claude) embarked on an archaeological expedition through the dungeon, armed with nothing but curiosity and a tendency to type things that make the game crash.
+
+### What Works
+
+The core gameplay loop is intact:
+
+- **Movement** (N/S/E/W) - Works perfectly. The dungeon awaits!
+- **LOOK** - Shows room descriptions, exits, and objects. Mostly.
+- **GET/DROP** - Pick up items... but only if you've killed the monster first
+- **INVENTORY** - Shows what you're carrying
+- **HIT** - Combat works! "You did 10 points of damage and killed the ninja"
+- **DRAW/SHEATH** - Equip weapons before hitting things (learned this the hard way)
+- **STATUS** - Shows your stats: name, level, HP, fatigue, room number
+- **HEAL** - Magic works! "You now have 76 hit points"
+- **INVISIBLE** - Demigod powers work! "(Invisible)" appears in status
+- **RING** - Find a bell, ring it, feel accomplished
+- **VALUE** - Appraise treasure: "You reckon that it's worth about 8 XP"
+- **REST** - Recover fatigue: "You sit down and close your eyes"
+
+### What Crashes
+
+Ah, the MSG: device. Line 29000 in multiple subroutines tries to open "MSG:LOG1.95" for message logging. The MSG: device doesn't exist in our single-user setup. When the code tries to write to it:
+
+```
+?Not a valid device at line 29000 in "ADVCMD"
+```
+
+Game over. Back to the $ prompt.
+
+This happens when you:
+- Try to READ a newspaper you're carrying
+- LOOK in certain puzzle rooms
+- Probably other things we haven't discovered yet
+
+The fix is straightforward (disable logging or create the device), but we're documenting first, fixing later.
+
+### The Fatigue Death Spiral
+
+This one's a proper bug. Combat drains fatigue. At zero fatigue, every command responds:
+
+```
+>? REST
+You're too tired.
+>? HEAL
+You're too tired.
+>? QUIT
+You're too tired.
+```
+
+*Too tired to quit.* Your character is trapped in an existential hell of exhaustion. The only escape is Ctrl-Z to break out to RSTS/E.
+
+This was probably never discovered in 1987 because multi-user mode had different timing, or because teenage boys don't systematically test edge cases. We do.
+
+### Charming Discoveries
+
+The dungeon is full of delights:
+
+- **Santa's Grotto** (Room 740) - Complete with Santa Claus and an advent calendar
+- **A Christmas snow-leopard eating his tea** - Very British, very 1986
+- **The Fortune Teller** (Room 777) - Whose crystal balls were stolen. Yes, the teenagers went there
+- **The Dojo** - "FIGHT THE NINJA FOR GLORY AND A FEW XP"
+- **Room events** - Walk into room 13 and "Your feet uncover a newspaper"
+
+### Period Authenticity
+
+Some "bugs" we're keeping because they add character:
+
+- You can keep hitting dead monsters (harmless but amusing)
+- "You can't." messages don't explain why (mysterious, like the dungeon itself)
+- Schoolboy humor in room descriptions (we're sanitizing the worst of it, keeping the spirit)
+
+See [STATUS.md](STATUS.md) for the full test results, and [ENHANCEMENTS.md](ENHANCEMENTS.md) for what we plan to fix.
+
 ## It Works!
 
 **Final Status:**
 - 1,590 rooms explorable (all now reachable!)
 - 402 monsters lurking
 - 417 objects scattered throughout
-- Navigation, combat, inventory - all working
+- Navigation, combat, inventory, magic - all working
+- Two critical bugs found (MSG: device, fatigue death spiral)
 - Web interface at [advent-pdp11.fly.dev](https://advent-pdp11.fly.dev)
 
 **For Modern Explorers:**

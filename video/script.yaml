@@ -1,0 +1,955 @@
+# ADVENT Demo Video Script
+# Timed sequence for video production
+
+metadata:
+  title: "ADVENT: An AI Explores a 1986 Dungeon"
+  duration: "~5 minutes"
+  resolution: "1280x720"
+  fps: 30
+
+music:
+  main_track: "dungeon_ambient.mp3"
+  volume: 0.25
+  fade_in: 3s
+  fade_out: 3s
+
+scenes:
+
+  # ============================================
+  # PRE-INTRO - Jasper's Quote
+  # ============================================
+  - id: jaspers_quote
+    duration: 6s
+    background: black
+    events:
+      - time: 0s
+        type: quote
+        text: |
+          "Wow! I have forgotten quite how dull
+           early text based adventure games are 🙂"
+
+                                    — Jasper, 2026
+        style: centered_italic
+        fade_in: 1s
+        fade_out: 1s
+
+      - time: 5s
+        type: fade_to_black
+        duration: 1s
+
+  # ============================================
+  # STAR WARS CRAWL
+  # ============================================
+  - id: star_wars_crawl
+    duration: 45s
+    background: starfield  # Animated star background
+    music:
+      track: "epic_synth_intro.mp3"  # 80s-style dramatic synth
+      volume: 0.5
+      fade_in: 2s
+
+    events:
+      - time: 0s
+        type: crawl_title
+        text: "ADVENT"
+        subtitle: "A Tale of Digital Archaeology"
+        style: star_wars_title
+        duration: 5s
+
+      - time: 5s
+        type: crawl_text
+        speed: 30  # pixels per second
+        text: |
+          In the beginning, there was nothing.
+
+          Well, that's not quite true. There was a folder
+          full of files dated July 4th, 1988, sitting on
+          a modern computer, doing precisely nothing.
+
+          The files had names like ADVENT.B2S and
+          ADVMSG.SUB, and to the untrained eye they
+          looked like gibberish.
+
+          But it was not gibberish at all. It was a
+          multi-user dungeon game from 1986-7, written
+          by teenagers at Manchester Grammar School.
+
+          Eight players could log in simultaneously,
+          explore a dungeon of nearly 2000 rooms,
+          fight monsters, cast spells, and presumably
+          argue about who stole whose treasure.
+
+          The source code came from a 9-track magnetic
+          tape, because of course it did. Back then you
+          needed a tape drive the size of a washing
+          machine and a prayer to whatever deity handles
+          magnetic media degradation.
+
+          38 years later, an AI was summoned to make
+          sense of it all...
+
+      - time: 43s
+        type: fade_to_black
+        duration: 2s
+
+  # ============================================
+  # INTRO - Title Card
+  # ============================================
+  - id: intro
+    duration: 8s
+    events:
+      - time: 0s
+        type: title_card
+        text: |
+          ADVENT
+          A Multi-User Dungeon from 1986-7
+          Manchester Grammar School
+
+      - time: 3s
+        type: subtitle
+        text: "Resurrected in 2025-6 • Explored by Claude (AI)"
+
+      - time: 5s
+        type: fade_to_terminal
+
+      - time: 6s
+        type: sound
+        file: "ambience/computer_boot.wav"
+        volume: 0.6
+
+  # ============================================
+  # SCENE 1: Opening - First Room
+  # ============================================
+  - id: opening
+    duration: 25s
+    events:
+      - time: 0s
+        type: terminal
+        action: show
+        content: |
+          No character loaded. Creating temporary character...
+          You are in dark desolate dismal room.
+
+          Exits :
+
+              North
+              East
+              South
+              West
+
+          You see:
+              NEWDEN's corpse
+          >?
+
+      - time: 1s
+        type: sound
+        file: "ambience/dripping_water.wav"
+        volume: 0.4
+        loop: true
+        fade_in: 2s
+
+      - time: 3s
+        type: thought_bubble
+        text: "Ah yes, dark desolate dismal. The adjective budget was clearly unlimited in 1986."
+        typing_speed: 25ms
+        duration: 4s
+        sound_on_appear: "ui/soft_chime.wav"
+
+      - time: 8s
+        type: thought_bubble
+        text: "A corpse already? I haven't even moved yet. This place has atmosphere."
+        typing_speed: 25ms
+        duration: 4s
+
+      - time: 8.5s
+        type: sound
+        file: "ambience/ominous_drone.wav"
+        volume: 0.3
+        duration: 3s
+
+      - time: 13s
+        type: terminal
+        action: type_command
+        text: "STATUS"
+        typing_speed: 80ms
+
+      - time: 14s
+        type: sound
+        file: "ui/keyboard_enter.wav"
+        volume: 0.5
+
+      - time: 14.5s
+        type: terminal
+        action: show_response
+        content: |
+          Name :  PLAYER
+          Level : 16
+          Xp :    0
+          HP :    20
+          Fatigue : 50
+          Room :  2
+
+      - time: 16s
+        type: thought_bubble
+        text: "Level 16? Nice. They've given me demigod powers from the start."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 20s
+        type: thought_bubble
+        text: "In 1987, you had to EARN this. I'm basically cheating."
+        typing_speed: 25ms
+        duration: 3s
+
+  # ============================================
+  # SCENE 2: First Movement
+  # ============================================
+  - id: first_movement
+    duration: 20s
+    events:
+      - time: 0s
+        type: terminal
+        action: type_command
+        text: "N"
+        typing_speed: 100ms
+
+      - time: 0.5s
+        type: sound
+        file: "movement/footsteps_stone.wav"
+        volume: 0.6
+
+      - time: 1s
+        type: terminal
+        action: show_response
+        content: |
+          You are in a large rough walled cave, lit by a large torch on the
+          east wall. To the west there is a small slot, into which things
+          could be dropped.
+
+          Exits :
+
+              North
+              East
+              South
+              West
+
+          You see:
+              A large ediblefood pig
+              A portrait of david
+              A Davidian Cavehog
+
+      - time: 2s
+        type: sound
+        file: "ambience/torch_crackle.wav"
+        volume: 0.4
+        loop: true
+
+      - time: 3s
+        type: thought_bubble
+        text: "An 'ediblefood pig'. As opposed to the other kind of pig, presumably."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 7s
+        type: thought_bubble
+        text: "Wait. A Davidian Cavehog? That sounds like a monster."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 7.5s
+        type: sound
+        file: "combat/monster_growl.wav"
+        volume: 0.5
+
+      - time: 11s
+        type: terminal
+        action: type_command
+        text: "GET PIG"
+        typing_speed: 80ms
+
+      - time: 12s
+        type: terminal
+        action: show_response
+        content: "You can't."
+
+      - time: 12.5s
+        type: sound
+        file: "ui/error_buzz.wav"
+        volume: 0.4
+
+      - time: 13s
+        type: thought_bubble
+        text: "You can't. That's it? Just... 'you can't'?"
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 17s
+        type: thought_bubble
+        text: "This is peak 1986 error messaging. They KNOW why. They just didn't tell ME."
+        typing_speed: 25ms
+        duration: 3s
+
+  # ============================================
+  # SCENE 3: First Combat
+  # ============================================
+  - id: first_combat
+    duration: 35s
+    music_override:
+      track: "tension_loop.mp3"
+      volume: 0.3
+      crossfade: 2s
+
+    events:
+      - time: 0s
+        type: terminal
+        action: type_command
+        text: "HIT CAVEHOG"
+        typing_speed: 80ms
+
+      - time: 1s
+        type: terminal
+        action: show_response
+        content: "First draw"
+
+      - time: 1.5s
+        type: sound
+        file: "ui/error_buzz.wav"
+        volume: 0.3
+
+      - time: 2s
+        type: thought_bubble
+        text: "First draw? Ah. I need to draw a weapon before hitting things."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 6s
+        type: thought_bubble
+        text: "Even AIs can't punch monsters bare-handed, it seems."
+        typing_speed: 25ms
+        duration: 2.5s
+
+      - time: 9s
+        type: terminal
+        action: type_command
+        text: "DRAW PIG"
+        typing_speed: 80ms
+
+      - time: 10s
+        type: terminal
+        action: show_response
+        content: "Ok."
+
+      - time: 10.5s
+        type: sound
+        file: "combat/sword_draw.wav"
+        volume: 0.6
+
+      - time: 11s
+        type: thought_bubble
+        text: "I'm... I'm wielding a pig as a weapon. This is fine."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 15s
+        type: terminal
+        action: type_command
+        text: "HIT CAVEHOG"
+        typing_speed: 80ms
+
+      - time: 16s
+        type: sound
+        file: "combat/sword_hit.wav"
+        volume: 0.7
+
+      - time: 16.5s
+        type: terminal
+        action: show_response
+        content: "You did 10 points of damage and killed the Davidian Cavehog"
+
+      - time: 17s
+        type: sound
+        file: "combat/monster_death.wav"
+        volume: 0.6
+
+      - time: 18s
+        type: sound
+        file: "ui/success_chime.wav"
+        volume: 0.4
+
+      - time: 19s
+        type: thought_bubble
+        text: "10 damage! One-hit kill with a pig. This pig ROCKS."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 23s
+        type: thought_bubble
+        text: "...I'm not apologizing for that pun."
+        typing_speed: 25ms
+        duration: 2s
+
+      - time: 26s
+        type: terminal
+        action: type_command
+        text: "GET PIG"
+        typing_speed: 80ms
+
+      - time: 27s
+        type: terminal
+        action: show_response
+        content: "Ok."
+
+      - time: 28s
+        type: thought_bubble
+        text: "NOW I can pick things up. Monster dead = items accessible."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 32s
+        type: thought_bubble
+        text: "Would have been nice if 'You can't' had mentioned that."
+        typing_speed: 25ms
+        duration: 3s
+
+  # ============================================
+  # SCENE 4: The Dojo
+  # ============================================
+  - id: dojo
+    duration: 30s
+    music_override:
+      track: "tension_loop.mp3"
+      volume: 0.35
+
+    events:
+      - time: 0s
+        type: terminal
+        action: type_command
+        text: "N"
+        typing_speed: 100ms
+
+      - time: 0.5s
+        type: sound
+        file: "movement/footsteps_stone.wav"
+        volume: 0.6
+
+      - time: 1s
+        type: terminal
+        action: show_response
+        content: |
+          You are in the dojo. Those who do not bow before standing on the
+          mat will be executed immediately. A sign reads: "FIGHT THE NINJA
+          FOR GLORY AND A FEW XP".
+
+          Exits :
+
+              North
+              East
+              South
+              West
+
+          You see:
+              A bo staff
+              A ninja
+
+      - time: 2s
+        type: sound
+        file: "ambience/tension_sting.wav"
+        volume: 0.5
+
+      - time: 3s
+        type: thought_bubble
+        text: "A ninja. In a cave. Sure, why not. I'm a language model - I've seen weirder."
+        typing_speed: 25ms
+        duration: 4s
+
+      - time: 8s
+        type: thought_bubble
+        text: "'FIGHT THE NINJA FOR GLORY AND A FEW XP'. Honest advertising."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 12s
+        type: terminal
+        action: type_command
+        text: "DRAW PIG"
+        typing_speed: 80ms
+
+      - time: 13s
+        type: sound
+        file: "combat/sword_draw.wav"
+        volume: 0.5
+
+      - time: 13.5s
+        type: terminal
+        action: show_response
+        content: "Ok."
+
+      - time: 14s
+        type: terminal
+        action: type_command
+        text: "HIT NINJA"
+        typing_speed: 80ms
+
+      - time: 15s
+        type: sound
+        file: "combat/sword_hit.wav"
+        volume: 0.7
+
+      - time: 15.5s
+        type: terminal
+        action: show_response
+        content: "You did 10 points of damage and killed the ninja"
+
+      - time: 16s
+        type: sound
+        file: "combat/monster_death.wav"
+        volume: 0.6
+
+      - time: 17s
+        type: thought_bubble
+        text: "I just killed a ninja with an edible pig. Peak gaming experience."
+        typing_speed: 25ms
+        duration: 4s
+
+  # ============================================
+  # SCENE 5: Santa's Grotto Discovery
+  # ============================================
+  - id: santas_grotto
+    duration: 35s
+    music_override:
+      track: "music_box.mp3"
+      volume: 0.3
+      crossfade: 2s
+
+    events:
+      - time: 0s
+        type: terminal
+        action: type_command
+        text: "ROOM 740"
+        typing_speed: 80ms
+
+      - time: 1s
+        type: sound
+        file: "magic/teleport_whoosh.wav"
+        volume: 0.6
+
+      - time: 2s
+        type: terminal
+        action: show_response
+        content: |
+          You are inside Santa's Grotto. There are presents lying around on
+          shelves all around the room. To the north is Santa's little room
+          and above the entrance are pictures of all his reindeer.
+
+          Exits :
+
+              North
+              East
+              South
+              West
+
+          You see:
+              A friendly dwarf's corpse
+              MANWE's corpse
+
+      - time: 3s
+        type: sound
+        file: "misc/sleigh_bells.wav"
+        volume: 0.5
+
+      - time: 4s
+        type: thought_bubble
+        text: "Wait. There's a Santa's Grotto in this dungeon?"
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 8s
+        type: thought_bubble
+        text: "The teenagers who made this really committed to the bit."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 12s
+        type: terminal
+        action: type_command
+        text: "N"
+        typing_speed: 100ms
+
+      - time: 12.5s
+        type: sound
+        file: "movement/footsteps_wood.wav"
+        volume: 0.5
+
+      - time: 13s
+        type: terminal
+        action: show_response
+        content: |
+          You are inside Santa's little room. In the middle of the room there
+          is a large seat where he can sit and give out presents. Apart from
+          numerous sacks in the room there is only an advent calendar.
+
+          Exits :
+
+              North
+              East
+              South
+              West
+
+          You see:
+              Santa Claus
+
+      - time: 14s
+        type: sound
+        file: "misc/ho_ho_ho.wav"
+        volume: 0.4
+
+      - time: 15s
+        type: thought_bubble
+        text: "An advent calendar. In a game called ADVENT. I see what they did there."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 19s
+        type: thought_bubble
+        text: "Santa Claus is here. And he's technically a monster I could fight."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 23s
+        type: thought_bubble
+        text: "I'm going to pretend I don't see the 'HIT SANTA' option in my mind palace."
+        typing_speed: 25ms
+        duration: 4s
+
+  # ============================================
+  # SCENE 6: The Fatigue Bug
+  # ============================================
+  - id: fatigue_bug
+    duration: 40s
+    music_override:
+      track: "dungeon_ambient.mp3"
+      volume: 0.2
+
+    events:
+      - time: 0s
+        type: terminal
+        action: show
+        content: |
+          >? HIT CAVEHOG
+          You did 13 points of damage
+          >? HIT CAVEHOG
+          You did 8 points of damage
+          >? HIT CAVEHOG
+          You did 11 points of damage and killed the Davidian Cavehog
+
+      - time: 1s
+        type: terminal
+        action: type_command
+        text: "LOOK"
+        typing_speed: 80ms
+
+      - time: 2s
+        type: terminal
+        action: show_response
+        content: "You're too tired."
+
+      - time: 2.5s
+        type: sound
+        file: "ui/error_buzz.wav"
+        volume: 0.4
+
+      - time: 3s
+        type: thought_bubble
+        text: "Too tired? Understandable. Combat is exhausting."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 7s
+        type: terminal
+        action: type_command
+        text: "REST"
+        typing_speed: 80ms
+
+      - time: 8s
+        type: terminal
+        action: show_response
+        content: "You're too tired."
+
+      - time: 8.5s
+        type: sound
+        file: "ui/error_buzz.wav"
+        volume: 0.4
+
+      - time: 9s
+        type: thought_bubble
+        text: "Too tired to REST? That's... concerning."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 13s
+        type: terminal
+        action: type_command
+        text: "HEAL"
+        typing_speed: 80ms
+
+      - time: 14s
+        type: terminal
+        action: show_response
+        content: "You're too tired."
+
+      - time: 15s
+        type: thought_bubble
+        text: "Too tired for MAGIC?!"
+        typing_speed: 25ms
+        duration: 2s
+
+      - time: 18s
+        type: terminal
+        action: type_command
+        text: "QUIT"
+        typing_speed: 80ms
+
+      - time: 19s
+        type: terminal
+        action: show_response
+        content: "You're too tired."
+
+      - time: 19.5s
+        type: sound
+        file: "misc/record_scratch.wav"
+        volume: 0.7
+
+      - time: 20s
+        type: music
+        action: stop
+        fade_out: 1s
+
+      - time: 21s
+        type: thought_bubble
+        text: "TOO TIRED TO QUIT?!"
+        typing_speed: 15ms
+        duration: 2s
+        style: panic
+
+      - time: 24s
+        type: thought_bubble
+        text: "This is a bug. This has to be a bug."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 28s
+        type: thought_bubble
+        text: "I'm trapped in an existential hell of exhaustion."
+        typing_speed: 25ms
+        duration: 3s
+
+      - time: 32s
+        type: thought_bubble
+        text: "The only escape is Ctrl-Z to break out to the operating system."
+        typing_speed: 25ms
+        duration: 4s
+
+      - time: 37s
+        type: thought_bubble
+        text: "1986 bugs: the gift that keeps on giving."
+        typing_speed: 25ms
+        duration: 3s
+
+  # ============================================
+  # SCENE 7: Developer Blindness Reflection
+  # ============================================
+  - id: reflection
+    duration: 30s
+    music:
+      track: "dungeon_ambient.mp3"
+      volume: 0.2
+      fade_in: 2s
+
+    events:
+      - time: 0s
+        type: thought_bubble_fullscreen
+        style: reflection
+        paragraphs:
+          - delay: 0s
+            text: "Here's the thing about 'you can't' messages:"
+
+          - delay: 3s
+            text: "The developers knew EXACTLY why each one failed."
+
+          - delay: 6s
+            text: "Monster in room? Of course you can't get stuff!"
+
+          - delay: 9s
+            text: "Wrong item type? Obviously it won't work!"
+
+          - delay: 12s
+            text: "But they never wrote that down. They just wrote 'you can't.'"
+
+          - delay: 16s
+            text: "38 years later, an AI is trying to figure out what they meant."
+
+          - delay: 20s
+            text: "Add context to your error messages, future developers."
+
+          - delay: 24s
+            text: "Your future AI debugging assistant will thank you."
+
+  # ============================================
+  # OUTRO - Credits (Scrolling)
+  # ============================================
+  - id: outro
+    duration: 50s
+    background: black
+    music:
+      track: "credits.mp3"  # Something 80s synth, contemplative
+      volume: 0.4
+      fade_in: 2s
+      fade_out: 3s
+
+    events:
+      - time: 0s
+        type: fade_from_terminal
+        duration: 2s
+
+      - time: 2s
+        type: credits_scroll
+        speed: 25  # pixels per second
+        style: retro_green  # Green text on black, VT100-style
+        content: |
+          ═══════════════════════════════════════
+
+                         ADVENT
+               A Multi-User Dungeon from 1986-7
+
+          ═══════════════════════════════════════
+
+
+                    ORIGINAL AUTHORS
+                       (1986-7)
+
+                     Edward Hibbert
+                         Code
+
+                  David 'Gerbil' Quest
+                  Design & Documentation
+
+
+                   PRESERVATIONISTS
+
+                      Nick Hoath
+            Rescued data files on switch-off day
+              using an 80286 PC and serial cable
+                Wrote the Perl version (Valerion)
+
+                   Delwyn Holroyd
+             The National Museum of Computing
+           Read the 9-track tape in January 2025
+
+                    Peter Clark(e?)
+                 Source of some code files
+
+
+                   THOSE WHO REMEMBERED
+
+                     Gary Birch
+                    Hamish Allan
+             Kept the memory alive across decades
+
+
+                  RESURRECTION TEAM
+                      (2025-6)
+
+                    Edward Hibbert
+               Context, corrections, and
+             "I can't believe I wrote that"
+
+                        Claude
+                    AI (Anthropic)
+          Digital archaeology, Docker containers,
+              and crashing RSTS/E repeatedly
+
+
+          ═══════════════════════════════════════
+
+              "Wow! I have forgotten quite how
+               dull early text based adventure
+                       games are 🙂"
+                                    — Jasper, 2026
+
+          ═══════════════════════════════════════
+
+
+                      THE MACHINES
+
+                   Beta (PDP-11)
+            The school computer running RSTS/E
+
+                  ICL 2966 at TNMOC
+            Read the tape after 38 years
+
+
+          ═══════════════════════════════════════
+
+
+                    SOURCE CODE
+
+              github.com/edwardhib/advent-pdp11
+
+
+          ═══════════════════════════════════════
+
+             Video produced by Claude (AI)
+             With sound effects from Freesound.org
+
+          ═══════════════════════════════════════
+
+                  Made with 💾 in 2026
+
+                 (and a lot of patience)
+
+      - time: 47s
+        type: fade_out
+        duration: 3s
+
+# ============================================
+# Sound Effect Requirements
+# ============================================
+sound_requirements:
+  ambience:
+    - dripping_water.wav     # Cave atmosphere
+    - torch_crackle.wav      # Fire ambience
+    - ominous_drone.wav      # Creepy moments
+    - tension_sting.wav      # Dramatic reveals
+
+  combat:
+    - sword_draw.wav         # Drawing weapon
+    - sword_hit.wav          # Attack lands
+    - monster_growl.wav      # Monster presence
+    - monster_death.wav      # Monster dies
+
+  magic:
+    - teleport_whoosh.wav    # ROOM command
+    - heal_sparkle.wav       # HEAL spell
+    - invisible_shimmer.wav  # INVISIBLE spell
+
+  movement:
+    - footsteps_stone.wav    # Cave walking
+    - footsteps_wood.wav     # Wooden floor
+
+  ui:
+    - soft_chime.wav         # Thought bubble appears
+    - keyboard_enter.wav     # Command entered
+    - error_buzz.wav         # Error message
+    - success_chime.wav      # Victory/success
+
+  misc:
+    - sleigh_bells.wav       # Santa's Grotto
+    - ho_ho_ho.wav           # Santa presence (optional)
+    - record_scratch.wav     # Game crash/bug reveal
+    - computer_boot.wav      # Intro
+
+music_requirements:
+  - dungeon_ambient.mp3      # Main exploration (Kevin MacLeod - "Crypto" or similar)
+  - tension_loop.mp3         # Combat scenes
+  - music_box.mp3            # Santa's Grotto (eerie music box)
+  - credits.mp3              # End credits

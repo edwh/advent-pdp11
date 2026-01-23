@@ -214,10 +214,8 @@
 	JJ%=FNLOG2%('Is carrying an illegal object') &
 \	RESUME 1040 &
 
-29000	OPEN "MSG:LOG1.95" AS FILE #4%, MODE 2% &
-\	PRINT #4%, "ADVTDY : ";RIGHT(SYS(CHR$(6%)+CHR$(9%)+CHR$(ERR)),3%); &
-	" at line";ERL;" at ";TIME$(0%) &
-\	CLOSE #4% &
+! === 2026 Resurrection: Disable MSG: logging for single-user mode ===
+29000	PRINT "ADVTDY ERROR: ";ERR;" at line";ERL &
 \	RESUME 32767 &
 
 32767	SUBEND &
