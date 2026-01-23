@@ -411,3 +411,42 @@ D:      .FCTR SY:ADVTDY
 **Status:** Keyboard input now works reliably. Ready for fly.io deployment.
 
 **Next:** Deploy updated container to fly.io
+
+### January 20, 2026 - Backspace, Terminal Scaling, Disk Image Split
+
+**Tasks:**
+1. ✅ Fix backspace not working (was echoing `\` instead of deleting)
+2. ✅ Fix terminal scaling (terminal not filling window)
+3. ✅ Split large disk image for git push (954MB -> 20 x 50MB parts)
+4. ✅ Remove large file from git history (filter-branch)
+
+**Root Causes Found:**
+
+1. **Backspace issue:** RSTS/E was in rubout-echo mode, where pressing DEL echoes back the deleted character. For video terminals like VT100, you need "scope" mode.
+   - Fix: Added `SET TERMINAL /SCOPE` command after login in start_game_session.sh
+
+2. **Terminal scaling:** JavaScript transform scaling was using wrong character dimensions
+   - Fix: Configure ttyd with fontSize=20 to make terminal text larger
+
+3. **Large disk image blocking git push:** 954MB file exceeds GitHub's 100MB limit
+   - Fix: Split into 20 x 50MB parts, assemble during Docker build
+   - Also: Used git filter-branch to remove large file from history
+
+**Files Modified:**
+- `docker/start_game_session.sh` - Add SET TERMINAL /SCOPE
+- `docker/entrypoint.sh` - Add ttyd fontSize=20 option
+- `docker/web/terminal.js` - Simplify scaling function
+- `docker/screenrc` - Screen configuration (new file)
+- `Dockerfile` - Assemble disk parts during build
+- `.gitignore` - Exclude assembled disk image
+- `simh/Disks/ra72/` - Split disk parts and assembly script
+
+**Commits:**
+- `81f9a1b` - Fix backspace, terminal scaling, and split large disk image
+
+**Testing:**
+- ✅ Backspace works (verified by sending DEL characters to screen session)
+- ✅ Disk assembly works (verified 954MB file size in container)
+- ✅ Git push succeeded after history rewrite
+
+**Status:** All fixes complete and pushed to GitHub
