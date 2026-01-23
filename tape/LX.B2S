@@ -1,0 +1,153 @@
+1	SUB LX(ARG$) &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+5000	S.D$=CVT$$(ARG$,36%) &
+\	GOTO 5015 IF LEN(S.D$) &
+\	PRINT #1%, FNC$;CRLF$;'List subject index.';CRLF$ &
+
+5010	PRINT #1%, FNC$;CRLF$; &
+	'Range to list (FIRST,LAST) <ALL> >> '; &
+\	INPUT LINE #1%, S.D$ &
+\	S.D$=CVT$$(S.D$,36%) &
+\	S.D$=CHR$(0%)+','+CHR$(255%) UNLESS LEN(S.D$) &
+
+5015	FIRST$=S.D$ &
+\	LAST$=S.D$ &
+\	J%=INSTR(1%,S.D$,',') &
+\	GOTO 5020 UNLESS J% &
+\	FIRST$=LEFT(S.D$,J%-1%) &
+\	LAST$=RIGHT(S.D$,J%+1%) &
+
+5020	IF LAST$<FIRST$ THEN &
+	PRINT #1%, FNC$;CRLF$;'?Last must be alphabetically after first.' &
+\	GOTO 30000 &
+
+5021	J$='M.G.S. Paton Library : Subject Index' &
+\	J$=J$+', from '+FIRST$+' to '+LAST$ IF FIRST$<>LAST$ AND &
+	FIRST$<>CHR$(0%) &
+\	J$=J$+', '+FIRST$ IF FIRST$=LAST$ &
+\	HEADER$=J$ &
+\	GOTO 5250 IF SWITCH% AND 2% &
+
+5023	GET #6%, KEY #0% GE FIRST$ &
+\	GOTO 5210 IF LEFT(SC.SUBJECT$,LEN(LAST$))>LAST$ &
+
+5024	PRINT #1%, CHR$(24%); &
+\	PRINT #1%, STRING$(80%,ASCII('-')); &
+\	PRINT #1%, SPACE$(21%); &
+\	PRINT #1%, 'M.G.S. Paton Library : Subject Index.' &
+\	PRINT #1%, STRING$(80%,ASCII('-')) &
+
+5030	FOR COLUMN%=1% TO 2% &
+\	FOR LIN%=1% TO 15% &
+\	J$='????      ' &
+\	J$=SC.DEWEY$ IF FNVET.DEWEY%(SC.DEWEY$)&
+
+5035	PRINT #1%, CHR$(30%)+CHR$(32%+(COLUMN%-1%)*40%-3%*(COLUMN%=2%))+CHR$(66%+LIN%)+ &
+	SC.SUBJECT$+' '+J$+' '+NUM1$(SC.NO%) &
+
+5036	GET #6% &
+
+5040	GOTO 5100 IF LEFT(SC.SUBJECT$,LEN(LAST$))>LAST$ &
+\	NEXT LIN% &
+\	NEXT COLUMN% &
+\	GOTO 5500 IF FNCONT% &
+\	GOTO 5024 &
+
+5100	PRINT #1%, CHR$(30%)+CHR$(33%)+CHR$(66%+17%); &
+\	GOTO 30000 &
+
+5210	PRINT #1%, FNC$;CRLF$;'%No keywords in range given.' &
+\	GOTO 30000 &
+
+5250	OPEN '_SY:LIBR.TMP' FOR OUTPUT AS FILE #14% &
+\	KILL '_SY:LIBR.TMP' &
+\	DIM #14%, ST1$(3%,50%)=64% &
+\	ST1$(I%,J%)='' FOR I%=1% TO 3% FOR J%=1% TO 50% &
+	! Have to use a virtual array for memory reasons. &
+
+5260	GET #6%, KEY #0% GE FIRST$ &
+\	GOTO 5210 IF LEFT(SC.SUBJECT$,LEN(LAST$))>LAST$ &
+
+5270	FOR COLUMN%=1% TO 3% &
+\	FOR LIN%=1% TO 50% &
+\	J$='????      ' &
+\	J$=SC.DEWEY$ IF FNVET.DEWEY%(SC.DEWEY$) &
+
+5280	ST1$(COLUMN%,LIN%)=SC.SUBJECT$+' '+J$+' '+NUM1$(SC.NO%) &
+\	ST1$(COLUMN%,LIN%)=CVT$$(ST1$(COLUMN%,LIN%),4%)+ &
+	SPACE$(40%-LEN(CVT$$(ST1$(COLUMN%,LIN%),4%))) &
+
+5290	GET #6% &
+
+5300	GOTO 5400 IF LEFT(SC.SUBJECT$,LEN(LAST$))>LAST$ &
+\	NEXT LIN% &
+\	NEXT COLUMN% &
+\	GOSUB 6500 &
+\	ST1$(I%,J%)='' FOR I%=1% TO 3% FOR J%=1% TO 50% &
+\	GOTO 5270 &
+
+5400	GOSUB 6500 &
+\	GOTO 30000 &
+
+5500	J$=SYS(CHR$(2%))+SYS(CHR$(0%)) &
+\	PRINT #1%, CHR$(30%)+CHR$(33%)+CHR$(66%+17%); &
+\	PRINT #1%, FNC$;CRLF$;'%Listing aborted.' &
+\	GOTO 30000 &
+
+6500	! N.B. Print Header Here + Page Number &
+	J%=FNP%(CHR$(12%)) &
+\	J%=FNP%(STRING$(132%,ASCII('-'))) &
+\	PAGES.LISTED%=PAGES.LISTED%+1% &
+\	J$='' &
+\	J$='Page '+NUM1$(PAGES.LISTED%) IF PAGES.LISTED%>1% &
+\	J1$=SPACE$(66%-LEN(CVT$$(HEADER$,132%))/2%)+CVT$$(HEADER$,132%) &
+\	J1$=J1$+SPACE$(131%-LEN(J$)-LEN(J1$))+J$ &
+\	J%=FNP%(J1$) &
+\	J%=FNP%(STRING$(132%,ASCII('-'))) &
+\	J$='Keyword'+SPACE$(14%)+'Dewey'+SPACE$(6%)+'Count   ' &
+\	J%=FNP%(J$+J$+J$) &
+\	J%=FNP%(STRING$(132%,ASCII('-'))) &
+
+6510	JJ%=FNP%(LEFT(ST1$(1%,J%),40%)+LEFT(ST1$(2%,J%),40%) &
+	+LEFT(ST1$(3%,J%),40%)) &
+	FOR J%=1% TO 50% &
+\	RETURN &
+
+15010
+15020
+15030
+
+20000	DEF* FNP%(A$) &
+\	PRINT #2%, A$ &
+\	FNEXIT &
+
+20010	PRINT #1%, 'Line printer hung, put online to continue...';CHR$(13%); &
+\	SLEEP 3% &
+\	PRINT #1%, SPACE$(70%);CHR$(13%); &
+\	PRINT #2%, RECORD 4%, CHR$(0%) &
+\	FNEXIT &
+
+20080	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	JJJ%=CTRLC &
+\	RESUME 32767 IF (ERL=5010 AND ERR=11) OR (ERR=28 AND LINE=5010) &
+\	RESUME 5500 IF ERR=28 &
+\	RESUME 5210 IF (ERL=5023 OR ERL=5260) AND ERR=155 &
+\	RESUME 5100 IF ERL=5036 AND ERR=11 &
+\	RESUME 5035 IF ERL=5030 &
+\	RESUME 5400 IF ERL=5290 AND ERR=11 &
+
+26000	RESUME 20010 IF ERR=14 &
+
+29000	PRINT #1%, FNC$;CRLF$;'LX : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	SUBEND &
+

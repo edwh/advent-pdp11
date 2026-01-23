@@ -1,0 +1,20 @@
+10	COMMON (LIBR)	SWITCH%,		! Switches &
+						! Bit	Meaning &
+						&
+						! 0	Short listing &
+						! 1	LP output &
+						! 2	Special LIST output &
+						&
+			COM%,			! Command &
+			PKG.LOC$=9%,		! Package location &
+			CRLF$=2%,		! Carriage return line feed &
+			PRIV%,			! Flag for LIBR-privved user. &
+			BOOKS.THIS.PAGE%,	! How many books we've done &
+						! on this page. &
+			PAGES.LISTED%,		! How many pages we've done &
+			HEADER$=132%,		! Header for LP printouts. &
+			BOOKS.LISTED%,		! No. of books listed this &
+						! time. &
+			ARG%			! Any arguments specified on &
+						! command line. &
+

@@ -1,0 +1,130 @@
+.CH MASTER
+.P
+.HL 1 Function
+.P
+.X Bookings Operators
+Master is the program used by the Bookings Operators - ie those people 
+who are in charge of the bookings, and whose duty it is to throw off 
+people who are not booked, analyse the bookings and so on.
+.P
+.X Notice text (Master)
+Master will display the contents of the file _DP1:[1,95]MASTER.NTC as 
+a notice text.  If this file does not exist, no text will be printed.
+.P
+.X .MAS files
+Master is too big a program to run normally, so it is overlaid.  The 
+overlays are not built into the executable code, as they are if the 
+program is built using TKB, but are in seperate files.  The files have 
+the extension .MAS, and are generated on compilation (if the example 
+batch .CTL file was not used for compilation, rename the .RUN files).  If the 
+relevant .MAS file does not exist, MASTER will encounter a run-time 
+error, and a dump file will be produced.
+.P
+.X Command line (Master)
+.HL 2 Command line
+.P
+All command arguments in MASTER can be specified on the same line as the 
+command, for extra convenience.  Thus, for example, to trace all 
+bookings for [1,95], either TRACE [1,95] or TRACE then [1,95] could 
+be typed.
+.P
+Master has a variety of commands, concerned with displaying, analysing and 
+verifying bookings.  Here is a short summary of the commands - more 
+detailed information will be given in the section on Operation.
+.P
+.LS
+.X Trace (Master)
+.LE;Trace - this command allows a trace of bookings for a specified account.
+The format is the same as the trace routine in BOOKER, as the routine is 
+exported from BookLibrary.
+.X Delete (Master)
+.LE;Delete - this command allows the deletion of bookings, but in a 
+different way to that used in BOOKER.  The day, period and keyboard are
+requested from the user and the booking is deleted.
+.S
+The reason for this different format is that Bookings Operators will in
+general want to delete only one booking.
+.X Check (Master)
+.LE;Check - this command prints all the bookings for today for a supplied
+terminal.
+.X Verify (Master)
+.LE;Verify - this command allows handling of illegal jobs, ie jobs who
+have not booked for the terminal they are running on.  A brief status on
+the job is displayed and the user may do one of three things :
+.S
+.LS
+.LE;Kill the job
+.LE;Send the job a message
+.LE;Leave the job alone (default)
+.ELS
+.X List (Master)
+.LE;List - this allows the listing of all the bookings for a supplied day.
+.LE;Send - this command allows the user to send a message to any terminal
+which is bookable.  The arguments supplied are the keyboard number and
+the message.  If instead of a number, 'ALL' is typed, MASTER will send the 
+message to all bookable terminals.  This is useful for announcing things
+like 'All illegal jobs will be killed in 5 minutes.'
+.LE;Analyse - this is a fairly complex routine, which allows the Bookings
+Operators to see how much the bookings are being used, whether users in
+high-level accounts are monopolising the bookings sheets and so on.  A
+short and a full analysis are available, the full analysis showing the
+bookings for individual accounts, and the short for the various projects.
+Analyse works on bookings from a Monday to a Friday, and any date specified
+will be checked to see whether it is a Monday.  If not, the previous Monday
+will be selected.
+.P
+.HL 1 Operation
+.P
+This section describes the information which MASTER requires for its various
+commands.
+.P
+As mentioned above, all the arguments for commands can be specified in the
+command line.  The discussion of the user's responses will concentrate on
+the questions MASTER asks if the arguments are not specified in the
+command line.  Note that the arguments (if specified in the command line)
+must be in the same order as the questions detailed in the discussion.
+.P
+.X Trace (Master)
+.HL 2 Trace
+This command will display the bookings for a specified account.  The prompt
+is 'Account >> ', and a valid account (of the form [nnn,nnn] or a logical)
+must be specified.
+.P
+The bookings will then be displayed.
+.P
+.X Delete (Master)
+.HL 2 Delete
+.P
+This command allows bookings for a given day, period and keyboard to be
+deleted.
+.P
+The first question asks which day the booking is on.  The day specified
+must be a valid weekday.
+.P
+The next question asks which period the booking is on.  The period 
+given must be between 1 and NoOfPeriods as definied in BookLibrary.
+.P
+The final question asks for the terminal.  The terminal given must be in
+the list of bookable terminals as given in BookLibrary.
+.P
+If the booking slot is empty, MASTER will print 'This space is free' and
+exit from the delete routine.
+.P
+If the space is used, MASTER then asks for confirmation :
+.S
+.I 5
+Really delete booking for [nnn,nnn] <NO> ?
+.S
+If the user replies in the affirmative, the booking will be deleted.
+This question asks as a safeguard in case the user types in the wrong
+keyboard number, so that the wrong booking does not get deleted.
+.P
+.X Check (Master)
+.HL 2 Check
+.P
+This command lists all the bookings on a given terminal for the current day.
+.P
+The only input required from the user is the keyboard number, which must
+be in the list of bookable keyboards.  A blank booking is shown by a dash
+instead of the PPN (project-programmer number).
+.P

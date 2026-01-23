@@ -1,0 +1,519 @@
+1	SUB ARRIVE(ARG$) &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+2	OPEN 'DP2:'+PKG.LOC$+'BOOKS.ENT' AS FILE #7%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY ACCESSION$ &
+
+5000	S.D$=FNGETARG$ &
+\	GOTO 5015 IF LEN(S.D$) &
+\	PRINT #1%, FNC$;CRLF$;'Arrive a book.';CRLF$ &
+
+5010	PRINT #1%, FNC$;CRLF$;'Accession number of the book >> '; &
+\	INPUT LINE #1%, S.D$ &
+\	S.D$=CVT$$(S.D$,255%) &
+\	SUBEXIT UNLESS LEN(S.D$) &
+
+5015	J$,ACC1$=CVT%$(VAL(S.D$)-32768.) &
+\	GOTO 5030 &
+
+5020	PRINT #1%, FNC$;CRLF$;'?Illegal accession number.' &
+\	GOTO 30000 &
+
+5030	GET #3%, KEY #0% EQ J$ &
+\	GOTO 5050 &
+
+5040	PRINT #1%, FNC$;CRLF$;'?No book with that accession number.' &
+\	GOTO 30000 &
+
+5050	PRINT #1%, FNC$;CRLF$;'Accession number';TAB(25%);' >> '; &
+	FNPRETTY.ACCESSION$(CVT$%(ACCESSION$)+32768.);CRLF$;'Title';TAB(25%); &
+	' >> ';TITLE$;CRLF$; &
+	'Author(s)';TAB(25%);' >> '; &
+
+5060	GET #4%, KEY #0% EQ ACCESSION$ &
+\	AUT$=CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	FIRST.AUTHOR$=AUT$ &
+\	UNTIL 0% &
+
+5070	GET #4% &
+\	GOTO 5080 UNLESS A.ACCESSION$=ACCESSION$ &
+\	AUT$=AUT$+' & '+CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	NEXT &
+
+5080	PRINT #1%, AUT$ &
+\	IF (FLAG% AND 512%)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'This book is not on order.' &
+\	GOTO 30000 &
+
+5090	GOSUB 8000 &
+\	J$=FNIMP$('Accession number',5%,NUM1$(DEFAULT.ACCESSION.)) &
+\	ON ERROR GOTO 5100 &
+\	J.=VAL(J$) &
+\	GOTO 5110 &
+
+5100	GOTO 25000 UNLESS ERR=52 &
+\	PRINT #1%, FNC$;CRLF$;'?Illegal accession number.' &
+\	RESUME 5080 &
+
+5110	ON ERROR GOTO 5120 &
+\	CHANGED.ACC%=-1% &
+\	GOTO 5130 IF CVT%$(J.-32768.)=ACCESSION$ &
+\	FIND #3%, KEY #0% EQ CVT%$(J.-32768.) &
+\	GOTO 5115 &
+
+5111	FIND #7%, KEY #0% EQ CVT%$(J.-32768.) &
+\	GOTO 5115 &
+
+5115	PRINT #1%, FNC$;CRLF$;'?That accession number is in use.' &
+\	GOTO 5090 &
+
+5120	RESUME 5111 IF ERL=5110 AND ERR=155 &
+\	GOTO 25000 UNLESS ERR=155 &
+\	RESUME 5130 &
+
+5130	GET #3%, KEY #0% EQ ACC1$ &
+\	ON ERROR GOTO 25000 &
+\	J1$=FNPRETTY.ACCESSION$(J.) &
+\	PRINT #1%, FNC$;CRLF$;'The check digit for this book is '; &
+	RIGHT(J1$,INSTR(1%,J1$,'-')+1%) &
+\	NEW.ACCESSION$=CVT%$(J.-32768.) &
+\	CHANGED.AUTHOR%=0% &
+\	PRINT #1%, FNC$;CRLF$;'Do you wish to change the list of '; &
+	'authors for this book <NO> ? '; &
+\	INPUT LINE #1%, J$ &
+\	GOTO 5090 IF ASCII(J$)=27% &
+\	J$=CVT$$(J$,255%) &
+\	J$='NO' UNLESS LEN(J$) &
+\	GOTO 5150 UNLESS LEFT('YES',LEN(J$))=J$ &
+\	CHANGED.AUTHOR%=-1% &
+\	PRINT #1%, FNC$;CHR$(26%);'Please enter all the authors for this '; &
+	'book. Hit RETURN alone when    ';CRLF$;'list is complete.' &
+\	AUT$='' &
+\	UNTIL 0% &
+\	J$=FNIMP$('Next author',25%,'No more authors') &
+\	IF ESCAPE% THEN &
+	GOTO 5090 IF AUT$='' &
+\	J%=INSTR(1%,AUT$,'/') &
+\	UNTIL J%=0% &
+\	JJ%=J% &
+\	J%=INSTR(J%+1%,AUT$,'/') &
+\	NEXT &
+\	PRINT #1%, FNC$;CRLF$;'%Author ';RIGHT(AUT$,JJ%+1%);' discarded.' &
+\	AUT$=LEFT(AUT$,JJ%-1%) &
+\	GOTO 5135 &
+
+5131	GOTO 5140 IF J$='No more authors' &
+\	AUT$=AUT$+'/'+CVT$$(J$,36%) &
+
+5135	NEXT &
+
+5140	AUT$=RIGHT(AUT$,2%) &
+\	J.EH%=INSTR(1%,AUT$,'/') &
+\	J.EH%=LEN(AUT$)+1% UNLESS J.EH% &
+\	FIRST.AUTHOR$=LEFT(AUT$,J.EH%-1%) &
+
+5150	TITLE$=CVT$$(FNIMP$('Title',47%,TITLE$),36%) &
+\	JUNK$=FIRST.AUTHOR$ &
+\	GOTO 5130 IF ESCAPE% &
+\	IF CVT$$(TITLE$,255%)='' THEN &
+	PRINT #1%, FNC$;CRLF$;'?Must specify a title.' &
+\	GOTO 5150 &
+
+5160	N.D$=FNIMP$('Dewey Number',10%,'N/A') &
+\	N.D$=CVT$$(N.D$,255%) &
+\	GOTO 5150 IF ESCAPE% &
+\	N.D$=STRING$(3%-LEN(N.D$),ASCII('0'))+N.D$ IF LEN(N.D$)<3% &
+	UNLESS N.D$='F' &
+\	N.D$='000' IF N.D$='N/A' &
+\	IF FNVET.DEWEY%(N.D$)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal Dewey Number, please re-enter.' &
+\	GOTO 5160 &
+
+5170	DEWEY$=N.D$ &
+\	PUBLISHER$=CVT$$(FNIMP$('Publisher',26%,PUBLISHER$),36%) &
+\	GOTO 5160 IF ESCAPE% &
+
+5180	N.I$=FNIMP$('I.S.B.N. (If available)',10%,ISBN$) &
+\	N.I$=CVT$$(N.I$,255%) &
+\	GOTO 5170 IF ESCAPE% &
+\	IF FNVET.ISBN%(N.I$)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal I.S.B.N. Number, please re-enter.' &
+\	GOTO 5180 &
+
+5190	ISBN$=N.I$ &
+
+5200	J$=NUM1$(PAGES%+32767.) &
+\	PAGES%=0% &
+\	J$='N/A' UNLESS PAGES% &
+\	N.P$=FNIMP$('Number of pages (0-65535)',5%,J$) &
+\	GOTO 5180 IF ESCAPE% &
+\	N.P$='0' IF N.P$='N/A' &
+\	J.=VAL(N.P$) &
+\	IF J.<0. OR J.>65535. THEN &
+	PRINT #1%, FNC$;CRLF$;'?Number of pages must be between 0 and '; &
+	'65535.' &
+\	GOTO 5200 &
+
+5210	PAGES%=J.-32767. &
+
+5215	N.P$=FNIMP$('Number of illustrations (0-255)',3%,'N/A') &
+\	GOTO 5200 IF ESCAPE% &
+\	N.P$='0' IF N.P$='N/A' &
+\	J%=VAL(N.P$) &
+\	IF J%<0% OR J%>255% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Number of illustrations must be between '; &
+	'0 and 255.' &
+\	GOTO 5215 &
+
+5220	ILLUS%=J% &
+\	N.P$=FNIMP$('This edition printed',4%,'N/A') &
+\	GOTO 5215 IF ESCAPE% &
+\	N.P$='0' IF N.P$='N/A' &
+\	J%=VAL(N.P$) &
+\	J%=VAL('A') IF J%<1000% OR J%>3000% IF J% &
+
+5230	THIS.PRINT%=J% &
+
+5240	J$=NUM1$(THIS.PRINT%) &
+\	J$='N/A' UNLESS THIS.PRINT% &
+\	N.P$=FNIMP$('This edition published',4%,J$) &
+\	GOTO 5220 IF ESCAPE% &
+\	N.P$='0' IF N.P$='N/A' &
+\	J%=VAL(N.P$) &
+\	J%=VAL('A') IF J%<1000% OR J%>3000% IF J% &
+
+5250	THIS.PUB%=J% &
+
+5260	J$=NUM1$(THIS.PUB%) &
+\	J$='N/A' UNLESS THIS.PUB% &
+\	N.P$=FNIMP$('First published',4%,J$) &
+\	GOTO 5240 IF ESCAPE% &
+\	N.P$='0' IF N.P$='N/A' &
+\	J%=VAL(N.P$) &
+\	J%=VAL('A') IF J%<1000% OR J%>3000% IF J% &
+
+5270	FIRST.PUB%=J% &
+\	SUBJ$='' &
+\	PRINT #1%, FNC$;CRLF$;'Please enter all the subject keywords '; &
+	'for this book. Hit RETURN';CRLF$;'alone when the list is complete.' &
+\	UNTIL 0% &
+\	J$=FNIMP$('Next subject',20%,'No more subjects') &
+\	IF ESCAPE% THEN &
+	GOTO 5260 IF SUBJ$='' &
+\	J%=INSTR(1%,SUBJ$,',') &
+\	UNTIL J%=0% &
+\	JJ%=J% &
+\	J%=INSTR(J%+1%,SUBJ$,',') &
+\	NEXT &
+\	PRINT #1%, FNC$;CRLF$;'%Subject ';RIGHT(SUBJ$,JJ%+1%);' discarded.' &
+\	SUBJ$=LEFT(SUBJ$,JJ%-1%) &
+\	GOTO 5275 &
+
+5271	GOTO 5280 IF J$='No more subjects' &
+\	SUBJ$=SUBJ$+','+CVT$$(J$,36%) &
+
+5275	NEXT &
+
+5280	SUBJ$=RIGHT(SUBJ$,2%) &
+\	CHANGED.SUBJECT%=-1% &
+\	GOSUB 6260 &
+\	GOTO 5270 IF ESCAPE% &
+
+5290	PRINT #1%, FNC$;CRLF$;'Really save this <YES> ? '; &
+\	INPUT LINE #1%, J$ &
+\	GOTO 5270 IF ASCII(J$)=27% &
+\	J$=CVT$$(J$,255%) &
+\	J$='YES' UNLESS LEN(J$) &
+\	GOTO 5340 UNLESS LEFT('YES',LEN(J$))=J$ &
+\	GOSUB 5300 IF CHANGED.ACC% &
+	! Need to changed things like subject records and author records. &
+\	GOSUB 5310 IF CHANGED.AUTHOR% &
+	! Re-write the list of authors. &
+\	GOSUB 5510 &
+	! Re-write the list of subjects &
+\	PRINT #1%, FNC$;CRLF$;'Arrived OK.' &
+\	GOTO 30000 &
+
+5300	DELETE #3% &
+\	J$=ACCESSION$ &
+\	ACCESSION$=NEW.ACCESSION$ &
+\	FLAG%=FLAG% XOR 512% &
+\	FLAG%=FLAG% OR 2%^8% &
+	! Set some flag bits - AR &
+\	PUT #3% &
+\	ACCESSION$=J$ &
+\	CHANGED.AUTHOR%,CHANGED.SUBJECT%=-1% &
+	! Force re-writing of author and subject records. &
+\	RETURN &
+
+5310	! Changed the list of authors. &
+	J%=INSTR(1%,AUT$,'/') &
+\	GOSUB 5350 &
+	! Zap old authors &
+\	RETURN UNLESS LEN(AUT$) &
+\	GOTO 5330 UNLESS J% &
+
+5320	J1$=LEFT(AUT$,J%-1%) &
+\	AUT$=RIGHT(AUT$,J%+1%) &
+\	A.ACCESSION$=NEW.ACCESSION$ &
+\	A.AUTHOR$=J1$ &
+\	A.AUTHOR$=LEFT(A.AUTHOR$,25%)+TITLE$ &
+\	PUT #4% &
+\	J%=INSTR(1%,AUT$,'/') &
+\	GOTO 5320 IF J% &
+
+5330	A.ACCESSION$=NEW.ACCESSION$ &
+\	A.AUTHOR$=AUT$ &
+\	A.AUTHOR$=LEFT(A.AUTHOR$,25%)+TITLE$ &
+\	PUT #4% &
+\	RETURN &
+
+5340	J$=SYS(CHR$(2%))+SYS(CHR$(0%)) &
+\	PRINT #1%, FNC$;CRLF$;'%Arrive aborted.' &
+\	GOTO 30000 &
+
+5350	ON ERROR GOTO 5430 &
+\	GET #4%, KEY #0% EQ ACCESSION$ &
+\	UNTIL 0% &
+\	DELETE #4% &
+
+5360	GET #4% &
+\	GOTO 5370 UNLESS A.ACCESSION$=ACCESSION$ &
+\	NEXT &
+
+5370	ON ERROR GOTO 25000 &
+\	RETURN &
+
+5380	ON ERROR GOTO 5430 &
+\	GET #5%, KEY #0% EQ ACCESSION$ &
+\	UNTIL 0% &
+
+5390	GET #6%, KEY #0% EQ S.SUBJECT$ &
+\	IF CVT$$(SC.SUBJECT$,255%)=CVT$$(S.SUBJECT$,255%) THEN &
+	IF SC.NO%=1% THEN DELETE #6% ELSE &
+	SC.NO%=SC.NO%-1% &
+\	UPDATE #6% &
+
+5400	DELETE #5% &
+
+5410	GET #5% &
+\	GOTO 5420 UNLESS S.ACCESSION$=ACCESSION$ &
+\	NEXT &
+
+5420	ON ERROR GOTO 25000 &
+\	RETURN &
+
+5430	RESUME 5370 IF ERR=155 OR ERR=11 UNLESS ERL=5380 &
+\	RESUME 5420 IF ERR=155 OR ERR=11 &
+\	GOTO 25000 &
+
+5440	DEF* FNIMP$(PROMPT$,LNGTH%,DEFAULT$) &
+\	PRINT #1%, FNC$;CRLF$;PROMPT$;TAB(25%);' >';LEFT(DEFAULT$,LNGTH%);TAB(27%+LNGTH%); &
+	'<';CRLF$;TAB(25%);' >';STRING$(LNGTH%,ASCII('_'));'<';CHR$(13%); &
+	TAB(25%);' >'; &
+\	INPUT LINE #1%, J$ &
+\	ESCAPE%=ASCII(J$)=27% &
+\	J$=CVT$$(J$,4%) &
+\	J$=DEFAULT$ UNLESS LEN(J$) &
+\	J$=LEFT(J$,LNGTH%) &
+\	FNIMP$=J$ &
+\	FNEND &
+
+5450	DEF* FNVET.ISBN%(TEST$) &
+\	IF CVT$$(TEST$,255%)='N/A' THEN &
+	FNVET.ISBN%=-1% &
+\	FNEXIT &
+
+5460	TEST1$="" &
+	\ EF%=-1% &
+	\ FNVET.ISBN%=0% &
+	\ FNEXIT IF LEN(TEST$)<>10% &
+	\ CHECK%=0% &
+	\ CT%=10% &
+	\ FOR K%=1% TO LEN(TEST$) STEP 2% &
+		\ K1$=MID(TEST$,K%,1%) &
+		\ K2$=MID(TEST$,K%+1%,1%) &
+		\ K2$=" " IF K2$="" &
+		\ K1$=" " IF K1$="" &
+	&
+		\ J1%=ASCII(K1$) &
+		\ J2%=ASCII(K2$) &
+	&
+		\ J1%=J1%-48%+30%*(K1$="X")-27%*(K1$=" ") &
+		\ J2%=J2%-48%+30%*(K2$="X")-27%*(K2$=" ") &
+	&
+		\ TEST1$=TEST1$+CHR$(J1%+16%*J2%) &
+		\ FNEXIT IF J1%>12% OR J1%<0% OR &
+				J2%>12% OR J2%<0% &
+	&
+		\ CHECK%=CHECK%+(CT%*J1%) IF K1$<>" " AND &
+		  J1%<>12% &
+		\ CT%=CT%-1% IF K1$<>" " &
+		\ CHECK%=CHECK%+(CT%*J2%) IF K2$<>" " AND &
+		  J2%<>12% &
+		\ CT%=CT%-1% IF K2$<>" " &
+	&
+		\ NEXT K% &
+		\ FNVET.ISBN%=((CHECK%/11%)*11%=CHECK%) &
+
+5470	FNEND &
+
+5510	J%=INSTR(1%,SUBJ$,',') &
+\	GOSUB 5380 &
+	! Zap old subjects &
+\	RETURN UNLESS LEN(SUBJ$) &
+\	GOTO 5530 UNLESS J% &
+
+5520	J1$=LEFT(SUBJ$,J%-1%) &
+\	SUBJ$=RIGHT(SUBJ$,J%+1%) &
+\	S.ACCESSION$=NEW.ACCESSION$ &
+\	S.SUBJECT$=J1$ &
+\	PUT #5% &
+\	GOSUB 5540 &
+\	J%=INSTR(1%,SUBJ$,',') &
+\	GOTO 5520 IF J% &
+
+5530	S.ACCESSION$=NEW.ACCESSION$ &
+\	S.SUBJECT$=SUBJ$ &
+\	PUT #5% &
+\	J1$=SUBJ$ &
+
+5540	GET #6%, KEY #0% EQ J1$ &
+\	IF CVT$$(SC.SUBJECT$,255%)=CVT$$(J1$,255%) THEN &
+	SC.NO%=SC.NO%+1% &
+\	UPDATE #6% &
+\	RETURN &
+
+5550	SC.NO%=1% &
+\	SC.SUBJECT$=J1$ &
+\	SC.DEWEY$=DEWEY$ &
+\	PUT #6% &
+\	RETURN &
+
+6240	ESCAPE%=-1% &
+\	RETURN &
+
+6260	ESCAPE%=0% &
+\	PRINT #1%, FNC$;CRLF$;'Status (L/S/R/Q/SC,M/UR) <L> >> '; &
+\	INPUT LINE #1%, ST$ &
+\	GOTO 6240 IF ASCII(ST$)=27% &
+\	ST$=CVT$$(ST$,255%) &
+\	ST$='L' UNLESS LEN(ST$) &
+
+6270	ST$=CVT$$(ST$,255%) &
+\	ST$='L'+ST$ IF LEFT(ST$,1%)=',' &
+\	J%=INSTR(1%,ST$,',') &
+\	ST1$=ST$ &
+\	ST2$='' &
+\	GOTO 6280 UNLESS J% &
+\	ST1$=LEFT(ST$,J%-1%) &
+\	ST2$=RIGHT(ST$,J%+1%) &
+
+6280	J%=INSTR(1%,'/L /S /R /Q /SC/','/'+ST1$) &
+\	GOTO 6310 UNLESS J% &
+\	FLAG%=FLAG% XOR 2%^I% IF FLAG% AND 2%^I% FOR I%=0% TO 4% &
+\	FLAG%=FLAG% XOR 2%^I% IF FLAG% AND 2%^I% FOR I%=10% TO 11% &
+	! Zero out old flag bits &
+\	FLAG%=FLAG% OR 2%^((J%-1%)/3%) &
+	! Put in new bit &
+
+6290	GOTO 6320 UNLESS LEN(ST2$) &
+\	J%=INSTR(1%,'/UR/M','/'+ST2$) &
+\	GOTO 6310 UNLESS J% &
+\	FLAG%=FLAG% OR 2%^((J%-1%)/3%+10%) &
+	! Put in new bit &
+
+6300	&
+
+6310	PRINT #1%, FNC$;CRLF$;'?Illegal status.' &
+\	GOTO 6260 &
+
+6320	RETURN &
+
+8000	GOTO 8100 IF DEFAULT.ACCESSION. &
+\	J.=32767. &
+\	GAP%=16384% &
+\	FOUND%=0% &
+
+8010	UNTIL 0% &
+
+8015	GOTO 8035 IF J.<1000. &
+\	FIND #3%, KEY #0% EQ CVT%$(J.-32768.) &
+\	FOUND%=-1% &
+\	J.=J.+GAP% &
+\	GOTO 8030 &
+
+8020	GOTO 8040 IF GAP%=1% AND FOUND%<>0% &
+\	J.=J.-GAP% &
+
+8030	GAP%=GAP%/2% UNLESS GAP%=1% &
+\	NEXT &
+
+8035	J.=1000. &
+\	GAP%=1% &
+\	GOTO 8015 &
+
+8040	DEFAULT.ACCESSION.=J. &
+\	IF J.=65535. THEN &
+	PRINT #1%, FNC$;CRLF$;"%Can't find a free accession number." &
+\	DEFAULT.ACCESSION.=0% &
+
+8050	RETURN &
+
+8100	J.=DEFAULT.ACCESSION.+1. &
+
+8110	FIND #3%, KEY #0% EQ CVT%$(J.-32768.) &
+\	J.=J.+1. &
+\	GOTO 8110 IF J.<65535. &
+\	DEFAULT.ACCESSION.=0. &
+\	RETURN &
+
+8120	DEFAULT.ACCESSION.=J. &
+\	RETURN &
+
+15040
+15060
+15070
+20061	DEF* FNPRETTY.ACCESSION$(P.A.N.) &
+\	J1$=NUM1$(P.A.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	J1$=RIGHT(J1$,2%) WHILE LEFT(J1$,1%)='0' &
+\	FNPRETTY.ACCESSION$=J1$+'-'+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+5500	PRINT #1%, FNC$;CRLF$;'%Arrive aborted.' &
+\	GOTO 30000 &
+
+25000	! ERRORS &
+	&
+	&
+	J%=CTRLC &
+\	RESUME 32767 IF (ERL=5010 AND ERR=11) OR (ERR=28 AND LINE=5010) &
+\	RESUME 8020 IF ERL=8015 AND ERR=155 &
+\	RESUME 5550 IF ERL=5540 AND ERR=155 &
+\	RESUME 5340 IF ERR=28 &
+\	RESUME 5500 IF (ERL=5490 AND ERR=11) OR (ERL=5480 AND ERR=155) &
+\	RESUME 5020 IF ERL=5015 &
+\	RESUME 5040 IF ERL=5030 AND ERR=155 &
+\	RESUME 5080 IF ERL=5070 AND ERR=11 &
+\	RESUME 5340 IF ERR=11 &
+\	RESUME 8120 IF ERL=8110 AND ERR=155 &
+\	IF ERL=5200 OR ERL=5215 OR (ERL>=5220 AND ERL<=5260) THEN PRINT #1%, FNC$;CRLF$; &
+	'?Illegal number, please re-enter.' &
+\	RESUME &
+
+29000	PRINT #1%, FNC$;CRLF$;'ARRIVE : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	SUBEND &
+

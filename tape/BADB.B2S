@@ -1,0 +1,19 @@
+10	ON ERROR GOTO 25000 &
+\	INPUT 'Disk ';DISK$ &
+\	OPEN DISK$ AS FILE #1% &
+\	INPUT 'Block ';BLCK. &
+\	GET #1%, RECORD BLCK. &
+\	PRINT 'Seems ok to me...' &
+\	GOTO 32767 &
+
+25000	IF ERR=13 THEN INPUT 'Zap the bad block ';Y$ &
+\	Y$=CVT$$(Y$,255%) &
+\	Y$='NO' UNLESS LEN(Y$) &
+\	IF LEFT('YES',LEN(Y$))=Y$ THEN &
+	FIELD #1%, 512% AS A$ &
+\	LSET A$=STRING$(512%,0%) &
+\	PUT #1%, RECORD BLCK. &
+\	PRINT 'Ok.' &
+
+32767	END &
+

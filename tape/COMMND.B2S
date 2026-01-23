@@ -1,0 +1,84 @@
+1	SUB COMMND(CCL%) &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+5000	CLOSE #7%,#9% &
+\	COM.LIST$='/DISPLAY        /AUTHOR         /DEWEY          '+ &
+		  '/SUBJECT        /TITLE          /EXIT           '+ &
+		  '/LX             /INDEX          '+ &
+		  '/SUMMARY        /SECRET         /HELP           '+ &
+		  '/XREF           ' &
+\	COM.LIST$=COM.LIST$+ &
+		  '/STATUS         /EDIT           /ENTER          '+ &
+		  '/REPAIR         /NAMESEARCH     /NUMBERSEARCH   '+ &
+		  '/NEWTICKET      /EDTICKET       /FREEZE         '+ &
+		  '/BORLIST        /ORDER          /ARRIVE         '+ &
+		  '/COMMENTS       /SUBEDIT        /DELETE         '+ &
+		  '/HELPEDIT       ' &
+	IF PRIV% &
+
+5010	UNLOCK #I% FOR I%=3% TO 6% &
+\	UNLOCK #10% &
+\	J%=CTRLC &
+\	J$=SYS(CHR$(2%)) &
+\	OPEN '_KB:' AS FILE #2% &
+\	IF CCL% THEN ARG$=CVT$$(HEADER$,128%) &
+\	GOTO 5020 &
+	ELSE &
+	PRINT #1%, FNC$;CRLF$;'Command >> '; &
+\	LINPUT #1%, ARG$ &
+\	ARG$=CVT$$(ARG$,8%+32%+128%) &
+
+5020	COM$=FNGETARG$ &
+\	IF LEN(COM$)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;"Use 'SUMMARY' for list of commands." &
+\	GOTO 5010 &
+
+5030	J%=INSTR(1%,COM$,'/') &
+\	SWITCH$='' &
+\	SWITCH$=RIGHT(COM$,J%) IF J% &
+\	COM$=LEFT(COM$,J%-1%) IF J% &
+\	J%=INSTR(1%,COM.LIST$,'/'+COM$) &
+\	IF J%=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal command.';CRLF$;CRLF$; &
+	"Use 'SUMMARY' for list of commands." &
+\	GOTO 5010 &
+
+5035	IF MID(COM.LIST$,J%,16%)<>'/HELP           ' THEN &
+	IF INSTR(J%+1%,COM.LIST$,'/'+COM$) THEN &
+	PRINT #1%, FNC$;CRLF$;'?Ambiguous command.';CRLF$;CRLF$; &
+	"Use 'SUMMARY' for list of commands." &
+\	GOTO 5010 &
+
+5040	COM%=(J%-1%)/16%+1% &
+\	SWITCH%=1% &
+	! Default of short listing &
+\	BOOKS.THIS.PAGE%=0% &
+	! Restart listing from top of page this time. &
+\	BOOKS.LISTED%=0% &
+	! Re-set counter for books. &
+\	PAGES.LISTED%=0% &
+	! Re-set counter for pages. &
+\	HEADER$=ARG$+'/'+SWITCH$ &
+	! Temp store it here. &
+\	SUBEXIT &
+
+15040
+15060
+15070
+15080
+15090
+15100
+15110
+15120
+25000	IF (ERR=11 AND ERL=5010) OR (ERR=28 AND LINE=5010) THEN &
+	COM%=-1% &
+\	RESUME 32767 &
+
+29000	PRINT #1%, FNC$;CRLF$;'COMMND : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	SUBEND &
+

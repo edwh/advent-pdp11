@@ -1,0 +1,94 @@
+.P
+MAIL is a bulletin board program.  It allows the user to send messages
+either to a particular account or to the world in general.  The user can
+read his own messages, all messages, or search for a subject.
+.P
+READ
+.S
+.PLM +10
+OWN
+.S
+.PLM +15
+This command displays all messages directed to the user's account.  
+The mail is deleted once it has been read.
+.S
+.PLM +10
+ALL
+.S
+.PLM +15
+This command displays all messages which the user may read (ie those directed
+to him and those directed to the world).  
+.S
+.PLM +10
+[nnn,nnn]
+.S
+.PLM +15
+Privileged users may read messages for any account.  This is how you do this.
+Wildcards are not supported.
+.S
+.PLM +10
+SENT
+.S
+.PLM +15
+This allows the user to read the messages which he has sent, to see whether
+they have been read or not.
+.S
+.PLM +10
+.S
+.PLM +5
+SEND
+.S
+.PLM +10
+[nnn,nnn]
+.S
+.PLM +15
+This directs the sent message to a particular account.
+.S
+.PLM +10
+ALL
+.S
+.PLM +15
+This allows the message to be read by anybody.
+.S
+.PLM +10
+.S
+Several questions are asked:
+.LS
+.LEN;Protect <NO> ?####If the user is privileged, he has the option of
+protecting a message so that it will not be deleted by a PURGE.
+Note that a protect can be overridden by a priveleged user during a delete.
+.LEN;Subject <GENERAL> ?####This defines the subject for the message.
+.LEN;Input file <_KB:> ?####This allows the user to specify an input
+file for the message.
+.ELS
+The message is terminated by _^Z.
+.S
+.PLM +5
+SUBJECT
+.S
+.PLM +10
+.S
+This command allows the user to read messages on a particular subject.
+The user suplies the subject name.
+.S
+.PLM +5
+LIST
+.S
+.PLM +10
+SUBJECTS
+.S
+This command lists all the subjects on which messages are currently held.
+.S
+.PLM +5
+PURGE
+.S
+.PLM +10
+.S
+This command (for priveleged users only) deletes all messages which have been
+read.  A protect may be overridden here.
+.PLM 0
+.P
+MAIL was primarily written as an example of RMS record handling.
+.S
+.C ;Edward D.W. Hibbert####August 1987
+.S

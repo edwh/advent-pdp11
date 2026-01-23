@@ -1,0 +1,75 @@
+5	DIM SY%(30%) &
+
+
+10	DEF FNL%(Z%) &
+\	Z0%=(SWAP%(Z%) AND 248%)/16% &
+\	Z1%=(SWAP%(Z%) AND 14%)/2% &
+\	FNL%=(Z1%*M2%+Z0%)*256%+(Z% AND 511%)/2% &
+\	FNEND &
+\	PRINT &
+\	PRINT "Disk "; &
+\	INPUT LINE D$ &
+\	PRINT &
+\	D$=CVT$$(D$,-1%) &
+\	STOP IF D$="^Z" &
+\	PRINT "Output file "; &
+\	INPUT LINE OUT.F$ &
+\	OUT.F$ = CVT$$(OUT.F$,-1%) &
+\	IF INSTR(1%,OUT.F$,"/") THEN &
+		SWITCH$ = RIGHT(OUT.F$,INSTR(1%,OUT.F$,"/")+1%) &
+\	OUT.F$ = LEFT(OUT.F$,INSTR(1%,OUT.F$,"/")+1%) &
+
+15	CHANGE SYS(CHR$(6%) + CHR$(-10%) + OUT.F$) TO SY% &
+\	IF (I% AND 4096%) THEN &
+		I$ = CHR$(SY%(23%)) + CHR$(SY%(24%)) &
+\	I$ = I$ + NUM1$(SY%(25%)) IF SY%(26%) &
+
+20	IF (I% AND 128%) THEN &
+		I$ = I$ + "[" + NUM1$(SY%(6%)) + "," + NUM1$(SY%(5%)) &
+
+30	IF (I% AND 1%) THEN &
+		PRINT "?Enter a filespec" &
+\	GOTO 12 &
+
+100	OPEN D$+"[1,1]" FOR INPUT AS FILE #1%, MODE 8192% &
+\	DIM #1%, A1%(32767%) &
+\	M1%=A1%(248%) &
+
+110	Z0%=(SWAP%(A1%(N1%)) AND 248%)/16% &
+\	Z1%=(SWAP%(A1%(N1%)) AND 14%)/2% &
+\	N1%=(Z1%*M1%+Z0%)*256%+(A1%(N1%) AND 511%)/2% &
+\	GOTO 32767 UNLESS N1% &
+\	GOTO 110 IF A1%(N1%+7%)=0% &
+\	GOTO 110 IF (A1%(N1%+4%) AND 64%)=0% &
+\	PROJ%=SWAP%(A1%(N1%+1%)) AND 255% &
+\	PROG%=A1%(N1%+1%) AND 255% &
+\	ACC$="["+NUM1$(PROJ%)+","+NUM1$(PROG%)+"]" &
+\	GOTO 110 IF ACC$="[1,1]" &
+\	OPEN D$+ACC$ FOR INPUT AS FILE #2%, MODE 8192% &
+\	DIM #2%, A2%(32767%) &
+\	M2%=A2%(248%) &
+\	N2%=0% &
+
+210	N2%=FNL%(A2%(N2%)) &
+
+220	IF N2%=0% THEN 110 &
+
+250	F$=RAD$(A2%(N2%+1%))+RAD$(A2%(N2%+2%))+"."+RAD$(A2%(N2%+3%)) &
+\	PROT%=SWAP%(A2%(N2%+4%)) &
+\	PROT%=PROT% AND 255% &
+\	M3%=FNL%(A2%(N2%+6%)) &
+\	ACCESS$=DATE$(A2%(M3%+1%)) &
+\	SIZE%=A2%(M3%+2%) &
+\	CREATE$=DATE$(A2%(M3%+3%)) &
+\	CREATE.TIME$=TIME$(A2%(M3%+4%)) &
+\	CLUS%=A2%(M3%+7%) &
+
+260	PRINT D$;ACC$;F$;TAB(25%);NUM1$(SIZE%);TAB(30%);"<";NUM1$(PROT%); &
+		">";TAB(37%);ACCESS$;TAB(48%);CREATE$;TAB(58%); &
+		CREATE.TIME$;TAB(68%);NUM1$(CLUS%) IF PROT% AND 128% &
+
+270	GOTO 210 &
+
+32767	goto 10 &
+\	end &
+

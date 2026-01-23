@@ -1,0 +1,535 @@
+1	ON ERROR GOTO 25000 &
+	&
+	!  L O A N . B 2 S &
+	&
+	&
+	!  Paton Library Loan System. &
+	&
+	&
+	!	Written by E.D.W. Hibbert January 1988. &
+	&
+	&
+	!  N.B. warning to future maintainers - a possible cause of bugs in &
+	!  this program is that it tacitly assumes that in the case where &
+	!  both loan and reservation records exist, the loan record comes &
+	!  first.  This will always be the case if LOAN was used to take the &
+	!  book out, so it shouldn't be a problem.  I just mention it. &
+
+1000	MAP (BORROW) B.TICKET$=2%, &
+		     B.SURNAME$=18%, &
+		     B.FORENAME$=24%, &
+		     B.FORM$=10%, &
+		     B.BOOKS.OUT%, &
+		     B.BOOKS.MAX%, &
+		     B.FLAG% &
+
+1010	MAP (LOANS) L.ACCESSION$=2%, &
+		    L.TICKET$=2%, &
+		    L.DUE%, &
+		    L.FLAG% &
+
+1020	MAP (BOOKS) ACCESSION$=2%,	! Accession number &
+		    DEWEY$=10%,		! Dewey number or F for fiction &
+		    ISBN$=10%,		! ISBN number &
+		    TITLE$=47%,		! Title &
+		    JUNK$=25%, &
+		    PUBLISHER$=26%,	! Publisher &
+		    FLAG%,		! General flag word &
+					! Bit value	Meaning &
+					!	0	Loan &
+					!	1	Short term loan &
+					!	2	Ref. only &
+					!	3	Quick ref. &
+					!	4	Special collection &
+					!	5,6,7,8	Unused &
+					!	9	On order &
+					!	10	Under repair &
+					!	11	Missing &
+		    ILLUS%,		! No. of illustrations &
+		    PAGES%,		! No. of pages &
+		    FIRST.PUB%,		! Date first published &
+		    THIS.PUB%,		! Date this edition published &
+		    THIS.PRINT%		! Date this edition printed &
+
+5000	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	PRIV%=0% &
+\	J$=SYS(CHR$(6%)+CHR$(-13%)+CHR$(255%)+CHR$(255%)+CHR$(-8%)) &
+\	PRIV%=-1% &
+\	J$=SYS(CHR$(6%)+CHR$(26%)) &
+\	PPN%=SWAP%(CVT$%(RIGHT(J$,21%))) &
+\	PROG%=PPN% AND 255% &
+\	GOTO 32767 UNLESS PROG%>=11% AND PROG%<=14% &
+
+5005	CRLF$=CHR$(13%)+CHR$(10%) &
+\	OPEN '_KB:' AS FILE #1%, MODE 16% &
+\	FIELD #1%, 1% AS YN$ &
+\	PRINT #1%, CRLF$;'Paton Library Loan Program';CRLF$;CRLF$; &
+
+5030	OPEN 'DP2:'+PKG.LOC$+'BORROW.RMS' AS FILE #9%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BORROW, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY B.TICKET$ NODUPLICATES, &
+	ALTERNATE KEY B.SURNAME$ DUPLICATES CHANGES &
+
+5040	OPEN 'DP2:'+PKG.LOC$+'LOANS.RMS' AS FILE #10%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP LOANS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY L.TICKET$ DUPLICATES, &
+	ALTERNATE KEY L.ACCESSION$ DUPLICATES &
+
+5050	OPEN 'DP2:'+PKG.LOC$+'BOOKS.RMS' FOR INPUT AS FILE #3%, &
+	ORGANIZATION UNDEFINED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY &
+
+6000	DEF.N$=DATE$(0%) &
+\	DEF.N%=FNDATE.OF%(DEF.N$) &
+\	TODAY%=DEF.N% &
+\	DEF.N%=FNNEXT.WEEK.DAY%(DEF.N%) FOR I%=1% TO 14% &
+\	PRINT #1%, CRLF$;'Date normal loans due back <';DATE$(DEF.N%); &
+	'> ? '; &
+\	INPUT LINE #1%, N.D$ &
+\	N.D$=CVT$$(N.D$,255%) &
+\	N.D$=DATE$(DEF.N%) UNLESS LEN(N.D$) &
+\	NORMAL.DUE%=FNDATE.OF%(N.D$) &
+\	GOTO 6010 UNLESS NORMAL.DUE% &
+\	DEF.N%=FNDATE.OF%(DATE$(0%)) &
+\	DEF.N%=FNNEXT.WEEK.DAY%(DEF.N%) FOR I%=1% TO 3% &
+\	PRINT #1%, CRLF$;'Date short term loans due back <';DATE$(DEF.N%); &
+	'> ? '; &
+\	INPUT LINE #1%, N.D$ &
+\	N.D$=CVT$$(N.D$,255%) &
+\	N.D$=DATE$(DEF.N%) UNLESS LEN(N.D$) &
+\	SHORT.DUE%=FNDATE.OF%(N.D$) &
+\	GOTO 6020 IF SHORT.DUE% &
+
+6010	PRINT #1%, CRLF$;'?Illegal date, please re-enter dates.' &
+\	GOTO 6000 &
+
+6020	J%=FNP%(CRLF$+'LOAN started up at '+TIME$(0%)+' on '+DATE$(0%)+ &
+	CRLF$+'Normal loans due back : '+DATE$(NORMAL.DUE%)+ &
+	'  Short term loans due back : '+DATE$(SHORT.DUE%)+CRLF$) &
+\	HEADER$='LOAN V1.0  '+ERT$(ERR)+' on ' &
+\	J%=FNWEEK.DAY.OF%(TODAY%) &
+\	J$=MID('Monday   Tuesday  WednesdayThursday Friday   Saturday '+ &
+	'Sunday   ',(J%-1%)*9%+1%,9%) &
+\	HEADER$=HEADER$+CVT$$(J$,128%)+', '+DATE$(0%) &
+
+6990	PRINT #1%, CHR$(24%);HEADER$;' at ';TIME$(0%);CRLF$; &
+	'Paton Library Loan System';CRLF$;CRLF$;CRLF$ &
+
+7000	GOTO 7015 IF LEN(KEEP.A.N$) &
+\	PRINT #1%, CRLF$;'Ticket number, Accession number >> '; &
+\	UNLOCK #9% &
+\	UNLOCK #10% &
+\	UNLOCK #3% &
+
+7010	J$=SYS(CHR$(2%)) &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,255%) &
+\	GOTO 6990 UNLESS LEN(J$) &
+
+7015	J$=FNPRETTY.TICKET$(CVT$%(T.N$)+32768.)+','+KEEP.A.N$ &
+	IF LEN(KEEP.A.N$) &
+\	J%=INSTR(1%,J$,',') &
+\	GOTO 7030 IF J% &
+\	PRINT #1%, CRLF$;'Please supply ticket number and accession'; &
+	' number, separated by a comma.' &
+\	GOTO 7000 &
+
+7020	PRINT #1%, CRLF$;'?Illegal ticket number.' &
+\	KEEP.A.N$='' &
+\	GOTO 7000 &
+
+7025	PRINT #1%, CRLF$;'?Illegal accession number - ';A.N$ &
+\	J$=K.T.N$+','+KEEP.A.N$ &
+\	KEEP.A.N$='' &
+\	GOTO 7000 &
+
+7030	K.T.N$=LEFT(J$,J%-1%) &
+\	A.N$=RIGHT(J$,J%+1%) &
+\	EH%=INSTR(1%,A.N$,'-') &
+\	GOTO 7025 UNLESS EH% &
+\	A.N.=VAL(LEFT(A.N$,EH%-1%)) &
+\	J$=FNPRETTY.ACCESSION$(A.N.) &
+\	J%=INSTR(1%,A.N$,',') &
+\	KEEP.A.N$='' &
+\	KEEP.A.N$=RIGHT(A.N$,J%+1%) IF J% &
+\	GOTO 7025 UNLESS LEFT(A.N$,LEN(J$))=J$ &
+\	SPECIAL.EXTENSION%=0% IF KEEP.A.N$='' &
+\	T.N.=FNDECODE.TICKET.(K.T.N$) &
+\	GOTO 7020 IF T.N.=0. &
+\	T.N$=CVT%$(T.N.-32768.) &
+\	A.N$=CVT%$(A.N.-32768.) &
+
+7031	GET #9%, KEY #0% EQ T.N$ &
+\	IF B.FLAG% AND 2% THEN &
+	J$=CVT$$(B.SURNAME$,128%)+', ' &
+\	J$=J$+LEFT(B.FORENAME$,1%)+'. '+RIGHT(B.FORM$,4%) UNLESS B.FLAG% AND 1% &
+\	J$=J$+B.FORENAME$ IF B.FLAG% AND 1% &
+\	PRINT #1%, CRLF$;'?Ticket for ';J$;' is frozen.';CRLF$; &
+	'Please retain the ticket, and report this to the Librarian.' &
+\	GOTO 7000 &
+
+7035	GET #3%, KEY #0% EQ A.N$ &
+\	GOTO 7050 &
+
+7040	PRINT #1%, CRLF$;'?No such ticket number exists.' &
+\	GOTO 7000 &
+
+7045	PRINT #1%, CRLF$;'?No such book exists.' &
+\	GOTO 7000 &
+
+7050	GET #10%, KEY #1% EQ A.N$ &
+	! Find loan record. &
+\	GOTO 7080 IF (L.FLAG% AND 1%) AND (L.TICKET$<>T.N$) &
+	! Then book is already reserved. &
+\	GOTO 7100 IF L.TICKET$=T.N$ AND (L.FLAG% AND 1%)=0% &
+	! If it's their loan record, they want to bring it back. &
+\	IF L.TICKET$=T.N$ AND (L.FLAG% AND 1%) THEN &
+	DELETE #10% &
+\	GOTO 7150 &
+	! It's reserved for them, so they want to take it out. &
+
+7070	! If we get here, we want to reserve the book. &
+	GET #10% UNLESS L.FLAG% AND 1% &
+	! Next record should be reservation record if there is one. &
+	! N.B. It is possible for the reservation record to be there but &
+	! the loan one not, if the book has been returned, so don't &
+	! skip past the reservation one, otherwise you get multiple &
+	! reservations, which we don't want (yet). &
+\	GOTO 7090 UNLESS L.ACCESSION$=A.N$ &
+	! If the accession numbers match, then it's a reservation. &
+	! Go to do the reservation unless it's reserved. &
+\	IF L.TICKET$=T.N$ THEN &
+	DELETE #10% &
+	! If the ticket numbers match then we want to unreserve it so &
+	! delete the reservation record. &
+\	PRINT #1%, CRLF$;'Reservation for ';CVT$$(LEFT(TITLE$,47%),128%);' cancelled.' &
+\	J%=FNP1%('reservation cancelled') &
+\	GOTO 7000 &
+
+7080	PRINT #1%, CRLF$;'?';CVT$$(LEFT(TITLE$,47%),128%);' is already reserved.' &
+	! If we got here there already is a reservation record but &
+	! it's for someone else so we can't reserve it. &
+	! N.B. In theory we could have multiple reservation records, but &
+	! it's probably too much effort. &
+\	GOTO 7000 &
+
+7090	L.TICKET$=T.N$ &
+	! Set up ticket number for reservation record. &
+\	L.DUE%=0% &
+\	L.ACCESSION$=A.N$ &
+	! Accession number to reserve. &
+\	L.FLAG%=1% &
+	! Flag as reservation record. &
+\	PUT #10% &
+	! Write the reservation record. &
+\	PRINT #1%, CRLF$;CVT$$(LEFT(TITLE$,47%),128%);' reserved for '; &
+\	J$=CVT$$(B.SURNAME$,128%)+', ' &
+\	J$=J$+LEFT(B.FORENAME$,1%)+'. '+RIGHT(B.FORM$,4%) UNLESS B.FLAG% AND 1% &
+\	J$=J$+B.FORENAME$ IF B.FLAG% AND 1% &
+\	PRINT #1%, J$ &
+\	J%=FNP1%('reserved') &
+\	GOTO 7000 &
+
+7100	! If we get here, they're bringing the book back. &
+	IF TODAY%>L.DUE% AND (B.FLAG% AND 1%)=0% THEN &
+	PRINT #1%, CRLF$;'This book was due back on ';DATE$(L.DUE%) &
+\	PRINT #1%, CRLF$;'It is '; &
+\	J%=FNSUB.DATE%(L.DUE%,TODAY%) &
+\	PRINT #1%, NUM1$(J%);' day'; &
+\	PRINT #1%, 's'; IF J%>1% &
+\	PRINT #1%, ' overdue.' &
+\	J$='Fine is' &
+\	RECALLS%=(L.FLAG% AND 14%)/2% &
+\	J$=J$+' 20p' IF RECALLS%=1% &
+\	J$=J$+' 30p' IF RECALLS%=2% &
+\	J$=J$+' 50p, please refer this borrower to LyAW.' IF RECALLS%=3% &
+\	J$=J$+' #10.00, please refer this borrower to LyAW.' IF RECALLS%=4% &
+\	J$=J$+' '+NUM1$(J%*10%/7%)+'p' UNLESS RECALLS% &
+\	PRINT #1%, CRLF$;STRING$(24%,32%);CHR$(155%)+'XB'+ &
+	CHR$(155%)+'XI'+J$+CHR$(155%)+'Xi'+CHR$(155%)+'Xb'+CHR$(7%)+CRLF$+ &
+	CRLF$ &
+
+7110	PRINT #1%, CRLF$;'Do you want to renew book number';A.N.;' ? '; &
+\	J$=SYS(CHR$(4%)) &
+\	GET #1% &
+\	J$=CVT$$(YN$,255%) &
+\	PRINT #1% &
+\	GOTO 7140 UNLESS J$='Y' &
+
+7120	GET #10%, KEY #1% EQ A.N$ &
+\	GET #10% UNLESS L.FLAG% AND 1% &
+\	IF L.ACCESSION$=A.N$ AND (L.FLAG% AND 1%) THEN &
+	PRINT #1%, CRLF$;'?Book is reserved, cannot renew.' &
+\	GET #10%, KEY #1% EQ A.N$ &
+\	GOTO 7140 &
+
+7130	GET #10%, KEY #1% EQ A.N$ &
+\	L.DUE%=NORMAL.DUE% &
+\	L.DUE%=SHORT.DUE% IF (FLAG% AND 2%) &
+\	L.FLAG%=0% &
+\	UPDATE #10% &
+\	PRINT #1%, CRLF$;CVT$$(LEFT(TITLE$,47%),128%);' renewed for '; &
+\	J$=CVT$$(B.SURNAME$,128%)+', ' &
+\	J$=J$+LEFT(B.FORENAME$,1%)+'. '+RIGHT(B.FORM$,4%) UNLESS B.FLAG% AND 1% &
+\	J$=J$+B.FORENAME$ IF B.FLAG% AND 1% &
+\	PRINT #1%, J$ &
+\	J%=FNP1%('renewed') &
+\	GOTO 7000 &
+
+7140	DELETE #10% &
+\	PRINT #1%, CRLF$;CVT$$(LEFT(TITLE$,47%),128%);' returned by '; &
+\	J$=CVT$$(B.SURNAME$,128%)+', ' &
+\	J$=J$+LEFT(B.FORENAME$,1%)+'. '+RIGHT(B.FORM$,4%) UNLESS B.FLAG% AND 1% &
+\	J$=J$+B.FORENAME$ IF B.FLAG% AND 1% &
+\	PRINT #1%, J$ &
+\	J%=FNP1%('returned') &
+\	PRINT #1%, CRLF$;'N.B. Please return this book to the Special '; &
+	'Collection room.' IF FLAG% AND 2%^4% &
+
+7145	GET #10% &
+\	IF L.ACCESSION$=A.N$ THEN &
+	PRINT #1%, CRLF$;'N.B. This book is reserved.' &
+
+7146	B.BOOKS.OUT%=B.BOOKS.OUT%-1% &
+\	UPDATE #9% &
+\	GOTO 7000 &
+
+7150	! If we get here, we want to take it out. &
+	GOTO 7170 &
+
+7161	PRINT #1%, CRLF$;'?Book is on order, please ARRIVE it using LIBR '; &
+	'first.' &
+\	GOTO 7000 &
+
+7162	PRINT #1%, CRLF$;'?Book is flagged as under repair.  Please use '; &
+	'the STATUS command';CRLF$; &
+	'in LIBR first.' &
+\	GOTO 7000 &
+
+7163	PRINT #1%, CRLF$;'?Book is flagged as missing.  Please use the '; &
+	'STATUS command in';CRLF$;'LIBR first.' &
+\	GOTO 7000 &
+
+7164	PRINT #1%, CRLF$;'?Book is not available for loan.  Use the '; &
+	'STATUS command in';CRLF$;'LIBR to change this if required.' &
+\	GOTO 7000 &
+
+7170	GOTO 7161 IF FLAG% AND 2%^9% &
+\	GOTO 7162 IF FLAG% AND 2%^10% &
+\	GOTO 7163 IF FLAG% AND 2%^11% &
+\	GOTO 7164 UNLESS (FLAG% AND 1%) OR (FLAG% AND 2%) &
+\	GET #10%, KEY #1% EQ A.N$ &
+\	GET #10% UNLESS L.FLAG% AND 1% &
+\	IF (L.ACCESSION$=A.N$) AND (L.FLAG% AND 1%) AND (L.TICKET$=T.N$) &
+	THEN &
+	DELETE #10% &
+	! It's reserved for this person, so delete the reservation. &
+\	GOTO 7190 &
+
+7180	PRINT #1%, CRLF$;'Book is reserved, cannot take out.' &
+\	GOTO 7000 &
+
+7190	GOTO 7200 IF B.BOOKS.OUT%<B.BOOKS.MAX% &
+\	PRINT #1%, CRLF$;'?Maximum number of books (';NUM1$(B.BOOKS.MAX%); &
+	') already out on this ticket.' &
+\	PRINT #1%, CRLF$;'Allow special extension <N> ? '; &
+\	J$=SYS(CHR$(4%)) &
+\	GET #1% &
+\	J$=CVT$$(YN$,255%) &
+\	J$='N' UNLESS LEN(J$) &
+\	GOTO 7191 IF J$='Y' &
+\	KEEP.A.N$='' &
+\	GOTO 7000 &
+
+7191	PRINT #1%, CRLF$;'Special Extension Password >> '; &
+\	J$=SYS(CHR$(3%)) &
+\	INPUT LINE #1%, J$ &
+\	J$=CVT$$(J$,255%) &
+\	GOTO 7010 UNLESS J$='SPECIALEXTENSION' &
+
+7200	L.ACCESSION$=A.N$ &
+\	L.TICKET$=T.N$ &
+\	L.DUE%=NORMAL.DUE% &
+\	L.DUE%=SHORT.DUE% IF FLAG% AND 2% &
+\	L.FLAG%=0% &
+\	PUT #10% &
+\	GOTO 7220 &
+
+7210	PRINT #1%, CRLF$;CVT$$(LEFT(TITLE$,47%),128%);' is already out.' &
+\	GOTO 7000 &
+
+7220	B.BOOKS.OUT%=B.BOOKS.OUT%+1% &
+\	UPDATE #9% &
+\	PRINT #1%, CRLF$;CVT$$(LEFT(TITLE$,47%),128%);' taken out by '; &
+\	J$=CVT$$(B.SURNAME$,128%)+', ' &
+\	J$=J$+LEFT(B.FORENAME$,1%)+'. '+RIGHT(B.FORM$,4%) UNLESS B.FLAG% AND 1% &
+\	J$=J$+B.FORENAME$ IF B.FLAG% AND 1% &
+\	PRINT #1%, J$ &
+\	PRINT #1%, CRLF$;'N.B. This book was in the Special Collection '; &
+	'room.' IF FLAG% AND 2%^4% &
+\	J%=FNP1%('taken out') &
+\	GOTO 7000 &
+
+8000	PRINT #1%, CRLF$ + "Exit Password >> "; &
+\	V$ = SYS(CHR$(3%)) &
+\	INPUT LINE #1%, EXIT.P$ &
+\	EXIT.P$ = CVT$$(EXIT.P$, -1%) &
+\	V$ = SYS(CHR$(2%)) &
+\	GOTO 32767 IF EXIT.P$='EXITPASSWORD' &
+\	GOTO 6990 &
+
+20000	DEF* FNINC.DATE%(DAT%) &
+\	D%=DAT% &
+\	D%=D%+1% &
+\	D%=D%+1% WHILE DATE$(D%)='00-XXX-00' &
+\	FNINC.DATE%=D% &
+\	FNEND &
+	! Increment RSTS format date. &
+
+20010	DEF* FNWEEK.DAY.OF%(DAT%) &
+\	Y%=DAT%/1000%+70% &
+\	D%=DAT%-1000%*(Y%-70%) &
+\	D%=365%*Y%+(Y%+3%)/4%+D%-1% &
+\	D%=D%-D%/7%*7% &
+\	D%=7% UNLESS D% &
+\	FNWEEK.DAY.OF%=D% &
+\	FNEND &
+	! 1 = Monday ... 7 = Sunday &
+
+20020	DEF* FNNEXT.WEEK.DAY%(DAT%) &
+\	N.D%=DAT% &
+\	N.D%=FNINC.DATE%(N.D%) &
+\	N.D%=FNINC.DATE%(N.D%) WHILE FNWEEK.DAY.OF%(N.D%)>5% &
+\	FNNEXT.WEEK.DAY%=N.D% &
+\	FNEND &
+	! Find next week day. &
+
+20030	DEF* FNDATE.OF%(J$) &
+\	J$=J$+RIGHT(DATE$(0%),3%) UNLESS INSTR(1%,J$,'-') &
+\	J$='0'+J$ IF INSTR(1%,J$,'-')<3% &
+\	J$=J$+RIGHT(DATE$(0%),7%) UNLESS INSTR(4%,J$,'-') &
+\	J$=CVT$$(J$,255%) &
+\	FNDATE.OF%=0% &
+\	J%=VAL(RIGHT(J$,8%)) &
+\	I%=INSTR(1%,'JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC',MID(J$,4%,3%)) &
+\	GOTO 20050 UNLESS I% &
+\	J%=1000%*(J%-70%)+28%*((I%-1%)/3%) &
+\	GOTO 20040 IF CVT$$(DATE$(I%),255%)=J$ FOR I%=J% TO J%+100% &
+\	GOTO 20050 &
+
+20040	FNDATE.OF%=I% &
+
+20050	FNEND &
+
+20060	DEF* FNPRETTY.TICKET$(P.T.N.) &
+\	J1$=NUM1$(P.T.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNPRETTY.TICKET$=LEFT(J1$,3%)+'-'+RIGHT(J1$,4%)+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+20065	DEF* FNPRETTY.ACCESSION$(P.A.N.) &
+\	J1$=NUM1$(P.A.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	J1$=RIGHT(J1$,2%) WHILE LEFT(J1$,1%)='0' &
+\	FNPRETTY.ACCESSION$=J1$+'-'+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+20070	DEF* FNDECODE.TICKET.(D.T.N$) &
+\	FNDECODE.TICKET.=0. &
+\	FNEXIT UNLESS LEN(D.T.N$)=7% &
+\	J%=INSTR(1%,D.T.N$,'-') &
+\	FNEXIT UNLESS J% &
+\	CHECK.DIGIT$=RIGHT(D.T.N$,7%) &
+\	D.T.N$=LEFT(D.T.N$,3%)+MID(D.T.N$,5%,2%) &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(D.T.N$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNEXIT UNLESS CHECK.DIGIT$=CHR$(J1%+ASCII('A')) &
+\	J1.=VAL(D.T.N$) &
+\	GOTO 20080 IF J1.<0. OR J1.>65535. &
+\	FNDECODE.TICKET.=J1. &
+\	FNEXIT &
+
+20080	FNEND &
+
+20090	DEF* FNSUB.DATE%(D1%,D2%) &
+\	IF D2%<=D1% THEN &
+	FNSUB.DATE%=0% &
+\	FNEXIT &
+
+20100	S.I%=1% &
+\	IF FNNEXT.WEEK.DAY%(D1%)<>D2% THEN &
+	S1%=0% &
+\	UNTIL D1%>=D2% &
+\	S.I%=S.I%+1% &
+\	D1%=FNNEXT.WEEK.DAY%(D1%) &
+\	NEXT &
+\	S.I%=S.I%-1% &
+
+20110	FNSUB.DATE%=S.I% &
+\	FNEND &
+
+21000	DEF* FNP%(Z$) &
+\	PRINT #1%, CHR$(155%)+'O3'+Z$+CHR$(155%)+"O1" &
+\	FNEND &
+
+21010	DEF* FNP1%(ZZ$) &
+\	P1.J%=FNP%(CRLF$+FNPRETTY.ACCESSION$(CVT$%(ACCESSION$)+32768.)+ &
+	' '+CVT$$(TITLE$,128%)+' '+ZZ$+' by '+CVT$$(B.SURNAME$,128%) &
+	+' '+FNPRETTY.TICKET$(CVT$%(B.TICKET$)+32768.)) &
+\	FNEND &
+
+25000	! Errors &
+	&
+	&
+	IF ERL>5000 AND ERL<6000 THEN PRINT #1%, &
+	CRLF$;'Catalogue is locked (';ERT$(ERR);'), please try later.' &
+\	RESUME 32767 &
+
+25005	RESUME 8000 IF ERL = 7010% AND ERR = 11% &
+\	RESUME 7010 IF ERL=7010 &
+\	RESUME 5005 IF ERL=5000 &
+\	RESUME 6990 IF ERL = 8000 &
+
+25010	RESUME 20050 IF ERL=20030 AND ERR=52 &
+\	RESUME 7130 IF ERL=7120 AND ERR=11 &
+\	RESUME 7025 IF ERL=7031 &
+\	RESUME 7040 IF ERL=7030 AND ERR=155 &
+\	RESUME 7045 IF ERL=7035 AND ERR=155 &
+\	RESUME 7150 IF ERL=7050 AND ERR=155 &
+\	RESUME 7210 IF ERL=7200 AND ERR=155 &
+\	RESUME 20080 IF ERL=20070 AND ERR=52 &
+\	RESUME 7190 IF ERL=7170 AND ERR=155 &
+\	RESUME 7010 IF ERR=11 AND ERL=7190 &
+\	RESUME 7090 IF ERL=7070 AND ERR=11 &
+\	RESUME 7010 IF ERL=7191 AND ERR=11 &
+\	RESUME 7146 IF ERL=7145 AND ERR=11 &
+
+26000	IF ERR=154 THEN &
+	PRINT #1%, 'Waiting for catalogue...'; &
+\	SLEEP 5% &
+\	PRINT #1%, CHR$(13%);SPACE$(50%);CHR$(13%); &
+\	RESUME &
+
+29000	PRINT #1%, CRLF$;'LOAN : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+32767	J$=SYS(CHR$(6%)+CHR$(-13%)+CHR$(255%)+CHR$(255%)+CHR$(-16%)) IF PRIV% &
+\	END &
+

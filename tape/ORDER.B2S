@@ -1,0 +1,540 @@
+1	ON ERROR GOTO 25000 &
+
+2	OPEN 'DP2:'+PKG.LOC$+'BOOKS.ENT' AS FILE #7%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY ACCESSION$ &
+
+5000	DEFAULT.ORDER.DATE$=DATE$(0%) &
+\	PRINT #1%, FNC$;CRLF$;'Order a book.';CRLF$ &
+\	S.D$=FNGETARG$ &
+\	GOTO 5070 IF LEN(S.D$) &
+
+5010	GOSUB 8000 &
+	! Find next free accession number &
+\	PRINT #1%, FNC$;CRLF$;'(Next free accession number is '; &
+	NUM1$(DEFAULT.ACCESSION.);')' IF DEFAULT.ACCESSION. &
+\	PRINT #1%, FNC$;'(Hit LF for list of free accession numbers)' &
+\	PRINT #1%, FNC$;CRLF$;'Accession number of the book >> '; &
+\	INPUT LINE #1%, S.D$ &
+\	GOTO 5030 IF ASCII(S.D$)=10% &
+\	S.D$=CVT$$(S.D$,255%) &
+\	GOTO 5070 IF LEN(S.D$) &
+\	IF DEFAULT.ACCESSION. THEN &
+	PRINT #1%, FNC$;CRLF$;'(Accession number';DEFAULT.ACCESSION.; &
+	'being used)' &
+\	S.D$=NUM1$(DEFAULT.ACCESSION.) &
+\	GOTO 5070 &
+
+5020	&
+
+5030	PRINT #1%, FNC$;CRLF$; &
+	'List of unused accession numbers :';CRLF$ &
+\	RESTORE #3% &
+\	GET #3% &
+\	J.=CVT$%(ACCESSION$)+32768. &
+\	PRINT #1%, '32768-';NUM1$(J.-1.) IF J.>32768. &
+\	PRINT #1%, '32768' IF J.=32768. &
+\	UNTIL 0% &
+\	GET #3% &
+\	JJ.=CVT$%(ACCESSION$)+32768. &
+\	GOTO 5040 UNLESS JJ.<>J.+1. &
+\	IF JJ.=J.+2. THEN PRINT #1%, NUM1$(J.+1.) &
+	ELSE &
+	IF J.>32768. AND JJ.<32768. THEN &
+	PRINT #1%, NUM1$(J.+1.);'-65535' &
+	ELSE &
+	PRINT #1%, NUM1$(J.+1.);'-';NUM1$(JJ.-1.) &
+
+5040	J.=JJ. &
+
+5050	NEXT &
+
+5060	PRINT #1%, NUM1$(J.+1.);'-32767' IF ERR=11 &
+\	PRINT #1%, FNC$;CRLF$;'List complete.' &
+\	GOTO 5010 &
+
+5070	J$=CVT%$(VAL(S.D$)-32768.) &
+\	GOTO 5090 &
+
+5080	PRINT #1%, FNC$;CRLF$;'?Illegal accession number.' &
+\	GOTO 30000 &
+
+5090	FIND #3%, KEY #0% EQ J$ &
+\	GOTO 5095 &
+
+5091	FIND #7%, KEY #0% EQ J$ &
+\	GOTO 5095 &
+
+5095	PRINT #1%, FNC$;CRLF$;'?That accession number is in use.' &
+\	GOTO 30000 &
+
+5100	ACCESSION$=J$ &
+\	PRINT #1%, FNC$;CRLF$;'Please enter all the authors for this '; &
+	'book. Hit RETURN alone when    ';CRLF$;'list is complete.' &
+\	AUTHORS%=0% &
+\	AUT$='' &
+\	UNTIL 0% &
+\	J$='No more authors' &
+\	J$=DEFAULT.AUTHOR$ IF LEN(DEFAULT.AUTHOR$) UNLESS AUTHORS% &
+\	J$=FNIMP$('Next author',25%,J$) &
+\	AUTHORS%=AUTHORS%+1% &
+\	IF ESCAPE% THEN &
+	GOTO 5010 IF AUT$='' &
+\	J%=INSTR(1%,AUT$,'/') &
+\	UNTIL J%=0% &
+\	JJ%=J% &
+\	J%=INSTR(J%+1%,AUT$,'/') &
+\	NEXT &
+\	PRINT #1%, FNC$;CRLF$;'%Author ';RIGHT(AUT$,JJ%+1%);' discarded.' &
+\	AUT$=LEFT(AUT$,JJ%-1%) &
+\	GOTO 5105 &
+
+5101	GOTO 5110 IF J$='No more authors' &
+\	DEFAULT.AUTHOR$=CVT$$(J$,36%) IF AUTHORS%=1% &
+\	AUT$=AUT$+'/'+CVT$$(J$,36%) &
+
+5105	NEXT &
+
+5110	AUT$=RIGHT(AUT$,2%) &
+
+5120	TITLE$=CVT$$(FNIMP$('Title',47%,''),36%) &
+\	JUNK$=DEFAULT.AUTHOR$ &
+\	GOTO 5100 IF ESCAPE% &
+
+5130	PRINT #1%, FNC$;CRLF$;'Order date <';DEFAULT.ORDER.DATE$;'> ? '; &
+\	INPUT LINE #1%, N.D$ &
+\	GOTO 5120 IF ASCII(N.D$)=27% &
+\	N.D$=CVT$$(N.D$,255%) &
+\	N.D$=CVT$$(DEFAULT.ORDER.DATE$,255%) UNLESS LEN(N.D$) &
+\	J%=FNDATE.OF%(N.D$) &
+\	IF J%=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal order date.' &
+\	GOTO 5130 &
+
+5140	DEWEY$=DATE$(J%) &
+\	DEFAULT.ORDER.DATE$=DEWEY$ &
+\	PUBLISHER$=CVT$$(FNIMP$('Publisher',26%,DEFAULT.PUBLISHER$),36%) &
+\	GOTO 5130 IF ESCAPE% &
+\	DEFAULT.PUBLISHER$=PUBLISHER$ &
+
+5150	N.I$=FNIMP$('I.S.B.N. (If available)',10%,'N/A') &
+\	N.I$=CVT$$(N.I$,255%) &
+\	GOTO 5140 IF ESCAPE% &
+\	N.I$=CVT$$(N.I$,255%) &
+\	IF FNVET.ISBN%(N.I$)=0% THEN &
+	PRINT #1%, FNC$;CRLF$;'?Illegal I.S.B.N. Number, please re-enter.' &
+\	GOTO 5150 &
+
+5160	ISBN$=N.I$ &
+
+5161	PRINT #1%, FNC$;CRLF$;'Price (eg 9.95)           >'; &
+\	INPUT LINE #1%, J$ &
+\	GOTO 5150 IF ASCII(J$)=27% &
+\	PRICE.=VAL(CVT$$(J$,255%)) &
+\	PAGES%=PRICE.*100. &
+	! Price for ordered books. &
+
+5162	PRINT #1%, FNC$;CRLF$;'Classification <';DEFAULT.CLASS$;'> >> '; &
+\	INPUT LINE #1%, CLASS$ &
+\	GOTO 5161 IF ASCII(CLASS$)=27% &
+\	CLASS$=CVT$$(CLASS$,36%) &
+\	CLASS$=DEFAULT.CLASS$ UNLESS LEN(CLASS$) &
+\	GOTO 5330 &
+
+5163	PRINT #1%, FNC$;CRLF$;'?Illegal price.' &
+\	GOTO 5161 &
+
+5330	DEFAULT.CLASS$=CLASS$ &
+\	PRINT #1%, FNC$;CRLF$;'Really save this <YES> ? '; &
+\	INPUT LINE #1%, J$ &
+\	GOTO 5162 IF ASCII(J$)=27% &
+\	J$=CVT$$(J$,255%) &
+\	J$='YES' UNLESS LEN(J$) &
+\	GOTO 5370 UNLESS LEFT('YES',LEN(J$))=J$ &
+\	OPEN '_KB:' AS FILE #1%, MODE 16% &
+\	GOSUB 5340 &
+
+5335	S.ACCESSION$=ACCESSION$ &
+\	S.SUBJECT$=LEFT(CLASS$,20%) &
+\	PUT #5% &
+\	CLASS$=RIGHT(CLASS$,21%) &
+\	GOTO 5335 IF LEN(CLASS$) &
+\	FLAG%=512% &
+\	THIS.PRINT%,THIS.PUB%,FIRST.PUB%=0% &
+\	PUT #7% &
+\	PRINT #1%, FNC$;CRLF$;'Book ordered OK.' &
+\	OPEN '_KB:' AS FILE #1% &
+\	GOTO 30000 &
+
+5340	RETURN UNLESS LEN(AUT$) &
+\	J%=INSTR(1%,AUT$,'/') &
+\	GOTO 5360 UNLESS J% &
+
+5350	J1$=LEFT(AUT$,J%-1%) &
+\	AUT$=RIGHT(AUT$,J%+1%) &
+\	A.ACCESSION$=ACCESSION$ &
+\	A.AUTHOR$=J1$ &
+\	A.AUTHOR$=LEFT(A.AUTHOR$,25%)+TITLE$ &
+\	PUT #4% &
+\	J%=INSTR(1%,AUT$,'/') &
+\	GOTO 5350 IF J% &
+
+5360	A.ACCESSION$=ACCESSION$ &
+\	A.AUTHOR$=AUT$ &
+\	A.AUTHOR$=LEFT(A.AUTHOR$,25%)+TITLE$ &
+\	PUT #4% &
+\	RETURN &
+
+5370	J$=SYS(CHR$(2%))+SYS(CHR$(0%)) &
+\	PRINT #1%, FNC$;CRLF$;'%Order aborted.' &
+\	GOTO 30000 &
+
+5380	DEF* FNIMP$(PROMPT$,LNGTH%,DEFAULT$) &
+\	PRINT #1%, FNC$;CRLF$;PROMPT$;TAB(25%);' >';LEFT(DEFAULT$,LNGTH%);TAB(27%+LNGTH%); &
+	'<';CRLF$;TAB(25%);' >';STRING$(LNGTH%,ASCII('_'));'<';CHR$(13%); &
+	TAB(25%);' >'; &
+\	INPUT LINE #1%, J$ &
+\	ESCAPE%=(ASCII(J$)=27%) &
+\	J$=CVT$$(J$,4%) &
+\	J$=DEFAULT$ UNLESS LEN(J$) &
+\	J$=LEFT(J$,LNGTH%) &
+\	FNIMP$=J$ &
+\	FNEND &
+
+5390	DEF* FNVET.ISBN%(TEST$) &
+\	IF CVT$$(TEST$,255%)='N/A' THEN &
+	FNVET.ISBN%=-1% &
+\	FNEXIT &
+
+5400	TEST1$="" &
+	\ EF%=-1% &
+	\ FNVET.ISBN%=0% &
+	\ FNEXIT IF LEN(TEST$)<>10% &
+	\ CHECK%=0% &
+	\ CT%=10% &
+	\ FOR K%=1% TO LEN(TEST$) STEP 2% &
+		\ K1$=MID(TEST$,K%,1%) &
+		\ K2$=MID(TEST$,K%+1%,1%) &
+		\ K2$=" " IF K2$="" &
+		\ K1$=" " IF K1$="" &
+	&
+		\ J1%=ASCII(K1$) &
+		\ J2%=ASCII(K2$) &
+	&
+		\ J1%=J1%-48%+30%*(K1$="X")-27%*(K1$=" ") &
+		\ J2%=J2%-48%+30%*(K2$="X")-27%*(K2$=" ") &
+	&
+		\ TEST1$=TEST1$+CHR$(J1%+16%*J2%) &
+		\ FNEXIT IF J1%>12% OR J1%<0% OR &
+				J2%>12% OR J2%<0% &
+	&
+		\ CHECK%=CHECK%+(CT%*J1%) IF K1$<>" " AND &
+		  J1%<>12% &
+		\ CT%=CT%-1% IF K1$<>" " &
+		\ CHECK%=CHECK%+(CT%*J2%) IF K2$<>" " AND &
+		  J2%<>12% &
+		\ CT%=CT%-1% IF K2$<>" " &
+	&
+		\ NEXT K% &
+		\ FNVET.ISBN%=((CHECK%/11%)*11%=CHECK%) &
+
+5410	FNEND &
+
+8000	GET #3%, KEY #0% GE CVT%$(60000.-32768.) &
+
+8010	J.=CVT$%(ACCESSION$)+32768. &
+
+8020	GET #3% &
+\	J1.=CVT$%(ACCESSION$)+32768. &
+\	IF J1.<>J.+1. THEN &
+	DEFAULT.ACCESSION.=J.+1. &
+\	FIND #7%, KEY #0% EQ CVT%$(DEFAULT.ACCESSION.-32768.) &
+
+8025	J.=J1. &
+\	GOTO 8020 &
+
+8026	RETURN &
+
+8030	DEFAULT.ACCESSION.=J1.+1. &
+\	DEFAULT.ACCESSION.=0. IF DEFAULT.ACCESSION.>65535. &
+\	RETURN &
+
+20030	DEF* FNDATE.OF%(J$) &
+\	J$=J$+RIGHT(DATE$(0%),3%) UNLESS INSTR(1%,J$,'-') &
+\	J$='0'+J$ IF INSTR(1%,J$,'-')<3% &
+\	J$=J$+RIGHT(DATE$(0%),7%) UNLESS INSTR(4%,J$,'-') &
+\	J$=CVT$$(J$,255%) &
+\	FNDATE.OF%=0% &
+\	J%=VAL(RIGHT(J$,8%)) &
+\	I%=INSTR(1%,'JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC',MID(J$,4%,3%)) &
+\	GOTO 20050 UNLESS I% &
+\	J%=1000%*(J%-70%)+28%*((I%-1%)/3%) &
+\	GOTO 20040 IF CVT$$(DATE$(I%),255%)=J$ FOR I%=J% TO J%+100% &
+\	GOTO 20050 &
+
+20040	FNDATE.OF%=I% &
+
+20050	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	JJJ%=CTRLC &
+\	RESUME 32767 IF (ERL=5010 AND ERR=11) OR (ERR=28 AND LINE=5010) &
+\	RESUME 8026 IF ERL=8020 AND ERR=155 &
+\	RESUME 5370 IF ERR=28 &
+\	RESUME 5080 IF ERL=5070 &
+\	RESUME 5091 IF ERL=5090 AND ERR=155 &
+\	RESUME 5100 IF ERL=5091 AND ERR=155 &
+\	RESUME 5060 IF ERL=5030 AND ERR=11 &
+\	RESUME 5163 IF ERL=5161 AND ERR=52 &
+\	RESUME 5370 IF ERR=11 &
+\	RESUME 8030 IF ERL=8020 AND ERR=11 &
+\	IF ERL=5170 OR (ERL>=5190 AND ERL<=5230) THEN PRINT #1%, FNC$;CRLF$; &
+	'?Illegal number, please re-enter.' &
+\	RESUME &
+
+29000	PRINT #1%, FNC$;CRLF$;'ORDER : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+1000	MAP (BOOKS) ACCESSION$=2%,	! Accession number &
+		    DEWEY$=10%,		! Dewey number or F for fiction &
+		    ISBN$=10%,		! ISBN number &
+		    TITLE$=47%,		! Title &
+		    JUNK$=25%,		! Used for indexing. &
+		    PUBLISHER$=26%,	! Publisher &
+		    FLAG%,		! General flag word &
+					!      Bit 	Meaning &
+					!	0	Loan &
+					!	1	Short term loan &
+					!	2	Ref. only &
+					!	3	Quick ref. &
+					!	4	Special collection &
+					!	5,6,7	Unused &
+					!	8	Newly arrived &
+					!	9	On order &
+					!	10	Under repair &
+					!	11	Missing &
+					!	12	Comments held &
+		    ILLUS%,		! No. of illustrations &
+		    PAGES%,		! No. of pages &
+		    FIRST.PUB%,		! Date first published &
+		    THIS.PUB%,		! Date this edition published &
+		    THIS.PRINT%		! Date this edition printed &
+
+1010	MAP (AUTHOR) A.ACCESSION$=2%,	! Accession number &
+		     A.AUTHOR$=72%	! Author for this book &
+					! is held in first 25 &
+	&
+	&
+	! For multiple authors for one book have duplicate records. &
+
+1020	MAP (SUBJCT) S.ACCESSION$=2%,	! Accession number &
+		     S.SUBJECT$=20%	! This subject &
+	&
+	&
+	! For multiple subjects for one book have multiple records &
+
+1030	MAP (BORROW) B.TICKET$=2%,	! Ticket number &
+		     B.SURNAME$=18%,	! Surname &
+		     B.FORENAME$=24%,	! Forenames &
+		     B.FORM$=10%,	! Form &
+		     B.BOOKS.OUT%,	! No. of books currently out &
+		     B.BOOKS.MAX%,	! Maximum number of books allowed &
+		     B.FLAG%		! Flag word &
+					&
+					! Bit	Meaning &
+					&
+					!  0	Staff &
+					!  1	Ticket is frozen &
+
+1040	MAP (LOANS) L.ACCESSION$=2%,	! Book that's out &
+					! or book that's reserved &
+		    L.TICKET$=2%,	! Borrower that's got it out &
+					! or borrower that's got it reserved &
+		    L.DUE%,		! Date this is due back &
+					! or date reserved until &
+		    L.FLAG%		! Flag word &
+					&
+					! Bit	Meaning &
+					&
+					!  0	This record is a reservation. &
+					! 1-3	Recalls - extract by &
+					!	(L.FLAG% AND 14%)/2% &
+
+1050	MAP (SUBCNT) SC.SUBJECT$=20%,	! The subject &
+		     SC.NO%,		! The number of books &
+		     SC.DEWEY$=10%	! Dewey number for this subject &
+
+1060	MAP (COMENT) C.ACCESSION$=2%,	! Accession number of the comments &
+		     C.COMMENTS$=80%	! Comments for this book. &
+					! N.B. Can have multiple records. &
+
+30000	GOTO 32767 IF ARG% &
+\	UNLOCK #3% &
+\	GOTO 5010 UNLESS BOOKS.LISTED% &
+\	PRINT #2%, FNC$;CRLF$;CRLF$;'A total of ';NUM1$(BOOKS.LISTED%); &
+\	J$=' books were listed.' &
+\	J$=' book was listed.' IF BOOKS.LISTED%=1% &
+\	PRINT #2%, J$ &
+\	BOOKS.LISTED%,BOOKS.THIS.PAGE%=0% &
+\	GOTO 5010 &
+
+10	COMMON (LIBR)	SWITCH%,		! Switches &
+						! Bit	Meaning &
+						&
+						! 0	Short listing &
+						! 1	LP output &
+						! 2	Special LIST output &
+						&
+			COM%,			! Command &
+			PKG.LOC$=9%,		! Package location &
+			CRLF$=2%,		! Carriage return line feed &
+			PRIV%,			! Flag for LIBR-privved user. &
+			BOOKS.THIS.PAGE%,	! How many books we've done &
+						! on this page. &
+			PAGES.LISTED%,		! How many pages we've done &
+			HEADER$=132%,		! Header for LP printouts. &
+			BOOKS.LISTED%,		! No. of books listed this &
+						! time. &
+			ARG%			! Any arguments specified on &
+						! command line. &
+
+28999	IF ERR=154 THEN &
+	PRINT #1%, FNC$;'Waiting for data...'; &
+\	SLEEP 5% &
+\	PRINT #1%, CHR$(13%);SPACE$(50%);CHR$(13%); &
+\	RESUME &
+
+15000	! Standard functions &
+	&
+	&
+	DEF* FNC$ &
+\	FNC$='' &
+\	FNC$=CRLF$ IF CCPOS(1%) &
+\	FNEND &
+
+15010	! FNGETARG &
+	&
+	&
+	! This function is used in routines to allow the specification of &
+	! all the command arguments on the command line. &
+	&
+	DEF* FNGETARG$ &
+\	FNGETARG$='' &
+\	GOTO 15030 UNLESS LEN(ARG$) &
+\	JJ%=INSTR(1%,ARG$,' ') &
+\	IF JJ%=0% THEN &
+	FNGETARG$=ARG$ &
+\	ARG$='' &
+\	GOTO 15030 &
+
+15020	FNGETARG$=LEFT(ARG$,JJ%-1%) &
+\	ARG$=RIGHT(ARG$,JJ%+1%) &
+
+15030	FNEND &
+
+15040	DEF* FNCONT% &
+\	J%=CTRLC &
+\	FNCONT%=0% &
+\	FNEXIT IF ((SWITCH% AND 1%) AND BOOKS.THIS.PAGE%<>0%) &
+	OR (SWITCH% AND 2%) &
+	! Exit if it's a short listing and we're not at the end of &
+	! the page. &
+\	ON ERROR GOTO 15060 &
+\	PRINT #1%, FNC$;CRLF$; &
+	'	*** Press any key to continue, or ^C to abort. ***'; &
+	STRING$(16%,8%); &
+\	J$=SYS(CHR$(3%)) &
+\	J$=SYS(CHR$(4%)) &
+\	GET #1% &
+\	J$=SYS(CHR$(2%)) &
+!\	PRINT #1%, CHR$(13%);SPACE$(70%);CHR$(13%); &
+\	PRINT #1%, CHR$(13%);CHR$(24%); &
+\	GOTO 15070 &
+
+15060	J$=SYS(CHR$(2%)) &
+\	J%=CTRLC &
+\	FNCONT%=-1% &
+\	RESUME 15070 &
+
+15070	ON ERROR GOTO 25000 &
+\	FNEND &
+
+15080	DEF* FNVET.DEWEY%(D$) &
+\	FNVET.DEWEY%=0% &
+\	ON ERROR GOTO 15090 &
+\	J.=VAL(D$) &
+\	FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+	! It's a number, simple &
+
+15090	RESUME 15100 &
+
+15100	IF LEFT(D$,6%)='822.33' THEN &
+	J%=ASCII(RIGHT(D$,7%)) &
+\	IF J%>=ASCII('A') AND J%<=ASCII('Z') THEN &
+	FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+
+15110	IF LEFT(D$,1%)='F' THEN FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+
+15120	ON ERROR GOTO 25000 &
+\	FNEND &
+
+1500	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	J$=SYS(CHR$(6%)+CHR$(26%)) &
+\	PPN%=SWAP%(CVT$%(RIGHT(J$,21%))) &
+!\	PPN%=PEEK(PEEK(PEEK(520%)+8%)+24%) &
+\	PROJ%=SWAP%(PPN%) AND 255% &
+\	PROG%=PPN% AND 255% &
+\	PRIV%=((PROJ%=1%) OR (PROJ%=5% AND PROG%>=11% AND PROG%<=14%)) &
+\	GOTO 32767 UNLESS PRIV% &
+\	OPEN '_KB:' AS FILE #1% &
+\	PRINT #1%, CRLF$;'Paton Library Order Program';CRLF$;CRLF$ &
+
+2000	OPEN 'DP2:'+PKG.LOC$+'BOOKS .RMS' FOR INPUT AS FILE #3%, &
+	ORGANIZATION UNDEFINED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY &
+
+2010	OPEN 'DP2:'+PKG.LOC$+'AUTHOR.ENT' AS FILE #4%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP AUTHOR, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY A.ACCESSION$ DUPLICATES &
+
+2020	OPEN 'DP2:'+PKG.LOC$+'SUBJCT.ENT' AS FILE #5%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES &
+
+2050	OPEN 'DP2:'+PKG.LOC$+'SUBCNT.RMS' AS FILE #6%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBCNT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY SC.SUBJECT$ NODUPLICATES, &
+	ALTERNATE KEY SC.DEWEY$ DUPLICATES CHANGES &
+
+2070	OPEN 'DP2:'+PKG.LOC$+'LOANS.RMS' AS FILE #10%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP LOANS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY L.TICKET$ DUPLICATES, &
+	ALTERNATE KEY L.ACCESSION$ DUPLICATES &
+
+32767	END &
+

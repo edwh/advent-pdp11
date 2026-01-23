@@ -1,0 +1,140 @@
+1	ON ERROR GOTO 25000 &
+	&
+	! This program makes sure that SUBCNT.RMS is upto date. &
+	&
+	! SUBCNT contains the list of the numbers of books for a &
+	! given subject.  It is updated when a book is entered &
+	! or edited by the relevant subprograms, but this program &
+	! acts as a check. &
+	&
+	! This will take some time ! &
+	&
+	&
+	!	E.D.W. Hibbert  18-Nov-87 &
+	&
+
+1000	MAP (BOOKS) ACCESSION$=2%,	! Accession number &
+		    DEWEY$=10%,		! Dewey number or F for fiction &
+		    ISBN$=10%,		! ISBN number &
+		    TITLE$=47%,		! Title &
+		    JUNK$=25%,		! USED FOR INDEXING &
+		    PUBLISHER$=26%,	! Publisher &
+		    FLAG%,		! General flag word &
+		    ILLUS%,		! No. of illustrations &
+		    PAGES%,		! No. of pages &
+		    FIRST.PUB%,		! Date first published &
+		    THIS.PUB%,		! Date this edition published &
+		    THIS.PRINT%		! Date this edition printed &
+
+1020	MAP (SUBJCT) S.ACCESSION$=2%,	! Accession number &
+		     S.SUBJECT$=20%	! This subject &
+	&
+	&
+	! For multiple subjects for one book have multiple records &
+
+1050	MAP (SUBCNT) SC.SUBJECT$=20%,	! The subject &
+		     SC.NO%,		! The number of books &
+		     SC.DEWEY$=10%	! Dewey number for this subject &
+
+1500	PRINT &
+\	PRINT 'Vet SUBCNT.RMS' &
+\	PRINT '--------------' &
+\	PRINT &
+\	INPUT 'Proceed <NO> ';J$ &
+\	PRINT &
+\	J$=CVT$$(J$,255%) &
+\	J$='NO' UNLESS LEN(J$) &
+\	GOTO 32767 UNLESS LEFT('YES',LEN(J$))=J$ &
+
+2000	OPEN 'DP2:'+PKG.LOC$+'BOOKS .RMS' FOR INPUT AS FILE #3%, &
+	ORGANIZATION UNDEFINED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY &
+
+2020	OPEN 'DP2:'+PKG.LOC$+'SUBJCT.RMS' AS FILE #5%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+\	OPEN 'DP2:'+PKG.LOC$+'SUBJCT.RMS' AS FILE #8%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+	! Need to open it twice for subject searches. &
+
+2050	OPEN 'DP2:'+PKG.LOC$+'SUBCNT.RMS' AS FILE #9%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBCNT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY SC.SUBJECT$ NODUPLICATES, &
+	ALTERNATE KEY SC.DEWEY$ DUPLICATES CHANGES &
+
+500	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	BELL$=CHR$(7%) &
+\	OPEN '_KB:' AS FILE #1% &
+
+3010	RESTORE #5%, KEY #1% &
+\	GET #5% &
+\	UNLOCK #5% &
+\	UNTIL 0% &
+\	CNT%=1% &
+\	THIS.SUBJECT$=S.SUBJECT$ &
+\	GET #8%, KEY #1% EQ THIS.SUBJECT$ &
+\	UNLOCK #8% &
+\	GET #3%, KEY #0% EQ S.ACCESSION$ &
+\	UNLOCK #3% &
+\	THIS.DEWEY$=LEFT(DEWEY$,10%) &
+
+3020	GET #5% &
+\	UNLOCK #5% &
+\	IF S.SUBJECT$=THIS.SUBJECT$ THEN &
+	CNT%=CNT%+1% &
+\	GOTO 3020 &
+
+3030	GET #9%, KEY #0% EQ THIS.SUBJECT$ &
+\	GOTO 3045 IF SC.NO%=CNT% &
+\	PRINT #1%, CRLF$; &
+	'%Subject count for ';THIS.SUBJECT$;' was incorrect - corrected.' &
+\	SC.NO%=CNT% &
+\	UPDATE #9% &
+\	GOTO 3045 &
+
+3035	PRINT #1%, '%Subject ';THIS.SUBJECT$;' entered with';CNT%; &
+	'books and dewey of ';THIS.DEWEY$ &
+\	SC.NO%=CNT% &
+\	SC.DEWEY$=THIS.DEWEY$ &
+\	SC.SUBJECT$=THIS.SUBJECT$ &
+\	PUT #9% &
+
+3045	NEXT &
+
+3050	PRINT #1%, CRLF$;'Vet completed.  Please check the Dewey'; &
+	' numbers for any';CRLF$; &
+	'newly-entered subjects, and use the SUBEDIT command in LIBR';CRLF$; &
+	'to change them if required.';CRLF$ &
+\	GOTO 32767 &
+
+25000	RESUME 3050 IF ERL=3020 &
+\	RESUME 3035 IF ERL=3030 AND ERR=155 &
+\	IF ERL=3010 AND ERR=155 THEN PRINT #1%, &
+	'%Subject record for non-existant book - ignored.' &
+\	GET #5% &
+\	UNLOCK #5% &
+\	RESUME 3045 &
+
+28999	IF ERR=154 THEN SLEEP 5% \ RESUME &
+
+29000	PRINT 'SUBCNT : ';ERT$(ERR);' at line';ERL &
+
+32767	END &
+

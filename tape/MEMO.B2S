@@ -1,0 +1,85 @@
+10	on error goto 10000 &
+\	ctl.c$ = sys(chr$(6) + chr$(-7)) &
+\	open "_KB:" as file #1% &
+\	sys.nam$ = right(sys(chr$(6) + chr$(9) + chr$(0)),3%) &
+\	prog.nam$ = "MEMO.TSK V1.0" + chr$(9) + sys.nam$ + chr$(9) &
+\	prog.nam$ = prog.nam$ + "By R.F.M.Taylor, 1988" &
+\	! Simple program for librarians to leave memos &
+
+
+20	print chr$(24); &
+\	print prog.nam$ &
+\	stat$ = sys(chr$(6) + chr$(26)) &
+\	acct.proj$ = num1$(ascii(mid(stat$,22%,2%))) &
+\	acct.prog$ = num1$(ascii(mid(stat$,21%,1%))) &
+\	ppn$ = '[' + acct.proj$ + ',' + acct.prog$ + ']' &
+\	print 'You are running under the account ';ppn$ &
+
+30	if val(acct.proj$) > 5 then print "Sorry, you can't use MEMO." &
+\	goto 32767 &
+
+40	if val(acct.proj$) < 5 then print "Sorry, you can't use MEMO." &
+\	goto 32767 &
+
+50	print for i = 1 to 3 &
+\	print "Please enter your name. >>"; &
+\	input line #1%,ini$ &
+\	ini$ = cvt$$(ini$, 4%) &
+\	goto 1000 if ini$ = 'read' &
+\	open "_DR1:[5,13]MEMO.FIL" as file #2%,mode 2% &
+\	print #2%,"Memo from ";ini$ &
+\	print for i = 1 to 3 &
+
+60	print "Type in your message, of as many lines as you like." &
+\	print "End with a blank line, and Control Z" &
+
+70	print "Memo>"; &
+\	input line #1%,mem$ &
+\	mem$ = cvt$$(mem$,4%) &
+\	print #2,mem$ &
+\	goto 70 &
+
+80	print chr$(12);"Thankyou for the memo." &
+\	close #2 &
+\	close #1% &
+\	goto 32767 &
+
+1000	print chr$(24);"Read a Memo." &
+\	open "a:[5,13]memo.fil" for input as file #3% &
+
+1010	input line #3%,a$ &
+\	print cvt$$(a$,4%) &
+\	goto 1010 &
+
+1020	print "Those are the messages.." &
+\	print "Refresh file ? "; &
+\	input line #1%,ref$ &
+
+1030	open 'a:[5,13]memo.fil<0>' for output as file #3% &
+\	close #3% &
+
+1040	goto 10 &
+
+
+10000	if err = 5 then print "Sorry, see RFMT personally." &
+\	resume 32767 &
+
+10001	if err = 11 and erl = 1010 then resume 1020 &
+
+10002	if err = 5 then resume 1030 &
+
+10010	if err = 11 and erl = 70 then resume 80 &
+
+10011	if err = 28 and erl = 70 then ctl.c$ = sys(chr$(6) + chr$(-7)) &
+\	resume 80 &
+
+10020	if err = 10 then print "Sorry, See RFMT in person." &
+
+10021	if err = 11 then resume 10 &
+
+10030	print "There is a problem, see RFMT and tell him that the problem" &
+\	print "is ";right(sys(chr$(6) + chr$(9) + chr$(err)),3) &
+\	resume 32767 &
+
+32767	end &
+

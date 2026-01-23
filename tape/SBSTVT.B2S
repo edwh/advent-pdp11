@@ -1,0 +1,265 @@
+1	ON ERROR GOTO 25000 &
+	&
+	&
+	! S B S T V T . B 2 S  &
+	&
+	! Sub-Sort Vet - checks that all books have the sub-sort &
+	! data set correctly. &
+	&
+	!	E.D.W. Hibbert April 1988. &
+
+5000	RESTORE #3% &
+
+5010	GET #3% &
+
+5020	GET #4%, KEY #0% EQ ACCESSION$ &
+\	IF JUNK$<>LEFT(A.AUTHOR$,25%) THEN &
+	PRINT CVT$%(ACCESSION$)+32768.;' : JUNK$ wrong - '; &
+	'is ';JUNK$;' should be ';LEFT(A.AUTHOR$,25%) &
+\	JUNK$=LEFT(A.AUTHOR$,25%) &
+\	UPDATE #3% &
+
+5030	IF RIGHT(A.AUTHOR$,26%)<>TITLE$ THEN &
+	PRINT CVT$%(ACCESSION$)+32768.;' : A.AUTHOR$ wrong - '; &
+	'is ';RIGHT(A.AUTHOR$,26%);' should be ';TITLE$ &
+\	A.AUTHOR$=LEFT(A.AUTHOR$,25%)+TITLE$ &
+\	UPDATE #4% &
+
+5040	GET #4% &
+\	GOTO 5030 IF A.ACCESSION$=ACCESSION$ &
+
+5030	GOTO 5010 &
+
+1000	MAP (BOOKS) ACCESSION$=2%,	! Accession number &
+		    DEWEY$=10%,		! Dewey number or F for fiction &
+		    ISBN$=10%,		! ISBN number &
+		    TITLE$=47%,		! Title &
+		    JUNK$=25%,		! Used for indexing. &
+		    PUBLISHER$=26%,	! Publisher &
+		    FLAG%,		! General flag word &
+					!      Bit 	Meaning &
+					!	0	Loan &
+					!	1	Short term loan &
+					!	2	Ref. only &
+					!	3	Quick ref. &
+					!	4	Special collection &
+					!	5,6,7	Unused &
+					!	8	Newly arrived &
+					!	9	On order &
+					!	10	Under repair &
+					!	11	Missing &
+					!	12	Comments held &
+		    ILLUS%,		! No. of illustrations &
+		    PAGES%,		! No. of pages &
+		    FIRST.PUB%,		! Date first published &
+		    THIS.PUB%,		! Date this edition published &
+		    THIS.PRINT%		! Date this edition printed &
+
+1010	MAP (AUTHOR) A.ACCESSION$=2%,	! Accession number &
+		     A.AUTHOR$=72%	! Author for this book &
+					! is held in first 25 &
+	&
+	&
+	! For multiple authors for one book have duplicate records. &
+
+1020	MAP (SUBJCT) S.ACCESSION$=2%,	! Accession number &
+		     S.SUBJECT$=20%	! This subject &
+	&
+	&
+	! For multiple subjects for one book have multiple records &
+
+1030	MAP (BORROW) B.TICKET$=2%,	! Ticket number &
+		     B.SURNAME$=18%,	! Surname &
+		     B.FORENAME$=24%,	! Forenames &
+		     B.FORM$=10%,	! Form &
+		     B.BOOKS.OUT%,	! No. of books currently out &
+		     B.BOOKS.MAX%,	! Maximum number of books allowed &
+		     B.FLAG%		! Flag word &
+					&
+					! Bit	Meaning &
+					&
+					!  0	Staff &
+					!  1	Ticket is frozen &
+
+1040	MAP (LOANS) L.ACCESSION$=2%,	! Book that's out &
+					! or book that's reserved &
+		    L.TICKET$=2%,	! Borrower that's got it out &
+					! or borrower that's got it reserved &
+		    L.DUE%,		! Date this is due back &
+					! or date reserved until &
+		    L.FLAG%		! Flag word &
+					&
+					! Bit	Meaning &
+					&
+					!  0	This record is a reservation. &
+					! 1-3	Recalls - extract by &
+					!	(L.FLAG% AND 14%)/2% &
+
+1050	MAP (SUBCNT) SC.SUBJECT$=20%,	! The subject &
+		     SC.NO%,		! The number of books &
+		     SC.DEWEY$=10%	! Dewey number for this subject &
+
+1060	MAP (COMENT) C.ACCESSION$=2%,	! Accession number of the comments &
+		     C.COMMENTS$=80%	! Comments for this book. &
+					! N.B. Can have multiple records. &
+
+10	COMMON (LIBR)	SWITCH%,		! Switches &
+						! Bit	Meaning &
+						&
+						! 0	Short listing &
+						! 1	LP output &
+						! 2	Special LIST output &
+						&
+			COM%,			! Command &
+			PKG.LOC$=9%,		! Package location &
+			CRLF$=2%,		! Carriage return line feed &
+			PRIV%,			! Flag for LIBR-privved user. &
+			BOOKS.THIS.PAGE%,	! How many books we've done &
+						! on this page. &
+			PAGES.LISTED%,		! How many pages we've done &
+			HEADER$=132%,		! Header for LP printouts. &
+			BOOKS.LISTED%,		! No. of books listed this &
+						! time. &
+			ARG%			! Any arguments specified on &
+						! command line. &
+
+28999	IF ERR=154 THEN &
+	PRINT FNC$;'Waiting for data...'; &
+\	SLEEP 5% &
+\	PRINT CHR$(13%);SPACE$(50%);CHR$(13%); &
+\	RESUME &
+
+15000	! Standard functions &
+	&
+	&
+	DEF* FNC$ &
+\	FNC$='' &
+\	FNC$=CRLF$ IF CCPOS(1%) &
+\	FNEND &
+
+15010	! FNGETARG &
+	&
+	&
+	! This function is used in routines to allow the specification of &
+	! all the command arguments on the command line. &
+	&
+	DEF* FNGETARG$ &
+\	FNGETARG$='' &
+\	GOTO 15030 UNLESS LEN(ARG$) &
+\	JJ%=INSTR(1%,ARG$,' ') &
+\	IF JJ%=0% THEN &
+	FNGETARG$=ARG$ &
+\	ARG$='' &
+\	GOTO 15030 &
+
+15020	FNGETARG$=LEFT(ARG$,JJ%-1%) &
+\	ARG$=RIGHT(ARG$,JJ%+1%) &
+
+15030	FNEND &
+
+15040	DEF* FNCONT% &
+\	J%=CTRLC &
+\	FNCONT%=0% &
+\	FNEXIT IF ((SWITCH% AND 1%) AND BOOKS.THIS.PAGE%<>0%) &
+	OR (SWITCH% AND 2%) &
+	! Exit if it's a short listing and we're not at the end of &
+	! the page. &
+\	ON ERROR GOTO 15060 &
+\	PRINT FNC$;CRLF$; &
+	'	*** Press any key to continue, or ^C to abort. ***'; &
+	STRING$(16%,8%); &
+\	J$=SYS(CHR$(3%)) &
+\	J$=SYS(CHR$(4%)) &
+\	GET #0% &
+\	J$=SYS(CHR$(2%)) &
+\	PRINT CHR$(13%);CHR$(24%); &
+\	GOTO 15070 &
+
+15060	J$=SYS(CHR$(2%)) &
+\	J%=CTRLC &
+\	FNCONT%=-1% &
+\	RESUME 15070 &
+
+15070	ON ERROR GOTO 25000 &
+\	FNEND &
+
+15080	DEF* FNVET.DEWEY%(D$) &
+\	FNVET.DEWEY%=0% &
+\	ON ERROR GOTO 15090 &
+\	J.=VAL(D$) &
+\	FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+	! It's a number, simple &
+
+15090	RESUME 15100 &
+
+15100	IF LEFT(D$,6%)='822.33' THEN &
+	J%=ASCII(RIGHT(D$,7%)) &
+\	IF J%>=ASCII('A') AND J%<=ASCII('Z') THEN &
+	FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+
+15110	IF LEFT(D$,1%)='F' THEN FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+
+15120	ON ERROR GOTO 25000 &
+\	FNEND &
+
+1500	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	PRINT CRLF$;CRLF$;'Paton Library Sub-Sort Vet Program';CRLF$;CRLF$ &
+
+2000	OPEN 'DP2:'+PKG.LOC$+'BOOKS .RMS' FOR INPUT AS FILE #3%, &
+	ORGANIZATION UNDEFINED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY &
+
+2010	OPEN 'DP2:'+PKG.LOC$+'AUTHOR.RMS' AS FILE #4%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP AUTHOR, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY A.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY A.AUTHOR$ DUPLICATES CHANGES &
+
+2020	OPEN 'DP2:'+PKG.LOC$+'SUBJCT.RMS' AS FILE #5%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+
+2050	OPEN 'DP2:'+PKG.LOC$+'SUBCNT.RMS' AS FILE #6%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBCNT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY SC.SUBJECT$ NODUPLICATES, &
+	ALTERNATE KEY SC.DEWEY$ DUPLICATES CHANGES &
+
+2070	OPEN 'DP2:'+PKG.LOC$+'LOANS.RMS' AS FILE #10%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP LOANS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY L.TICKET$ DUPLICATES, &
+	ALTERNATE KEY L.ACCESSION$ DUPLICATES &
+
+25000	! ERRORS &
+	&
+	&
+	RESUME 5010 IF ERL=5020 AND ERR=155 &
+\	RESUME 5010 IF ERL=5040 AND ERR=11 &
+\	RESUME 32767 IF ERR=11 &
+
+29000	PRINT 'SBSTVT : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+30000
+
+32767	END &
+

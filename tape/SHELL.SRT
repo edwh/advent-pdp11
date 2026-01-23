@@ -1,0 +1,33 @@
+10	NO.OF.ENTRIES%=19% &
+\	RANDOM &
+\	DIM A%(19%) &
+\	A%(I%)=INT(RND*20%) FOR I%=1% TO 19% &
+\	PRINT &
+\	PRINT 'Shell Sort Demo - sorting the following numbers :' &
+\	PRINT &
+\	PRINT A%(I%); FOR I%=1% TO 19% &
+\	PRINT &
+\	GOSUB 8000 &
+\	PRINT &
+\	PRINT A%(I%); FOR I%=1% TO 19% &
+\	PRINT &
+\	GOTO 32767 &
+
+8000	GAP%=2^(INT(LOG(NO.OF.ENTRIES%)/LOG(2%))-1%)-1% &
+\	UNTIL GAP%<=0% &
+\	FOR LOOP%=1% TO NO.OF.ENTRIES%-GAP% &
+\	FOR POOL%=LOOP% TO 1% STEP -GAP% &
+\	IF A%(POOL%+GAP%)<A%(POOL%) THEN &
+	J%=A%(POOL%) &
+\	A%(POOL%)=A%(POOL%+GAP%) &
+\	A%(POOL%+GAP%)=J% &
+
+8010	NEXT POOL% &
+\	NEXT LOOP%	! UNTIL THE END. &
+\	GAP%=GAP%/2% &
+\	NEXT &
+
+8020	RETURN &
+
+32767	END &
+

@@ -1,0 +1,102 @@
+1	SUB DISPSH &
+\	ON ERROR GOTO 25000 &
+	! &
+	!	Written by E.D.W. Hibbert 1987-1988. &
+	! &
+
+4999	J%=VAL('A') &
+	! Force ERR<>28 &
+
+5000	BOOKS.LISTED%=BOOKS.LISTED%+1% &
+\	AUT$='' &
+\	GET #4%, KEY #0% EQ ACCESSION$ &
+\	UNLOCK #4% &
+\	AUT$=CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	UNTIL 0% &
+
+5010	GET #4% &
+\	UNLOCK #4% &
+\	GOTO 6000 UNLESS A.ACCESSION$=ACCESSION$ &
+\	AUT$=AUT$+' & '+CVT$$(LEFT(A.AUTHOR$,25%),128%) &
+\	NEXT &
+
+6000	! Short printout &
+	&
+	&
+	IF BOOKS.THIS.PAGE%=0% THEN &
+	PRINT #1%, CHR$(24%);STRING$(80%,ASCII('-')); &
+	'Ac. No.';SPACE$(31%);'Title';SPACE$(28%);'Stat/Date'; &
+	SPACE$(36%);'Author(s)';CRLF$; &
+	'Dewey No.';SPACE$(27%);'Publisher';SPACE$(27%);'I.S.B.N.'; &
+	STRING$(80%,ASCII('-')); &
+
+6010	AUT$='-' UNLESS LEN(AUT$) &
+\	BOOKS.THIS.PAGE%=BOOKS.THIS.PAGE%+1% &
+\	BOOKS.THIS.PAGE%=0% IF BOOKS.THIS.PAGE%>=4% &
+\	J$='' &
+\	J$='On Order: ' IF FLAG% AND 512% &
+\	PRINT #1%, J$;FNPRETTY.ACCESSION$(CVT$%(ACCESSION$)+32768.);TAB(40%- &
+	LEN(CVT$$(TITLE$,128%))/2%);CVT$$(TITLE$,128%); &
+\	J$='L' IF FLAG% AND 1% &
+\	J$='S' IF FLAG% AND 2% &
+\	J$='R' IF FLAG% AND 4% &
+\	J$='Q' IF FLAG% AND 8% &
+\	J$='SC' IF FLAG% AND 16% &
+\	J$=J$+',UR' IF FLAG% AND 1024% &
+\	J$=J$+',M' IF FLAG% AND 2048% &
+\	J$=J$+',AR' IF FLAG% AND 2%^8% &
+\	J$=CVT$$(DEWEY$,128%) IF FLAG% AND 512% &
+\	J1$=DEWEY$ &
+\	J1$='' IF FLAG% AND 512% &
+
+6020	GET #10%, KEY #1% EQ ACCESSION$ &
+\	J$=J$+','+DATE$(L.DUE%) IF L.DUE% &
+
+6030	PRINT #1%, TAB(79%-LEN(J$));J$;CRLF$;TAB(40%-LEN(AUT$)/2%);AUT$; &
+	CRLF$;J1$;TAB(40%-LEN(CVT$$(PUBLISHER$,128%))/2%); &
+	CVT$$(PUBLISHER$,128%);TAB(80%-LEN(CVT$$(ISBN$,128%))); &
+	CVT$$(ISBN$,128%); &
+	STRING$(80%,ASCII('-')); &
+\	SUBEXIT &
+
+15010
+15020
+15030
+15040
+15060
+15070
+
+20090	DEF* FNPRETTY.TICKET$(P.T.N.) &
+\	J1$=NUM1$(P.T.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	FNPRETTY.TICKET$=LEFT(J1$,3%)+'-'+RIGHT(J1$,4%)+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+20100	DEF* FNPRETTY.ACCESSION$(P.A.N.) &
+\	J1$=NUM1$(P.A.N.) &
+\	J1$=STRING$(5%-LEN(J1$),ASCII('0'))+J1$ &
+\	J1%=0% &
+\	J1%=J1%+I%*(ASCII(RIGHT(J1$,I%))-ASCII('0')) FOR I%=1% TO 5% &
+\	J1%=J1%-J1%/26%*26% &
+\	J1$=RIGHT(J1$,2%) WHILE LEFT(J1$,1%)='0' &
+\	FNPRETTY.ACCESSION$=J1$+'-'+CHR$(J1%+ASCII('A')) &
+\	FNEND &
+
+25000	! ERRORS &
+	&
+	&
+	RESUME 6000 IF (ERL=5000 AND ERR=155) OR (ERL=5010 AND ERR=11) &
+\	RESUME 5000 IF ERL=4999 &
+\	RESUME 32767 IF ERR=28 &
+\	RESUME 6030 IF ERL=6020 AND ERR=155 &
+
+29000	PRINT #1%, FNC$;CRLF$;'DISPSH : ';ERT$(ERR);' at line';ERL &
+\	RESUME 32767 &
+
+30000
+
+32767	SUBEND &
+

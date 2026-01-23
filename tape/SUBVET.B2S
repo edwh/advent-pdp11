@@ -1,0 +1,65 @@
+1	ON ERROR GOTO 25000 &
+	! Program to delete all subject records without corresponding &
+	! records in BOOKS.DTA &
+
+1000	MAP (BOOKS) ACCESSION$=2%,	! Accession number &
+		    DEWEY$=10%,		! Dewey number or F for fiction &
+		    ISBN$=10%,		! ISBN number &
+		    TITLE$=47%,		! Title &
+		    PUBLISHER$=26%,	! Publisher &
+		    FLAG%,		! General flag word &
+		    ILLUS%,		! No. of illustrations &
+		    PAGES%,		! No. of pages &
+		    FIRST.PUB%,		! Date first published &
+		    THIS.PUB%,		! Date this edition published &
+		    THIS.PRINT%		! Date this edition printed &
+
+1020	MAP (SUBJCT) S.ACCESSION$=2%,	! Accession number &
+		     S.SUBJECT$=20%	! This subject &
+	&
+	&
+	! For multiple subjects for one book have multiple records &
+
+1500	J$=SYS(CHR$(12%)) &
+\	PKG.LOC$='['+NUM1$(ASCII(RIGHT(J$,6%)))+','+NUM1$(ASCII(RIGHT(J$,5%))) &
+	+']' &
+\	CRLF$=CHR$(13%)+CHR$(10%) &
+\	OPEN '_KB:' AS FILE #1% &
+
+2000	OPEN PKG.LOC$+'BOOKS .RMS' AS FILE #3%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP BOOKS, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY ACCESSION$ NODUPLICATES, &
+	ALTERNATE KEY TITLE$ DUPLICATES CHANGES, &
+	ALTERNATE KEY DEWEY$ DUPLICATES CHANGES &
+
+2020	OPEN PKG.LOC$+'SUBJCT.RMS' AS FILE #5%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS MODIFY, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+\	OPEN PKG.LOC$+'SUBJCT.RMS' AS FILE #8%, &
+	ORGANIZATION INDEXED FIXED, &
+	MAP SUBJCT, &
+	ACCESS READ, &
+	ALLOW MODIFY, &
+	PRIMARY KEY S.ACCESSION$ DUPLICATES, &
+	ALTERNATE KEY S.SUBJECT$ DUPLICATES CHANGES &
+	! Need to open it twice for subject searches. &
+
+5000	RESTORE #5% &
+\	UNTIL 0% &
+\	GET #5% &
+\	GET #3%, KEY #0% EQ S.ACCESSION$ &
+
+5010	NEXT &
+
+25000	IF ERR=155 AND ERL=5000 THEN DELETE #5% &
+\	RESUME 5010 &
+
+32767	END &
+

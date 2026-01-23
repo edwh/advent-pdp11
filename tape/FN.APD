@@ -1,0 +1,77 @@
+15000	! Standard functions &
+	&
+	&
+	DEF* FNC$ &
+\	FNC$='' &
+\	FNC$=CRLF$ IF CCPOS(1%) &
+\	FNEND &
+
+15010	! FNGETARG &
+	&
+	&
+	! This function is used in routines to allow the specification of &
+	! all the command arguments on the command line. &
+	&
+	DEF* FNGETARG$ &
+\	FNGETARG$='' &
+\	GOTO 15030 UNLESS LEN(ARG$) &
+\	JJ%=INSTR(1%,ARG$,' ') &
+\	IF JJ%=0% THEN &
+	FNGETARG$=ARG$ &
+\	ARG$='' &
+\	GOTO 15030 &
+
+15020	FNGETARG$=LEFT(ARG$,JJ%-1%) &
+\	ARG$=RIGHT(ARG$,JJ%+1%) &
+
+15030	FNEND &
+
+15040	DEF* FNCONT% &
+\	J%=CTRLC &
+\	FNCONT%=0% &
+\	FNEXIT IF ((SWITCH% AND 1%) AND BOOKS.THIS.PAGE%<>0%) &
+	OR (SWITCH% AND 2%) &
+	! Exit if it's a short listing and we're not at the end of &
+	! the page. &
+\	ON ERROR GOTO 15060 &
+\	PRINT #1%, FNC$;CRLF$; &
+	'	*** Press any key to continue, or ^C to abort. ***'; &
+	STRING$(16%,8%); &
+\	J$=SYS(CHR$(3%)) &
+\	J$=SYS(CHR$(4%)) &
+\	GET #1% &
+\	J$=SYS(CHR$(2%)) &
+!\	PRINT #1%, CHR$(13%);SPACE$(70%);CHR$(13%); &
+\	PRINT #1%, CHR$(13%);CHR$(24%); &
+\	GOTO 15070 &
+
+15060	J$=SYS(CHR$(2%)) &
+\	J%=CTRLC &
+\	FNCONT%=-1% &
+\	RESUME 15070 &
+
+15070	ON ERROR GOTO 25000 &
+\	FNEND &
+
+15080	DEF* FNVET.DEWEY%(D$) &
+\	FNVET.DEWEY%=0% &
+\	ON ERROR GOTO 15090 &
+\	J.=VAL(D$) &
+\	FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+	! It's a number, simple &
+
+15090	RESUME 15100 &
+
+15100	IF LEFT(D$,6%)='822.33' THEN &
+	J%=ASCII(RIGHT(D$,7%)) &
+\	IF J%>=ASCII('A') AND J%<=ASCII('Z') THEN &
+	FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+
+15110	IF LEFT(D$,1%)='F' THEN FNVET.DEWEY%=-1% &
+\	GOTO 15120 &
+
+15120	ON ERROR GOTO 25000 &
+\	FNEND &
+
