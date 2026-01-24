@@ -564,4 +564,5 @@ D:      .FCTR SY:ADVTDY
 - ✅ NORTH movement works
 - ✅ Room descriptions and objects display correctly
 
-**Commits:** (committing now)
+**Commits:**
+- `3e13464` - Fix ^Z flooding bug by reverting to RUN ADVENT
