@@ -90,7 +90,7 @@ RUN cp /opt/advent/disks-backup/rstse_10_ra72.dsk /opt/advent/disks/rstse_10_ra7
 COPY build/data/ /opt/advent/data/
 
 # Copy source files for building from source
-COPY src/*.SUB src/*.B2S src/*.COM /opt/advent/src/
+COPY src/*.SUB src/*.B2S /opt/advent/src/
 
 # Copy tape creation and room reconstruction scripts
 COPY scripts/create_tape.py scripts/create_advent_tape.py /opt/advent/scripts/

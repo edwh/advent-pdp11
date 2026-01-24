@@ -107,9 +107,9 @@ echo ">>> Configuring terminal for video display..."
 send_line "SET TERMINAL /SCOPE"
 sleep 1
 
-# Start ADVENT via command file (loops on exit to prevent OS escape)
+# Start ADVENT directly (not via @ADVENT command file which causes ^Z flooding)
 echo ">>> Starting ADVENT..."
-send_line "@ADVENT"
+send_line "RUN ADVENT"
 sleep 3
 
 echo ">>> Persistent game session is ready"

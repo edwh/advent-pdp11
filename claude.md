@@ -412,6 +412,7 @@ D:      .FCTR SY:ADVTDY
 
 **Next:** Deploy updated container to fly.io
 
+<<<<<<< Updated upstream
 ### January 20, 2026 - Backspace, Terminal Scaling, Disk Image Split
 
 **Tasks:**
@@ -512,3 +513,55 @@ D:      .FCTR SY:ADVTDY
 - Fix MSG: device issue (create MSG: or disable logging)
 - Test shrine treasure drops for XP
 - Continue Phase 2 testing
+
+### January 24, 2026 - ^Z Flooding Bug Root Cause Found and Fixed
+
+**Problem:** Game was continuously receiving ^Z/EOF at INPUT prompt, causing rapid restarts with `> ? ^Z` appearing repeatedly.
+
+**Root Cause Identified:** Commit `b4adbac` introduced a problematic combination:
+
+1. **ADVENT.COM command file** - Auto-restart loop:
+   ```
+   $ SET NOON
+   $ LOOP:
+   $ RUN ADVENT
+   $ GOTO LOOP
+   ```
+
+2. **Changed start_game_session.sh** from `RUN ADVENT` to `@ADVENT`
+
+3. **Added ^Z error handler** at line 25003:
+   ```basic
+   RESUME 32766 IF ERR=11% AND ERL=36% AND SINGLE.USER%
+   ```
+   Which jumps to `END` (line 32766)
+
+**The infinite loop:** When any ^Z exists in the input buffer:
+1. Game receives ^Z at INPUT (line 36)
+2. Error handler catches EOF (error 11), jumps to END
+3. Game exits
+4. ADVENT.COM loop immediately restarts the game
+5. Still has ^Z in buffer → repeat
+
+**Fix:** Reverted to using `RUN ADVENT` directly instead of `@ADVENT` command file.
+
+**Testing (via Chrome MCP on old version before b4adbac):**
+- ✅ Game starts normally, waits at `>?` prompt
+- ✅ LOOK command - displays room description
+- ✅ NORTH command - movement works, arrived at new room (rough walled cave)
+- ✅ Room shows objects: "ediblefood pig", "portrait of david", "Davidian Cavehog"
+- ✅ No ^Z flooding
+
+**Fix Applied:**
+- Modified `docker/start_game_session.sh` line 112: Use `RUN ADVENT` instead of `@ADVENT`
+- Removed ADVENT.COM from build (not needed without auto-restart)
+- Removed ^Z error handler from ADVENT.B2S (line 25003)
+
+**Verified Working:**
+- ✅ Game starts with `RUN ADVENT` (not `@ADVENT`)
+- ✅ No ^Z flooding at prompt
+- ✅ LOOK command works
+- ✅ NORTH movement works
+- ✅ Room descriptions and objects display correctly
+
+**Commits:** (committing now)

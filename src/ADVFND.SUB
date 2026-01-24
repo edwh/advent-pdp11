@@ -24,9 +24,7 @@
 	UNLESS INSTR(1%,CVT$$(PEOPLE$,255%),NAM$) &
 \	SUBEXIT &
 
-25000	! ERRORS &
-	&
-	&
+25000	! ERRORS
 
 ! === 2026 Resurrection: Disable MSG: logging for single-user mode ===
 29000	PRINT "ADVFND ERROR: ";ERR;" at line";ERL &
