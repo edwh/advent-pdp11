@@ -62,6 +62,10 @@
 \	GOTO 36 IF COM$="" &
 \	GET #3%, RECORD ROOM%(USER%) &
 \	GOTO 24990 IF ROOM$<>CHR$(ROOM%(USER%)) &
+\	GOSUB 1530 IF INSTR(1%,PEOPLE$,"*") UNLESS FLAG%(USER%) AND 2%^1% &
+\	! 2026 Resurrection: Enable monster auto-attacks in single-user mode &
+\	GOSUB 1540 IF INSTR(1%,PEOPLE$,"#") IF FLAG%(USER%) AND 1% &
+\	! End 2026 Resurrection &
 \	GOSUB 21000 &
 \	GOTO 37 UNLESS C% &
 \	CALL ADVNOR IF C%>=1% AND C%<=19% &

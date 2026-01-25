@@ -21,3 +21,13 @@ simh/Disks/ra72/rstse_10_ra72.dsk
 
 # API keys
 .env
+
+# Video production temp files
+video/output/*.wav
+video/output/*.mp3
+video/output/*.png
+video/frames/
+video/__pycache__/
+
+# Generated data (symlink to build/data)
+generated_data/

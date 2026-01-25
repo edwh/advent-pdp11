@@ -680,3 +680,53 @@ NOT:
 **Files Modified:**
 - `build/data/BOARD.NTC` - Fixed with 23 indexed rooms
 - `scripts/fix_noticeboards.py` - Script to add missing rooms to INDEX
+
+### January 25, 2026 - Demo Mode Complete
+
+**Goal:** Create an auto-play demo mode for video recording with audio and commentary.
+
+**Implementation Complete:**
+
+1. **Server-side input injection** (input_server.py)
+   - HTTP server on port 8083
+   - Receives POST /send requests with keystroke data
+   - Uses `screen -S advent -X stuff` to inject into game session
+   - Avoids cross-origin WebSocket issues with ttyd iframe
+
+2. **Demo script** (docker/web/demo.js)
+   - DEMO_SCRIPT array with [command, delayMs, comment] entries
+   - Character-by-character typing animation
+   - Uses /api/send endpoint to inject keystrokes
+   - Shows Claude's snarky commentary below terminal
+   - Browser Web Speech API for TTS (prefers British voice)
+   - Background ambient audio (dungeon_ambient.mp3)
+   - Keyboard click sounds on each keystroke
+   - Hides status panel during demo for cleaner recording
+
+3. **nginx config** - Added /api/send proxy to port 8083
+
+4. **Dockerfile** - Added COPY for input_server.py, fixed audio directory permissions
+
+**Usage:**
+- Navigate to http://localhost:8085
+- Click "Run Demo" button, OR
+- Go to http://localhost:8085?demo=1 for auto-start
+
+**Audio Files Added:**
+- dungeon_ambient.mp3 (1.4MB) - Background ambience
+- keyboard_click.wav (4.8KB) - Typing sounds
+- soft_chime.wav (26KB) - UI sounds
+
+**Issues Fixed:**
+- Audio directory had wrong permissions (drw-r--r-- instead of drwxr-xr-x)
+- Fixed by adding `chmod 755 /opt/advent/web/audio` to Dockerfile
+
+**Status:**
+- ✅ Input API working (/api/send returns {"ok":true})
+- ✅ Audio files serving correctly
+- ✅ Demo script loaded
+- ✅ Container rebuilt and running on port 8085
+
+**Next:**
+- Test full demo playthrough
+- Record video with audio

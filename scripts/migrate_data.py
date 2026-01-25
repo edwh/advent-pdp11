@@ -389,18 +389,32 @@ def generate_advent_chr(output_path):
 
 
 def generate_board_ntc(output_path):
-    """Generate empty BOARD.NTC file (noticeboard)."""
-    print(f"Generating BOARD.NTC...")
+    """Copy original BOARD.NTC with 1986-87 noticeboard data.
 
-    # 512 records x 512 bytes
-    record_count = 512
-    record_size = 512
+    The original tape/BOARD.NTC contains real player-written messages
+    including Monty Python quotes, schoolboy humor, and game tips.
+    This is historical content worth preserving!
+    """
+    print(f"Copying original BOARD.NTC with 1986-87 data...")
 
-    with open(output_path, 'wb') as f:
-        f.write(b'\x00' * (record_count * record_size))
+    # Look for original BOARD.NTC in tape directory
+    script_dir = Path(__file__).parent.parent
+    original_path = script_dir / "tape" / "BOARD.NTC"
 
-    file_size = os.path.getsize(output_path)
-    print(f"  Created BOARD.NTC: {file_size:,} bytes")
+    if original_path.exists():
+        import shutil
+        shutil.copy(original_path, output_path)
+        file_size = os.path.getsize(output_path)
+        print(f"  Copied original BOARD.NTC: {file_size:,} bytes")
+    else:
+        # Fallback: generate empty file if original not found
+        print(f"  WARNING: Original tape/BOARD.NTC not found, generating empty file")
+        record_count = 512
+        record_size = 512
+        with open(output_path, 'wb') as f:
+            f.write(b'\x00' * (record_count * record_size))
+        file_size = os.path.getsize(output_path)
+        print(f"  Created empty BOARD.NTC: {file_size:,} bytes")
 
 
 def generate_messag_npc(output_path):
