@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
     nginx-light \
     python3 \
+    python3-pip \
     libpcap0.8 \
     curl \
     ca-certificates \
@@ -50,6 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     screen \
     tmux \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages for Claude API
+RUN pip3 install --no-cache-dir --break-system-packages anthropic
 
 # Install ttyd (not in Debian repos, download binary)
 RUN curl -sLo /usr/local/bin/ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 && \
@@ -126,6 +130,8 @@ COPY docker/restart_service.sh /opt/advent/
 COPY docker/kick_service.sh /opt/advent/
 COPY docker/kick_console.sh /opt/advent/
 COPY docker/tcp_connect.py /opt/advent/
+COPY docker/input_server.py /opt/advent/
+COPY docker/commentary_server.py /opt/advent/
 COPY docker/screenrc /root/.screenrc
 
 # Copy web interface
@@ -137,7 +143,8 @@ COPY STATUS.md RESURRECTION.md PROVENANCE.md TECHNICAL.md CONTINUATION.md NEWADV
 # Set permissions
 RUN chmod +x /opt/advent/*.sh /opt/advent/*.exp /opt/advent/*.py /opt/advent/scripts/*.py && \
     chmod 644 /opt/advent/*.md && \
-    chmod 644 /opt/advent/web/*
+    chmod 644 /opt/advent/web/* && \
+    chmod 755 /opt/advent/web/audio
 
 # Expose ports
 EXPOSE 8080 7681 7682 2322 2323

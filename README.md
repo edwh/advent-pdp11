@@ -4,6 +4,9 @@ A multi-user dungeon game from 1986-87, resurrected from the dead after 38 years
 
 Originally written for a PDP-11 minicomputer (ask your grandparents), now running in Docker because of course it is. We live in an age of wonders.
 
+[![Watch the video](https://img.youtube.com/vi/qhvSK0vTHAE/maxresdefault.jpg)](https://youtu.be/qhvSK0vTHAE)
+*▶ Click to watch Claude AI explore the dungeon*
+
 ![ADVENT MUD Screenshot](docs/screenshot.png)
 
 ## Quick Start

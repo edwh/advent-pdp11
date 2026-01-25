@@ -94,6 +94,14 @@ echo "Restart service started on port 8081"
 "$ADVENT_DIR/kick_service.sh" &
 echo "Kick service started on port 8082"
 
+# Start the input service (listens on port 8083, sends keystrokes for demo mode)
+python3 "$ADVENT_DIR/input_server.py" &
+echo "Input service started on port 8083"
+
+# Start the commentary service (listens on port 8084, real-time Claude observations)
+python3 "$ADVENT_DIR/commentary_server.py" &
+echo "Commentary service started on port 8084"
+
 # Start SIMH in background
 echo "Starting SIMH emulator..."
 echo "  Console: telnet localhost 2322"
