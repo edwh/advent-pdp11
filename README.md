@@ -47,27 +47,40 @@ We never said this would be elegant.
 
 ## Current Status (January 2026)
 
-**Single-user mode is fully working!** You can:
+**Single-player mode is fully working!** You can:
 
-- Wander around: NORTH, SOUTH, EAST, WEST, UP, DOWN
-- Look at things: LOOK, EXITS, EXAMINE
-- Hoard treasure: GET, DROP, INVENTORY
-- Check your stats: STATUS
-- Give up: QUIT
+- **Explore**: NORTH, SOUTH, EAST, WEST, UP, DOWN (and diagonals)
+- **Look around**: LOOK, EXITS, EXAMINE
+- **Collect items**: GET, DROP, INVENTORY
+- **Fight monsters**: DRAW weapon, HIT target, SHEATH
+- **Survive**: EAT food, REST, check STATUS
+- **Read history**: READ BOARD to see authentic 1986 schoolboy messages
 
-The dungeon contains 1,587 rooms, 402 monsters, and 417 objects. Some room descriptions are... let's say "period authentic." It was the 1980s. Teenagers were involved.
+Monsters will attack you back. Combat is turn-based and surprisingly tactical for 1986.
+
+The dungeon contains 1,587 rooms, 402 monsters, and 417 objects. Room descriptions range from atmospheric to absurd - it was the 1980s, teenagers were involved, and some things are best experienced firsthand.
+
+### Claude AI Demo Mode
+
+Click **"Claude Plays"** in the web interface to watch Claude AI explore the dungeon with sardonic British commentary. Requires an Anthropic API key:
+
+```bash
+# Create .env file in project root
+echo "ANTHROPIC_API_KEY=sk-ant-api03-..." > .env
+
+# Restart the container
+docker compose up -d
+```
 
 ### Demigod Privileges
 
-New players start at **level 16** because life's too short to grind. In the original 1987 game, you'd have to earn these abilities through blood, sweat, and creative monster slaughter. We're giving them away free:
+New players start at **level 16** because life's too short to grind. In 1987 you'd earn these through blood, sweat, and creative monster slaughter. We're giving them away free:
 
-- `/ROOM <number>` - Teleport directly to any room
-- `/LIST` - See all players online
-- `/TELEPORT <player>` - Teleport to another player
-- `/INVISIBLE` - Toggle invisibility
-- `/ANNOUNCE <message>` - Broadcast to everyone (level 30+)
+- `ROOM <number>` - Teleport directly to any room (try 84, 85, 740, 777)
+- `HEAL` - Restore your health
+- `INVISIBLE` - Toggle invisibility
 
-See [STATUS.md](STATUS.md) for what works and what doesn't.
+See [STATUS.md](STATUS.md) for the full command list.
 
 ## Access Methods
 
